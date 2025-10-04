@@ -1,0 +1,22 @@
+/* styles.css */
+.logo-img {
+  width: 400px;
+  max-width: 90%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 0;   
+}
+
+/* Optional: Make it larger on medium screens */
+@media (min-width: 768px) {
+  .logo-img {
+    width: 208px;
+    height: 144px;
+  }
+}
+
+.button {
+  gap: 50px;
+}

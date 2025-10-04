@@ -1,0 +1,42 @@
+import styled from "styled-components";
+
+const HEADER_HEIGHT = 70;   // header height
+const SIDE_GAP = 20;        // gap left/right
+const BOTTOM_GAP = 10;      // bottom gap
+const SIDEBAR_WIDTH = 260;  // sidebar width
+
+export const ContentWrapper = styled.div<{ isSidebarOpen: boolean }>`
+  flex: 1;
+  background-color: #000;    /* Black background */
+  color: #fff;               /* White text */
+  padding: 24px;
+  margin-top: ${HEADER_HEIGHT}px;   /* Gap below header */
+  margin-left: ${SIDE_GAP}px;
+  margin-right: ${SIDE_GAP}px;
+  margin-bottom: ${BOTTOM_GAP}px;   /* Gap from bottom */
+  border-radius: 12px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+
+  min-height: calc(100vh - ${HEADER_HEIGHT}px - ${BOTTOM_GAP}px - 40px);
+
+  ${({ isSidebarOpen }) =>
+    isSidebarOpen &&
+    `
+      margin-left: ${SIDE_GAP}px;
+    `}
+`;
+
+import React from "react";
+import { ContentWrapper } from "../Main Content/style";
+
+interface MainContentsProps {
+  isSidebarOpen: boolean;
+  children: React.ReactNode;
+}
+
+const MainContents: React.FC<MainContentsProps> = ({ isSidebarOpen, children }) => {
+  return <ContentWrapper isSidebarOpen={isSidebarOpen}>{children}</ContentWrapper>;
+};
+
+export default MainContents;
