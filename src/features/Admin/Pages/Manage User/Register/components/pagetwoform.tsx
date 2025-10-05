@@ -58,7 +58,11 @@ const Page2Form: React.FC<Page2FormProps> = ({
                 onClick={() => setShowPassword(!showPassword)}
                 style={{ cursor: "pointer" }}
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {showPassword
+                  ? (FaEyeSlash({}) as React.ReactElement)
+                  : (FaEye({}) as React.ReactElement)
+                }
+
               </InputGroup.Text>
             </InputGroup>
           </Form.Group>

@@ -35,7 +35,11 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           variant="outline-secondary"
           onClick={() => setShowPassword(!showPassword)}
         >
-          {showPassword ? <FaEyeSlash /> : <FaEye />}
+          {showPassword
+            ? (FaEyeSlash({}) as React.ReactElement)
+            : (FaEye({}) as React.ReactElement)
+          }
+
         </Button>
       </InputGroup>
     </Form.Group>

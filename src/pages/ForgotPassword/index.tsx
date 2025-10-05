@@ -78,7 +78,11 @@ const ForgotPasswordPage: React.FC = () => {
                   variant="outline-secondary"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                 >
-                  {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showNewPassword
+                    ? (FaEyeSlash({}) as React.ReactElement)
+                    : (FaEye({}) as React.ReactElement)
+                  }
+
                 </Button>
               </InputGroup>
               <FormText muted>Must be at least 8 characters long.</FormText>
@@ -99,7 +103,11 @@ const ForgotPasswordPage: React.FC = () => {
                   variant="outline-secondary"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showConfirmPassword
+                    ? (FaEyeSlash({}) as React.ReactElement)
+                    : (FaEye({}) as React.ReactElement)
+                  }
+
                 </Button>
               </InputGroup>
             </Form.Group>

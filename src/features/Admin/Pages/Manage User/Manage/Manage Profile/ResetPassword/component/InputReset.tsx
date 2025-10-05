@@ -6,25 +6,31 @@ import Button from "react-bootstrap/Button";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 interface PasswordInputProps {
-  label: string;
-  placeholder: string;
+  label?: string;
+  placeholder?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  name?: string;
 }
 
 const PasswordInput: React.FC<PasswordInputProps> = ({
-  label,
-  placeholder,
+  label = "Password",
+  placeholder = "Enter password",
   value,
   onChange,
+  name = "password",
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+
   return (
     <Form.Group className="mb-3">
-      <Form.Label>{label}</Form.Label>
+      {label && <Form.Label htmlFor={name}>{label}</Form.Label>}
       <InputGroup>
         <Form.Control
+          id={name}
+          name={name}
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
           value={value}
@@ -33,9 +39,15 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
         />
         <Button
           variant="outline-secondary"
-          onClick={() => setShowPassword(!showPassword)}
+          onClick={togglePasswordVisibility}
+          type="button"
         >
-          {showPassword ? <FaEyeSlash /> : <FaEye />}
+          
+        {showPassword
+          ? (FaEyeSlash({}) as React.ReactElement)
+          : (FaEye({}) as React.ReactElement)
+        }
+
         </Button>
       </InputGroup>
     </Form.Group>
