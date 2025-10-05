@@ -5,7 +5,6 @@ import CustomButton from "../components/Button/button";
 import BlurPopup from "../components/Popup";
 import logo from "../assets/pics/logo-landscape.png";
 import LoginForm from "../components/Login/LoginForm";
-import { useAuth } from "../context/AuthContext";
 import "./styles.css"; // ✅ keep your homepage styles
 
 const HomePage: React.FC = () => {
