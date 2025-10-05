@@ -10,34 +10,41 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 
+// ✅ Define a clear type for messages
+type Message = {
+  role: "user" | "bot";
+  text: string;
+};
+
 const Chatbot: React.FC = () => {
-  const [messages, setMessages] = useState<{ role: "user" | "bot"; text: string }[]>([
+  const [messages, setMessages] = useState<Message[]>([
     { role: "bot", text: "👋 Hello! I'm your assistant. How can I help today?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // auto scroll to latest message
+  // ✅ Auto-scroll to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ✅ Handle sending message
   const handleSend = () => {
     if (!input.trim()) return;
 
-    // Add user message
-    const userMessage = { role: "user", text: input };
+    const userMessage: Message = { role: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
-    // Fake bot reply (replace with API call)
+    // Simulate bot reply (you can replace this with an API call later)
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", text: `🤖 I understood: "${userMessage.text}"` },
-      ]);
+      const botMessage: Message = {
+        role: "bot",
+        text: `🤖 I understood: "${userMessage.text}"`,
+      };
+      setMessages((prev) => [...prev, botMessage]);
       setLoading(false);
     }, 1000);
   };
@@ -58,7 +65,7 @@ const Chatbot: React.FC = () => {
               backgroundColor: "#fff",
             }}
           >
-            {/* Messages */}
+            {/* Chat messages */}
             <Box
               sx={{
                 flexGrow: 1,
@@ -94,7 +101,7 @@ const Chatbot: React.FC = () => {
                 </Box>
               ))}
 
-              {/* Loading indicator */}
+              {/* Loading bubble */}
               {loading && (
                 <Box display="flex" justifyContent="flex-start" mb={1}>
                   <Box
