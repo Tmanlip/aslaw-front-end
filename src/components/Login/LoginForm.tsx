@@ -114,21 +114,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       {/* Remember me & Forgot password */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <Form.Check type="checkbox" id="rememberMe" label="Remember me" />
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setForgotPasswordPage(true);
-          }}
+        <button
+          type="button"
+          onClick={() => setForgotPasswordPage(true)}
           style={{
             fontSize: "14px",
             color: colors.gold6 || "#3b82f6",
             textDecoration: "none",
             fontWeight: "500",
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
           }}
         >
           Forgot password?
-        </a>
+        </button>
       </div>
 
       {/* Submit Button */}
