@@ -1,4 +1,4 @@
-import HomePage from './pages/Home';
+//import HomePage from './pages/Home';
 //import NewHome from './pages/newHome';
 //import RegisterPage from './pages/Admin/Manage User/Register';
 //import ForgotPasswordPage from './pages/ForgotPassword';
@@ -12,8 +12,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 //import UpdateCheque from './pages/Admin/Billing';
 import { AuthProvider } from "./context/AuthContext";
 import RenderRouter from "./routes/RenderRouter";
-
-type UserRole = 'admin' | 'client' | 'lawyer';
 
 function App() {
   /*const [role, setRole] = useState<"admin" | "client" | "lawyer" | null>(null);

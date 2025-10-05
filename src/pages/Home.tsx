@@ -12,7 +12,6 @@ const HomePage: React.FC = () => {
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
 
-  const { role } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = () => {
