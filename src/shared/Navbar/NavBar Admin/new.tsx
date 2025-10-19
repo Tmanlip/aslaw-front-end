@@ -60,7 +60,7 @@ const NavBarAdmin: React.FC = () => {
               onClick={toggleSideBar}
               style={{ cursor: "pointer" }}
             />
-            <Navbar.Brand href="/">
+            <Navbar.Brand href="/admin/dashboard">
               <Logo src={logo} alt="Logo" />
             </Navbar.Brand>
 

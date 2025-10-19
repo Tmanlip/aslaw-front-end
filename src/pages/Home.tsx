@@ -5,7 +5,7 @@ import CustomButton from "../components/Button/button";
 import BlurPopup from "../components/Popup";
 import logo from "../assets/pics/logo-landscape.png";
 import LoginForm from "../components/Login/LoginForm";
-import "./styles.css"; // ✅ keep your homepage styles
+import "./styles.css";
 
 const HomePage: React.FC = () => {
   const [showLoginPage, setShowLoginPage] = useState(false);
@@ -28,15 +28,18 @@ const HomePage: React.FC = () => {
     setShowLoginPage(false);
   };
 
-  // ✅ handle login success from LoginForm
+  // ✅ handle login success and redirect with message
   const handleLoginSuccess = (
     role: "admin" | "client" | "lawyer",
     message: string
   ) => {
     console.log(message);
-    if (role === "admin") navigate("/admin/dashboard");
-    if (role === "client") navigate("/client/dashboard");
-    if (role === "lawyer") navigate("/lawyer/dashboard");
+    if (role === "admin")
+      navigate("/admin/dashboard", { state: { successMessage: message } });
+    if (role === "client")
+      navigate("/client/dashboard", { state: { successMessage: message } });
+    if (role === "lawyer")
+      navigate("/lawyer/dashboard", { state: { successMessage: message } });
   };
 
   const LoginPageContent = () => (
@@ -52,15 +55,12 @@ const HomePage: React.FC = () => {
             className="logo-img"
           />
         </div>
-
         <h1 className="text-6xl md:text-8xl font-bold text-white mb-8">
           Login Portal
         </h1>
-
         <p className="text-xl md:text-2xl text-gray-300 mb-12">
           Please enter your credentials to continue
         </p>
-
         <CustomButton
           customColor="red4"
           size="lg"
@@ -84,7 +84,6 @@ const HomePage: React.FC = () => {
           maxWidth="max-w-md"
           colors={colors}
         >
-          {/* ✅ Pass in handler */}
           <LoginForm onLoginSuccess={handleLoginSuccess} />
         </BlurPopup>
       </>
@@ -104,14 +103,12 @@ const HomePage: React.FC = () => {
             className="logo-img"
           />
         </div>
-
         <h1 className="text-6xl md:text-8xl font-bold text-white mb-8">
           Welcome to Adnan Sharida & Associates!
         </h1>
         <p className="text-xl md:text-2xl text-gray-300 mb-12">
           Kindly login to use our services! Thank you!
         </p>
-
         <CustomButton
           customColor="gold6"
           size="lg"

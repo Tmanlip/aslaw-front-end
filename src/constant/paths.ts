@@ -4,7 +4,10 @@ const PATH = {
     DASHBOARD : "/admin/dashboard",
     BILLING : "/admin/billing",
     MANAGE_CASE : "/admin/manage_case",
+    ASSIGN_CASE : "/admin/manage_case/assign_case",
+    EDIT_CASE : "/admin/manage_case/edit_case",
     MANAGE_USER : "/admin/manage_user/manage",
+    MANAGE_PROFILE : "/admin/manage_user/manage_profile",
     REGISTER_USER : "/admin/manage_user/register",
     CHATBOT : "/admin/chatbot"
   },

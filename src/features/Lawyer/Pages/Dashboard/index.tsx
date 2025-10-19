@@ -1,12 +1,14 @@
+// src/pages/LawyerDashboard.tsx
 import React, { useState, useEffect } from "react";
-import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new"; // ✅ adjust path to where you saved it
+import { useLocation } from "react-router-dom";
+import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new";
 import Alert from "react-bootstrap/Alert";
 
-interface LawyerDashboardProps {
-  successMessage?: string;
-}
+const LawyerDashboard: React.FC = () => {
+  // ✅ Get success message from navigation state
+  const location = useLocation();
+  const successMessage = location.state?.successMessage || null;
 
-const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ successMessage }) => {
   const [showAlert, setShowAlert] = useState(!!successMessage);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ successMessage }) => 
             top: "1rem",
             left: "50%",
             transform: "translateX(-50%)",
-            zIndex: 1050, // stays above everything
+            zIndex: 1050,
             width: "auto",
             maxWidth: "600px",
           }}
@@ -44,10 +46,10 @@ const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ successMessage }) => 
         </div>
       )}
 
-      {/* Main content */}
+      {/* ✅ Main content */}
       <div style={{ padding: "2rem" }}>
-        <h1>Welcome to MyApp 🎉</h1>
-        <p>This is the homepage. You can navigate using the navbar links above.</p>
+        <h1>Welcome, Lawyer 🎉</h1>
+        <p>Here you can manage your assigned cases, client communication, and tasks.</p>
       </div>
     </>
   );

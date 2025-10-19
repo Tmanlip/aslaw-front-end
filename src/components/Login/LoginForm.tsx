@@ -5,7 +5,6 @@ import Alert from "react-bootstrap/Alert";
 import { colors } from "../../constant/color";
 import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";  // ✅ import
 
 type LoginFormProps = {
   onLoginSuccess?: (
@@ -15,8 +14,7 @@ type LoginFormProps = {
 };
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
-  const { login } = useAuth(); // ✅ global auth
-  const navigate = useNavigate(); // ✅ router navigation
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +27,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Hardcoded users for testing
+    // 🔒 Hardcoded users (for testing)
     const users = [
       { email: "admin@example.com", password: "password123", role: "admin" },
       { email: "client@example.com", password: "password123", role: "client" },
@@ -48,12 +46,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       // ✅ update global auth
       login(foundUser.role as "admin" | "client" | "lawyer");
 
-      // ✅ redirect to dashboard
-      if (foundUser.role === "admin") navigate("/admin/dashboard");
-      if (foundUser.role === "client") navigate("/client/dashboard");
-      if (foundUser.role === "lawyer") navigate("/lawyer/dashboard");
-
-      // optional callback
+      // ✅ trigger parent callback instead of navigation
       onLoginSuccess?.(
         foundUser.role as "admin" | "client" | "lawyer",
         successMessage
@@ -64,10 +57,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  // ✅ Show ForgotPassword instead of Login if triggered
-  if (showForgotPasswordPage) {
-    return <EmailConfirm />;
-  }
+  if (showForgotPasswordPage) return <EmailConfirm />;
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -91,9 +81,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Form.Text muted>
-          Please use the email associated with your account.
-        </Form.Text>
       </Form.Group>
 
       {/* Password */}
@@ -106,9 +93,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <Form.Text muted>
-          Your password must be 8–20 characters long and contain letters and numbers.
-        </Form.Text>
       </Form.Group>
 
       {/* Remember me & Forgot password */}

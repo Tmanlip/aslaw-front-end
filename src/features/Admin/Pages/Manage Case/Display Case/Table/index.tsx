@@ -1,5 +1,5 @@
-// src/components/UserTable.tsx
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -9,9 +9,10 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { TableVirtuoso, TableComponents } from "react-virtuoso";
 import Chance from "chance";
+import Button from "react-bootstrap/Button";
+import AssignCase from "../Assign Case"; // ✅ Offcanvas component
 import { colors } from "../../../../../../constant/color";
-import Button from "react-bootstrap/Button"; 
-import AssignCase from "../Assign Case"; // ✅ Import new component
+import { useAuth } from "../../../../../../context/AuthContext"; // ✅ Auth context
 
 const chance = new Chance();
 
@@ -22,7 +23,7 @@ interface CaseRecord {
   caseName?: string;
 }
 
-// Generate mock cases (some missing values)
+// ✅ Generate mock data
 const generateCases = (count: number): CaseRecord[] =>
   Array.from({ length: count }, (_, i) => ({
     id: i + 1,
@@ -31,12 +32,12 @@ const generateCases = (count: number): CaseRecord[] =>
     caseName: chance.bool() ? chance.sentence({ words: 3 }) : undefined,
   }));
 
-// Filter: require BOTH client and lawyer
+// ✅ Only cases with both client and lawyer
 const cases: CaseRecord[] = generateCases(50).filter(
   (c) => c.clientName && c.lawyerName
 );
 
-// Virtuoso Table components
+// ✅ Virtuoso table setup
 const VirtuosoTableComponents: TableComponents<CaseRecord> = {
   Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
     <TableContainer component={Paper} {...props} ref={ref} />
@@ -49,15 +50,18 @@ const VirtuosoTableComponents: TableComponents<CaseRecord> = {
   TableBody,
 };
 
+// ✅ Column setup
 const columns = [
   { label: "ID", dataKey: "id", width: 70 },
   { label: "Client Name", dataKey: "clientName", width: 200 },
   { label: "Lawyer Name", dataKey: "lawyerName", width: 200 },
   { label: "Case Name", dataKey: "caseName", width: 300 },
-  { label: "Action", dataKey: "action", width: 150 },
+  { label: "Action", dataKey: "action", width: 200 },
 ];
 
 export default function UserTable() {
+  const navigate = useNavigate();
+  const { role } = useAuth(); // ✅ Get user role
   const [show, setShow] = React.useState(false);
   const [selectedCase, setSelectedCase] = React.useState<CaseRecord | null>(null);
 
@@ -69,6 +73,21 @@ export default function UserTable() {
   const handleClose = () => {
     setShow(false);
     setSelectedCase(null);
+  };
+
+  // ✅ Handle navigation to Edit Case
+  const handleManageCase = (row: CaseRecord) => {
+    if (role !== "admin") {
+      alert("Only admins can access this page.");
+      return;
+    }
+
+    navigate("/admin/manage_case/edit_case", {
+      state: {
+        caseData: row,
+        successMessage: `Now managing case: ${row.caseName}`,
+      },
+    });
   };
 
   return (
@@ -86,6 +105,7 @@ export default function UserTable() {
                   style={{
                     width: column.width,
                     backgroundColor: colors.green3,
+                    fontWeight: "bold",
                   }}
                 >
                   {column.label}
@@ -100,6 +120,7 @@ export default function UserTable() {
               <TableCell>{row.lawyerName}</TableCell>
               <TableCell>{row.caseName ?? "—"}</TableCell>
               <TableCell>
+                {/* ✅ If client has no case, show Add Case */}
                 {!row.caseName && (
                   <Button
                     variant="primary"
@@ -109,13 +130,25 @@ export default function UserTable() {
                     Add Case
                   </Button>
                 )}
+
+                {/* ✅ If client has a case, show Manage Case */}
+                {row.caseName && (
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={() => handleManageCase(row)}
+                    style={{ marginLeft: "0.5rem" }}
+                  >
+                    Manage Case
+                  </Button>
+                )}
               </TableCell>
             </>
           )}
         />
       </Paper>
 
-      {/* ✅ Offcanvas Component */}
+      {/* ✅ Offcanvas Component for adding a new case */}
       <AssignCase
         show={show}
         handleClose={handleClose}

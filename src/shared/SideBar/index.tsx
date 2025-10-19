@@ -11,12 +11,24 @@ import chatbotRoutes from "../../routes/ChatbotRoutes";
 type SideBarProps = {
   show: boolean;
   handleClose: () => void;
-  children?: React.ReactNode; // ✅ allow children
+  children?: React.ReactNode;
 };
 
 const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
   const { role } = useAuth();
   const roleRoutes = AppRoutes(role);
+
+  // 🧹 Exclude Billing & RegisterUser ONLY for sidebar display
+  const sidebarRoutes =
+    role === "admin"
+      ? roleRoutes.filter(
+          (r) =>
+            !r.path?.includes("billing") &&
+            !r.path?.includes("manage_user/register") &&
+            !r.path?.includes("manage_user/manage_profile") &&
+            !r.path?.includes("manage_case/edit_case")
+        )
+      : roleRoutes;
 
   return (
     <Offcanvas
@@ -28,11 +40,10 @@ const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
         <Offcanvas.Title>Menu</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        {children} {/* ✅ render children from NavBarAdmin */}
+        {children}
 
         <Nav className="flex-column">
-          {/* Role-based links */}
-          {roleRoutes.map((route, i) =>
+          {sidebarRoutes.map((route, i) =>
             route.path ? (
               <Nav.Link
                 key={i}
@@ -51,7 +62,6 @@ const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
 
           <hr style={{ borderColor: colors.white, opacity: 0.5 }} />
 
-          {/* Chatbot links at bottom */}
           {chatbotRoutes.map((route, i) =>
             route.path ? (
               <Nav.Link

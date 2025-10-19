@@ -1,13 +1,14 @@
 // src/pages/HomePage.tsx
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import Alert from "react-bootstrap/Alert";
 
-interface AdminDashboardProps {
-  successMessage?: string;
-}
+const AdminDashboard: React.FC = () => {
+  // ✅ Get success message from navigation state
+  const location = useLocation();
+  const successMessage = location.state?.successMessage || null;
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ successMessage }) => {
   const [showAlert, setShowAlert] = useState(!!successMessage);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ successMessage }) => {
         </div>
       )}
 
-      {/* Main content */}
+      {/* ✅ Main content */}
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to MyApp 🎉</h1>
         <p>This is the homepage. You can navigate using the navbar links above.</p>
