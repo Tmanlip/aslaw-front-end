@@ -14,12 +14,13 @@ import { AuthProvider } from "./context/AuthContext";
 import RenderRouter from "./routes/RenderRouter";
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+//http://127.0.0.1:8000/api/ping
 
 function App() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    axios.get('aslaw-back-end-fra4e6edcffkamg6.southeastasia-01.azurewebsites.net') // update with your backend URL
+    axios.get('aslaw-back-end-emeyfvfcarepa8dj.southeastasia-01.azurewebsites.net') // update with your backend URL
       .then(response => setMessage(response.data.message))
       .catch(error => console.error('Error connecting:', error));
   }, []);
