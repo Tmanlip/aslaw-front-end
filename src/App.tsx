@@ -12,41 +12,25 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 //import UpdateCheque from './pages/Admin/Billing';
 import { AuthProvider } from "./context/AuthContext";
 import RenderRouter from "./routes/RenderRouter";
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 
 function App() {
-  /*const [role, setRole] = useState<"admin" | "client" | "lawyer" | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
 
-  const handleLoginSuccess = (
-      userRole: "admin" | "client" | "lawyer",
-      message: string
-    ) => {
-      setRole(userRole);
-      setSuccessMessage(message);
-    };
+  useEffect(() => {
+    axios.get('aslaw-back-end-fra4e6edcffkamg6.southeastasia-01.azurewebsites.net') // update with your backend URL
+      .then(response => setMessage(response.data.message))
+      .catch(error => console.error('Error connecting:', error));
+  }, []);
 
-  // Show dashboard based on role
-    if (!role) {
-    return <HomePage onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  if (role === "admin") {
-    return <AdminDashboard successMessage={successMessage ?? ""} />;
-  }
-  if (role === "client") {
-    return <ClientDashboard successMessage={successMessage ?? ""} />;
-  }
-  if (role === "lawyer") {
-    return <LawyerDashboard successMessage={successMessage ?? ""} />;
-  }
-
-  return null;
-
-  // return <div className="App"><AuthProvider>{renderDashboard()}</AuthProvider></div>; */
-
-  //return <Chatbot /> 
   return (
+    
     <AuthProvider>
+      <div style={{ textAlign: 'center', marginTop: '5rem' }}>
+        <h1>React ↔ Laravel Connection Test</h1>
+        <p>{message || 'Connecting...'}</p>
+      </div>
       <RenderRouter />
     </AuthProvider>
   )

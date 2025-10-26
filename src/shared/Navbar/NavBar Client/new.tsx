@@ -8,7 +8,7 @@ import { colors } from "../../../constant/color";
 import { LeftSection, MenuIcon, Logo } from "./style";
 import SearchBar from "../../../components/SearchBar/Search";
 import CustomButton from "../../../components/Button/button";
-import SideBarClient from "../../SideBar/SideBar Client/new";// Offcanvas sidebar
+import SideBar from "../../SideBar";
 
 const NavBarClient: React.FC = () => {
   const [searchValue, setSearchValue] = useState("");
@@ -79,7 +79,7 @@ const NavBarClient: React.FC = () => {
       </Navbar>
 
       {/* Sidebar: contains menu + SearchBar on small screens */}
-      <SideBarClient show={showSidebar} handleClose={() => setShowSidebar(false)}>
+      <SideBar show={showSidebar} handleClose={() => setShowSidebar(false)}>
         {/* Optional: put SearchBar inside sidebar on small screens */}
         <div className="d-lg-none" style={{ marginBottom: "1rem" }}>
           <SearchBar
@@ -91,7 +91,7 @@ const NavBarClient: React.FC = () => {
           />
         </div>
         {/* You can also put your menu links here */}
-      </SideBarClient>
+      </SideBar>
     </>
   );
 };

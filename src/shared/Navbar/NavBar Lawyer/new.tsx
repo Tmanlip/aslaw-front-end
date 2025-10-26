@@ -8,7 +8,7 @@ import { colors } from "../../../constant/color";
 import { LeftSection, MenuIcon, Logo } from "./style";
 import SearchBar from "../../../components/SearchBar/Search";
 import CustomButton from "../../../components/Button/button";
-import SideBarLawyer from "../../SideBar/SideBar Lawyer/new"; // Offcanvas sidebar
+import SideBar from "../../SideBar";
 
 const NavBarLawyer: React.FC = () => {
   const [searchValue, setSearchValue] = useState("");
@@ -79,7 +79,7 @@ const NavBarLawyer: React.FC = () => {
       </Navbar>
 
       {/* Sidebar: contains menu + SearchBar on small screens */}
-      <SideBarLawyer show={showSidebar} handleClose={() => setShowSidebar(false)}>
+      <SideBar show={showSidebar} handleClose={() => setShowSidebar(false)}>
         {/* Optional: put SearchBar inside sidebar on small screens */}
         <div className="d-lg-none" style={{ marginBottom: "1rem" }}>
           <SearchBar
@@ -91,7 +91,7 @@ const NavBarLawyer: React.FC = () => {
           />
         </div>
         {/* You can also put your menu links here */}
-      </SideBarLawyer>
+      </SideBar>
     </>
   );
 };
