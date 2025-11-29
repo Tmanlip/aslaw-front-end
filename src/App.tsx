@@ -20,7 +20,7 @@ function App() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    axios.get('aslaw-back-end-emeyfvfcarepa8dj.southeastasia-01.azurewebsites.net/api/ping') // update with your backend URL
+    axios.get('https://aslaw-back-end-emeyfvfcarepa8dj.southeastasia-01.azurewebsites.net/api/ping') // update with your backend URL
       .then(response => setMessage(response.data.message))
       .catch(error => console.error('Error connecting:', error));
   }, []);
