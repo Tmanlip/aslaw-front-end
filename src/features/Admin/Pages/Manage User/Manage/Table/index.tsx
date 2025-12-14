@@ -1,5 +1,5 @@
-// src/components/UserTable.tsx
 import * as React from "react";
+import axios from "axios"; // ✅ add axios
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -8,69 +8,34 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { TableVirtuoso, TableComponents } from "react-virtuoso";
-import Chance from "chance";
 import { colors } from "../../../../../../constant/color";
-import "bootstrap/dist/css/bootstrap.min.css";
 import { useAuth } from "../../../../../../context/AuthContext";
 import AppRoutes from "../../../../../../routes/AppRouter";
 import { useNavigate } from "react-router-dom";
-import { Modal, Button } from "react-bootstrap"; // ✅ Bootstrap modal
-
-const chance = new Chance();
-
-type UserRole = "Admin" | "Client" | "Lawyer";
-type UserStatus = "Active" | "Inactive";
+import { Modal, Button } from "react-bootstrap";
 
 interface User {
   id: number;
   name: string;
   email: string;
-  role: UserRole;
-  status: UserStatus;
+  role: "Admin" | "Client" | "Lawyer";
+  status: "Active" | "Inactive";
 }
-
-// Generate mock users
-const generateUsers = (count: number): User[] =>
-  Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    name: chance.name(),
-    email: chance.email(),
-    role: chance.pickone(["Admin", "Client", "Lawyer"]) as UserRole,
-    status: chance.pickone(["Active", "Inactive"]) as UserStatus,
-  }));
-
-const users: User[] = generateUsers(50);
-
-// Virtuoso setup
-const VirtuosoTableComponents: TableComponents<User> = {
-  Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
-    <TableContainer component={Paper} {...props} ref={ref} />
-  )),
-  Table: (props) => (
-    <Table {...props} sx={{ borderCollapse: "separate", tableLayout: "fixed" }} />
-  ),
-  TableHead,
-  TableRow,
-  TableBody,
-};
-
-const columns = [
-  { label: "ID", dataKey: "id", width: 70 },
-  { label: "Name", dataKey: "name", width: 200 },
-  { label: "Email", dataKey: "email", width: 250 },
-  { label: "Role", dataKey: "role", width: 120 },
-  { label: "Status", dataKey: "status", width: 120 },
-  { label: "Action", dataKey: "action", width: 150 },
-];
 
 export default function UserTable() {
   const { role } = useAuth();
   const navigate = useNavigate();
   const roleRoutes = AppRoutes(role);
 
-  // ✅ Modal state
+  const [users, setUsers] = React.useState<User[]>([]);
   const [showModal, setShowModal] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+
+  React.useEffect(() => {
+    axios.get<User[]>("http://127.0.0.1:8000/api/users") // fetch users from Laravel
+      .then((res) => setUsers(res.data))
+      .catch((err) => console.error(err));
+  }, []);
 
   const handleManageClick = (user: User) => {
     if (role !== "admin") return;
@@ -87,7 +52,6 @@ export default function UserTable() {
     setShowModal(false);
   };
 
-  // ✅ Navigate to Register User page
   const handleRegisterUser = () => {
     const registerPath =
       roleRoutes.find((r: any) => r.name === "RegisterUser")?.path ||
@@ -95,9 +59,29 @@ export default function UserTable() {
     navigate(registerPath);
   };
 
+  const VirtuosoTableComponents: TableComponents<User> = {
+    Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
+      <TableContainer component={Paper} {...props} ref={ref} />
+    )),
+    Table: (props) => (
+      <Table {...props} sx={{ borderCollapse: "separate", tableLayout: "fixed" }} />
+    ),
+    TableHead,
+    TableRow,
+    TableBody,
+  };
+
+  const columns = [
+    { label: "ID", dataKey: "id", width: 70 },
+    { label: "Name", dataKey: "name", width: 200 },
+    { label: "Email", dataKey: "email", width: 250 },
+    { label: "Role", dataKey: "role", width: 120 },
+    { label: "Status", dataKey: "status", width: 120 },
+    { label: "Action", dataKey: "action", width: 150 },
+  ];
+
   return (
     <>
-      {/* 🧾 Table */}
       <Paper style={{ height: 500, width: "100%" }}>
         <TableVirtuoso
           data={users}
@@ -139,11 +123,7 @@ export default function UserTable() {
                     Manage
                   </button>
                 ) : (
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    disabled
-                    title="Admins only"
-                  >
+                  <button className="btn btn-sm btn-secondary" disabled title="Admins only">
                     Manage
                   </button>
                 )}
@@ -153,7 +133,6 @@ export default function UserTable() {
         />
       </Paper>
 
-      {/* 🪟 Register New User button */}
       {role === "admin" && (
         <div className="d-flex justify-content-center mt-3 mb-2">
           <Button
@@ -172,7 +151,6 @@ export default function UserTable() {
         </div>
       )}
 
-      {/* 🪟 Modal Preview */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton style={{ backgroundColor: colors.green3 }}>
           <Modal.Title className="text-white">Manage User</Modal.Title>
@@ -186,11 +164,7 @@ export default function UserTable() {
               <p><strong>Role:</strong> {selectedUser.role}</p>
               <p>
                 <strong>Status:</strong>{" "}
-                <span
-                  style={{
-                    color: selectedUser.status === "Active" ? "green" : "red",
-                  }}
-                >
+                <span style={{ color: selectedUser.status === "Active" ? "green" : "red" }}>
                   {selectedUser.status}
                 </span>
               </p>

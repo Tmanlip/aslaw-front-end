@@ -24,36 +24,38 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   );
   const [showForgotPasswordPage, setForgotPasswordPage] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🔒 Hardcoded users (for testing)
-    const users = [
-      { email: "admin@example.com", password: "password123", role: "admin" },
-      { email: "client@example.com", password: "password123", role: "client" },
-      { email: "lawyer@example.com", password: "password123", role: "lawyer" },
-    ];
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const foundUser = users.find(
-      (user) => user.email === email && user.password === password
-    );
+      const data = await response.json();
 
-    if (foundUser) {
-      const successMessage = `Login successful! Welcome ${foundUser.role}`;
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      console.log("LOGIN SUCCESS:", data);
+
+      // Update your global auth context
+      login(data.role);
+      onLoginSuccess?.(data.role, data.message);
+
+      // Optional: redirect or show success message
       setAlertVariant("success");
-      setAlertMessage(successMessage);
-
-      // ✅ update global auth
-      login(foundUser.role as "admin" | "client" | "lawyer");
-
-      // ✅ trigger parent callback instead of navigation
-      onLoginSuccess?.(
-        foundUser.role as "admin" | "client" | "lawyer",
-        successMessage
-      );
-    } else {
+      setAlertMessage(data.message);
+    } catch (error: any) {
+      console.error("LOGIN ERROR:", error.message);
       setAlertVariant("danger");
-      setAlertMessage("Invalid username or password");
+      setAlertMessage(error.message);
     }
   };
 
@@ -82,7 +84,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           required
         />
       </Form.Group>
-
+      
       {/* Password */}
       <Form.Group className="mb-3" controlId="formPassword">
         <Form.Label>Password</Form.Label>
