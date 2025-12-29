@@ -1,5 +1,7 @@
 import * as React from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
+
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -7,37 +9,22 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import { TableVirtuoso, TableComponents } from "react-virtuoso";
-import Chance from "chance";
-import Button from "react-bootstrap/Button";
-import AssignCase from "../Assign Case"; // ✅ Offcanvas component
-import { colors } from "../../../../../../constant/color";
-import { useAuth } from "../../../../../../context/AuthContext"; // ✅ Auth context
 
-const chance = new Chance();
+import { TableVirtuoso, TableComponents } from "react-virtuoso";
+import Button from "react-bootstrap/Button";
+
+import AssignCase from "../Assign Case";
+import { colors } from "../../../../../../constant/color";
+import { useAuth } from "../../../../../../context/AuthContext";
 
 interface CaseRecord {
   id: number;
-  clientName?: string;
-  lawyerName?: string;
-  caseName?: string;
+  clientName: string;
+  lawyerName: string;
+  caseName: string;
+  status?: string;
 }
 
-// ✅ Generate mock data
-const generateCases = (count: number): CaseRecord[] =>
-  Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    clientName: chance.bool() ? chance.name() : undefined,
-    lawyerName: chance.bool() ? chance.name() : undefined,
-    caseName: chance.bool() ? chance.sentence({ words: 3 }) : undefined,
-  }));
-
-// ✅ Only cases with both client and lawyer
-const cases: CaseRecord[] = generateCases(50).filter(
-  (c) => c.clientName && c.lawyerName
-);
-
-// ✅ Virtuoso table setup
 const VirtuosoTableComponents: TableComponents<CaseRecord> = {
   Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
     <TableContainer component={Paper} {...props} ref={ref} />
@@ -50,7 +37,6 @@ const VirtuosoTableComponents: TableComponents<CaseRecord> = {
   TableBody,
 };
 
-// ✅ Column setup
 const columns = [
   { label: "ID", dataKey: "id", width: 70 },
   { label: "Client Name", dataKey: "clientName", width: 200 },
@@ -61,9 +47,28 @@ const columns = [
 
 export default function UserTable() {
   const navigate = useNavigate();
-  const { role } = useAuth(); // ✅ Get user role
+  const { role } = useAuth();
+
+  const [cases, setCases] = React.useState<CaseRecord[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
   const [show, setShow] = React.useState(false);
   const [selectedCase, setSelectedCase] = React.useState<CaseRecord | null>(null);
+
+  React.useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const res = await axios.get("http://127.0.0.1:8000/api/cases");
+        setCases(res.data);
+      } catch (error) {
+        console.error("Failed to fetch cases", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCases();
+  }, []);
 
   const handleShow = (row: CaseRecord) => {
     setSelectedCase(row);
@@ -75,7 +80,6 @@ export default function UserTable() {
     setSelectedCase(null);
   };
 
-  // ✅ Handle navigation to Edit Case
   const handleManageCase = (row: CaseRecord) => {
     if (role !== "admin") {
       alert("Only admins can access this page.");
@@ -89,6 +93,10 @@ export default function UserTable() {
       },
     });
   };
+
+  if (loading) {
+    return <p>Loading cases...</p>;
+  }
 
   return (
     <>
@@ -118,20 +126,14 @@ export default function UserTable() {
               <TableCell>{row.id}</TableCell>
               <TableCell>{row.clientName}</TableCell>
               <TableCell>{row.lawyerName}</TableCell>
-              <TableCell>{row.caseName ?? "—"}</TableCell>
+              <TableCell>{row.caseName}</TableCell>
               <TableCell>
-                {/* ✅ If client has no case, show Add Case */}
                 {!row.caseName && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleShow(row)}
-                  >
+                  <Button size="sm" onClick={() => handleShow(row)}>
                     Add Case
                   </Button>
                 )}
 
-                {/* ✅ If client has a case, show Manage Case */}
                 {row.caseName && (
                   <Button
                     variant="success"
@@ -148,7 +150,6 @@ export default function UserTable() {
         />
       </Paper>
 
-      {/* ✅ Offcanvas Component for adding a new case */}
       <AssignCase
         show={show}
         handleClose={handleClose}

@@ -4,6 +4,8 @@ import { Form, Row, Col, InputGroup } from "react-bootstrap";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import CustomDropdown from "./Option";
 
+type Role = "admin" | "lawyer" | "client";
+
 type Page2FormProps = {
   username: string;
   setUsername: (val: string) => void;
@@ -13,8 +15,8 @@ type Page2FormProps = {
   setShowPassword: (val: boolean) => void;
   email: string;
   setEmail: (val: string) => void;
-  role: string;
-  setRole: (val: string) => void;
+  role: Role | "";
+  setRole: (val: Role) => void;
 };
 
 const Page2Form: React.FC<Page2FormProps> = ({
@@ -58,11 +60,7 @@ const Page2Form: React.FC<Page2FormProps> = ({
                 onClick={() => setShowPassword(!showPassword)}
                 style={{ cursor: "pointer" }}
               >
-                {showPassword
-                  ? (FaEyeSlash({}) as React.ReactElement)
-                  : (FaEye({}) as React.ReactElement)
-                }
-
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </InputGroup.Text>
             </InputGroup>
           </Form.Group>
@@ -87,8 +85,12 @@ const Page2Form: React.FC<Page2FormProps> = ({
             <Form.Label>Role</Form.Label>
             <CustomDropdown
               title={role || "Select role"}
-              options={["Admin", "Staff", "Student"]}
-              onSelect={(val) => setRole(val)}
+              options={[
+                { label: "Admin", value: "admin" },
+                { label: "Lawyer", value: "lawyer" },
+                { label: "Client", value: "client" },
+              ]}
+              onSelect={(val) => setRole(val as Role)}
             />
           </Form.Group>
         </Col>

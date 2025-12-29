@@ -3,15 +3,30 @@ import React from "react";
 import { Form, Row, Col } from "react-bootstrap";
 import CustomDropdown from "./Option";
 
+type Gender = "Male" | "Female";
+type MaritalStatus = "Single" | "Married" | "Divorce";
+
 type Page1FormProps = {
   fullName: string;
   setFullName: (val: string) => void;
+
   age: string;
   setAge: (val: string) => void;
+
+  gender: Gender | "";
+  setGender: (val: Gender) => void;
+
   identification: string;
   setIdentification: (val: string) => void;
-  maritalStatus: string;
-  setMaritalStatus: (val: string) => void;
+
+  maritalStatus: MaritalStatus | "";
+  setMaritalStatus: (val: MaritalStatus) => void;
+
+  phoneNumber: string;
+  setPhoneNumber: (val: string) => void;
+
+  address: string;
+  setAddress: (val: string) => void;
 };
 
 const Page1Form: React.FC<Page1FormProps> = ({
@@ -19,13 +34,20 @@ const Page1Form: React.FC<Page1FormProps> = ({
   setFullName,
   age,
   setAge,
+  gender,
+  setGender,
   identification,
   setIdentification,
   maritalStatus,
   setMaritalStatus,
+  phoneNumber,
+  setPhoneNumber,
+  address,
+  setAddress,
 }) => {
   return (
     <Form>
+      {/* Row 1 */}
       <Row className="mb-3">
         <Col md={6}>
           <Form.Group controlId="formFullName">
@@ -52,6 +74,36 @@ const Page1Form: React.FC<Page1FormProps> = ({
         </Col>
       </Row>
 
+      {/* Row 2 */}
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Group controlId="formGender">
+            <Form.Label>Gender</Form.Label>
+            <CustomDropdown
+              title={gender || "Select gender"}
+              options={[
+                { label: "Male", value: "Male" },
+                { label: "Female", value: "Female" },
+              ]}
+              onSelect={(val) => setGender(val as Gender)}
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group controlId="formPhoneNumber">
+            <Form.Label>Phone Number</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter phone number"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+
+      {/* Row 3 */}
       <Row className="mb-3">
         <Col md={6}>
           <Form.Group controlId="formIdentification">
@@ -70,8 +122,28 @@ const Page1Form: React.FC<Page1FormProps> = ({
             <Form.Label>Marital Status</Form.Label>
             <CustomDropdown
               title={maritalStatus || "Select status"}
-              options={["Single", "Married", "Divorced", "Widowed"]}
-              onSelect={(val) => setMaritalStatus(val)}
+              options={[
+                { label: "Single", value: "Single" },
+                { label: "Married", value: "Married" },
+                { label: "Divorced", value: "Divorce" },
+              ]}
+              onSelect={(val) => setMaritalStatus(val as MaritalStatus)}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+
+      {/* Row 4 */}
+      <Row className="mb-3">
+        <Col>
+          <Form.Group controlId="formAddress">
+            <Form.Label>Home Address</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              placeholder="Enter home address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
             />
           </Form.Group>
         </Col>
