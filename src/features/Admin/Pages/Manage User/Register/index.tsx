@@ -68,7 +68,7 @@ const RegisterUser: React.FC = () => {
 
       console.log("Submitting payload:", payload);
 
-      const response = await axios.post("http://127.0.0.1:8000/api/registerusers", payload);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/registerusers`, payload);
 
       setCreatedUser({
         id: response.data.user.id,

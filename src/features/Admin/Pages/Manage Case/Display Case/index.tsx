@@ -11,7 +11,7 @@ const DisplayCase: React.FC = () => {
 
       {/* Main content */}
       <div style={{ padding: "2rem" }}>
-        <h2>User List</h2>
+        <h2>Cases List</h2>
         <UserTable />
       </div>
     </>

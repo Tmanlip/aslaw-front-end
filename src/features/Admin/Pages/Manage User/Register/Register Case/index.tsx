@@ -57,7 +57,7 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
     };
 
     const res = await axios.post(
-      "http://127.0.0.1:8000/api/registercases",
+      `${process.env.REACT_APP_API_URL}/registercases`,
       payload,
       {
         headers: {

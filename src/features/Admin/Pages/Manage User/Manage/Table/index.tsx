@@ -32,7 +32,7 @@ export default function UserTable() {
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
   React.useEffect(() => {
-    axios.get<User[]>("http://127.0.0.1:8000/api/users") // fetch users from Laravel
+    axios.get<User[]>(`${process.env.REACT_APP_API_URL}/users`) // fetch users from Laravel
       .then((res) => setUsers(res.data))
       .catch((err) => console.error(err));
   }, []);

@@ -58,7 +58,7 @@ export default function UserTable() {
   React.useEffect(() => {
     const fetchCases = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/api/cases");
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/cases`);
         setCases(res.data);
       } catch (error) {
         console.error("Failed to fetch cases", error);
