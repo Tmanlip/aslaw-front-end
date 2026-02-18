@@ -1,4 +1,4 @@
-// src/components/Page2Form.tsx
+// src/features/Admin/Pages/Manage User/Register/components/pagetwoform.tsx
 import React from "react";
 import { Form, Row, Col, InputGroup } from "react-bootstrap";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -60,7 +60,8 @@ const Page2Form: React.FC<Page2FormProps> = ({
                 onClick={() => setShowPassword(!showPassword)}
                 style={{ cursor: "pointer" }}
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {/* Call the icon functions directly to satisfy TypeScript */}
+                {showPassword ? FaEyeSlash({}) : FaEye({})}
               </InputGroup.Text>
             </InputGroup>
           </Form.Group>

@@ -1,16 +1,48 @@
-// src/pages/HomePage.tsx
-import React from "react";
-import NavBarClient from "../../../../shared/Navbar/NavBar Client/new"; 
-import ProfileInfo from "./ProfileInfo"; 
-import { userData } from "../../../../data/userData";  // ✅ includes photo
+import React, { useEffect, useState } from "react";
+import NavBarClient from "../../../../shared/Navbar/NavBar Client/new";
+import AuthMemory from "../../../../data/authMemory";
+import { fetchClientFullData } from "../../../../hooks/clientApi";
+import ProfileInfo from "./ProfileInfo"; // <-- the component
+import { ClientFullData } from "../../../../data/userInfo";
 
 const ClientProfile: React.FC = () => {
+  const [data, setData] = useState<ClientFullData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const firmID = AuthMemory.getUser()?.firmID;
+    if (firmID) {
+      fetchClientFullData(firmID)
+        .then((res) => setData(res))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <>
+        <NavBarClient />
+        <div style={{ padding: "2rem" }}>Loading client data...</div>
+      </>
+    );
+  }
+
+  if (!data) {
+    return (
+      <>
+        <NavBarClient />
+        <div style={{ padding: "2rem" }}>No client data available.</div>
+      </>
+    );
+  }
+
   return (
     <>
       <NavBarClient />
-
       <div style={{ display: "flex", padding: "2rem", gap: "2rem" }}>
-        {/* Left column: centered photo + welcome */}
+        {/* Left Column: Photo + Welcome */}
         <div
           style={{
             flexShrink: 0,
@@ -25,7 +57,7 @@ const ClientProfile: React.FC = () => {
           }}
         >
           <img
-            src={userData.photo} // ✅ using photo from userData
+            src={data.client.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
             alt="Passport"
             style={{
               width: "150px",
@@ -36,16 +68,13 @@ const ClientProfile: React.FC = () => {
               marginBottom: "1rem",
             }}
           />
-          <h1>Welcome to {userData.firstname} 🎉</h1>
-          <p>This is the homepage. You can navigate using the navbar links above.</p>
-          <p style={{ marginTop: "0.5rem", fontWeight: "bold" }}>
-            My Passport Photo
-          </p>
+          <h1>Welcome {data.client.name}</h1>
+          <p>{data.client.email}</p>
         </div>
 
-        {/* Right column: Profile info (scrollable) */}
+        {/* Right Column: ProfileInfo Component */}
         <div style={{ flex: 1 }}>
-          <ProfileInfo user={userData} />
+          <ProfileInfo />
         </div>
       </div>
     </>

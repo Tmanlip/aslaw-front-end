@@ -2,18 +2,21 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
 import Alert from "react-bootstrap/Alert";
+import Button from "react-bootstrap/Button";
+import { useClientData, Case } from "../../../../../context/ClientDataContext";
+import EditCaseModal from "./EditCaseModal";
 
 const EditCase: React.FC = () => {
   const location = useLocation();
-
-  // ✅ Get case data and success message from navigation
-  const { caseData, successMessage } = location.state || {
-    caseData: null,
-    successMessage: null,
-  };
+  const { cases } = useClientData();
+  
+  const { selectedCase: stateCase, successMessage } = location.state || {};
+  const [selectedCase, setSelectedCase] = useState<Case | null>(stateCase || null);
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
+  const [showModal, setShowModal] = useState(false);
 
+  // Show success message alert
   useEffect(() => {
     if (successMessage) {
       setShowAlert(true);
@@ -26,8 +29,7 @@ const EditCase: React.FC = () => {
     <>
       <NavBarAdmin />
 
-      {/* ✅ Floating success alert */}
-      {showAlert && successMessage && (
+      {showAlert && (
         <div
           style={{
             position: "fixed",
@@ -39,31 +41,62 @@ const EditCase: React.FC = () => {
             maxWidth: "600px",
           }}
         >
-          <Alert
-            variant="success"
-            onClose={() => setShowAlert(false)}
-            dismissible
-          >
-            {successMessage}
+          <Alert variant="success" onClose={() => setShowAlert(false)} dismissible>
+            {successMessage || "Case updated successfully!"}
           </Alert>
         </div>
       )}
 
-      {/* ✅ Case Details Section */}
       <div style={{ padding: "2rem" }}>
         <h2>Manage Case</h2>
 
-        {caseData ? (
+        {selectedCase ? (
           <div style={{ marginTop: "1.5rem" }}>
-            <p><strong>Case ID:</strong> {caseData.id}</p>
-            <p><strong>Client Name:</strong> {caseData.clientName}</p>
-            <p><strong>Lawyer Name:</strong> {caseData.lawyerName}</p>
-            <p><strong>Case Name:</strong> {caseData.caseName}</p>
+            <p><strong>Case ID:</strong> {selectedCase.caseId}</p>
+            <p><strong>Title:</strong> {selectedCase.title}</p>
+            <p><strong>Status:</strong> {selectedCase.status}</p>
+            <p><strong>Client Name:</strong> {selectedCase.clientName}</p>
+            <p><strong>Lawyer Name:</strong> {selectedCase.lawyerName}</p>
+            {selectedCase.description && <p><strong>Description:</strong> {selectedCase.description}</p>}
+
+            <Button
+              variant="warning"
+              style={{ marginTop: "1rem" }}
+              onClick={() => setShowModal(true)}
+            >
+              Edit Case
+            </Button>
           </div>
         ) : (
-          <p>No case data provided. Please go back and select a case.</p>
+          <>
+            <p style={{ marginTop: "1rem" }}>No case selected. Please select a case below:</p>
+            <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {cases.length > 0 ? (
+                cases.map((c) => (
+                  <Button
+                    key={c.caseId}
+                    variant="outline-primary"
+                    onClick={() => setSelectedCase(c)}
+                  >
+                    {c.title} - {c.clientName}
+                  </Button>
+                ))
+              ) : (
+                <p>No cases available.</p>
+              )}
+            </div>
+          </>
         )}
       </div>
+
+      {selectedCase && (
+        <EditCaseModal
+          show={showModal}
+          onClose={() => setShowModal(false)}
+          selectedCase={selectedCase}
+          setSelectedCase={setSelectedCase}
+        />
+      )}
     </>
   );
 };

@@ -1,16 +1,52 @@
-// src/pages/HomePage.tsx
-import React from "react";
-import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new"; 
-import ProfileInfo from "./ProfileInfo"; 
-import { userData } from "../../../../data/userData";  // ✅ includes photo
+import React, { useEffect, useState } from "react";
+import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new";
+import AuthMemory from "../../../../data/authMemory";
+import { fetchLawyerFullData } from "../../../../hooks/lawyerApi";
+import ProfileInfo from "./ProfileInfo";
+import { LawyerFullData } from "../../../../data/userInfo";
 
 const LawyerProfile: React.FC = () => {
+  const [data, setData] = useState<LawyerFullData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const firmID = AuthMemory.getUser()?.firmID;
+    if (firmID) {
+      fetchLawyerFullData(firmID)
+        .then((res) => {
+          setData(res);
+          AuthMemory.setLawyerFullData(res); // optional: store in AuthMemory
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <>
+        <NavBarLawyer />
+        <div style={{ padding: "2rem" }}>Loading lawyer data...</div>
+      </>
+    );
+  }
+
+  if (!data) {
+    return (
+      <>
+        <NavBarLawyer />
+        <div style={{ padding: "2rem" }}>No lawyer data available.</div>
+      </>
+    );
+  }
+
   return (
     <>
       <NavBarLawyer />
-
       <div style={{ display: "flex", padding: "2rem", gap: "2rem" }}>
-        {/* Left column: centered photo + welcome */}
+        {/* Left Column: Photo + Welcome */}
         <div
           style={{
             flexShrink: 0,
@@ -25,7 +61,7 @@ const LawyerProfile: React.FC = () => {
           }}
         >
           <img
-            src={userData.photo} // ✅ using photo from userData
+            src={data.lawyer.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
             alt="Passport"
             style={{
               width: "150px",
@@ -36,16 +72,13 @@ const LawyerProfile: React.FC = () => {
               marginBottom: "1rem",
             }}
           />
-          <h1>Welcome to {userData.firstname} 🎉</h1>
-          <p>This is the homepage. You can navigate using the navbar links above.</p>
-          <p style={{ marginTop: "0.5rem", fontWeight: "bold" }}>
-            My Passport Photo
-          </p>
+          <h1>Welcome {data.lawyer.name}</h1>
+          <p>{data.lawyer.email}</p>
         </div>
 
-        {/* Right column: Profile info (scrollable) */}
+        {/* Right Column: ProfileInfo Component */}
         <div style={{ flex: 1 }}>
-          <ProfileInfo user={userData} />
+          <ProfileInfo fullData={data} />
         </div>
       </div>
     </>

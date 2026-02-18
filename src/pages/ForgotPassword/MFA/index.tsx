@@ -2,33 +2,47 @@ import React, { useState } from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
+import axios from "axios";
 
 const EmailConfirm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertVariant, setAlertVariant] = useState<"success" | "danger">("success");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setAlertMessage(null);
 
-    if (email) {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/forgot-password`, {
+        email: email
+      });
+
+      setAlertMessage(`✅ ${response.data.message}`);
+      setAlertVariant("success");
+      setEmail(""); // clear input on success
+    } catch (error: any) {
       setAlertMessage(
-        `✅ A password reset link has been sent to ${email}. Please check your inbox.`
+        error.response?.data?.message || "❌ Something went wrong. Please try again."
       );
-      setEmail("");
+      setAlertVariant("danger");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Form onSubmit={handleSubmit}>
-      {/* ✅ Bootstrap Alert */}
+      {/* Alert */}
       {alertMessage && (
         <Alert
-          variant="success"
+          variant={alertVariant}
           onClose={() => setAlertMessage(null)}
           dismissible
         >
-          <Alert.Heading>Password Reset Email Sent!</Alert.Heading>
-          <p>{alertMessage}</p>
+          {alertMessage}
         </Alert>
       )}
 
@@ -43,18 +57,18 @@ const EmailConfirm: React.FC = () => {
           required
         />
         <Form.Text muted>
-          We’ll send a password reset link to this email if it exists in our
-          system.
+          We’ll send a password reset link to this email if it exists in our system.
         </Form.Text>
       </Form.Group>
 
-      {/* ✅ Outline Bootstrap Button */}
+      {/* Submit Button */}
       <Button
         type="submit"
         variant="outline-warning"
         style={{ width: "100%", fontWeight: 600 }}
+        disabled={loading}
       >
-        Send Reset Link
+        {loading ? "Sending..." : "Send Reset Link"}
       </Button>
     </Form>
   );

@@ -4,13 +4,20 @@ import Tab from "react-bootstrap/Tab";
 import DocumentsSection from "./UpdateDocument";
 import ReportsSection from "./UpdateReport";
 import ChequesSection from "./UpdateCheque";
-import { colors } from "../../../../../../constant/color"; // ✅ import your colors
+import { colors } from "../../../../../../constant/color";
 
 interface FileSectionProps {
   fileListUrl: string;
+  selectedCase?: {
+    lawyerFirmID: string;
+    clientFirmID?: string;
+    caseId?: string;
+    blob_folder_path?: string;
+    title?: string;
+  };
 }
 
-const FileSection: React.FC<FileSectionProps> = ({ fileListUrl }) => {
+const FileSection: React.FC<FileSectionProps> = ({ fileListUrl, selectedCase }) => {
   const [pdfFiles, setPdfFiles] = useState<string[]>([]);
   const [activeKey, setActiveKey] = useState<string>("documents");
 
@@ -21,8 +28,6 @@ const FileSection: React.FC<FileSectionProps> = ({ fileListUrl }) => {
       .catch((err) => console.error("Error loading file list:", err));
   }, [fileListUrl]);
 
-  const documents = pdfFiles.slice(0, 2);
-  const reports = pdfFiles.slice(2, 3);
   const cheques = pdfFiles.slice(3);
 
   return (
@@ -34,27 +39,22 @@ const FileSection: React.FC<FileSectionProps> = ({ fileListUrl }) => {
         className="mb-3"
         justify
         style={{
-          backgroundColor: colors.gold, // ✅ tab background
+          backgroundColor: colors.gold,
           borderRadius: "8px",
           padding: "0.5rem",
         }}
       >
         <Tab eventKey="documents" title="Documents">
-          <DocumentsSection files={documents} />
+          {/* ✅ Pass selectedCase prop */}
+          <DocumentsSection selectedCase={selectedCase} />
         </Tab>
+
         <Tab eventKey="reports" title="Reports">
-          <ReportsSection files={reports} />
+          <ReportsSection />
         </Tab>
+
         <Tab eventKey="cheques" title="Cheques">
-          <ChequesSection
-            files={{
-              initial: cheques.slice(0, 1),  // or whatever logic you want
-              first: cheques.slice(1, 2),
-              second: cheques.slice(2, 3),
-              third: cheques.slice(3, 4),
-              final: cheques.slice(4),
-            }}
-          />
+          <ChequesSection selectedCase={selectedCase}/>
         </Tab>
       </Tabs>
     </div>

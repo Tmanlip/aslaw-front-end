@@ -12,6 +12,8 @@ import SearchBar from "../../../components/SearchBar/Search";
 import CustomButton from "../../../components/Button/button";
 import SideBar from "../../SideBar";
 import { useAuth } from "../../../context/AuthContext";
+import AuthMemory from "../../../data/authMemory";
+import { apiFetch } from "../../../hooks/api"; // custom fetch wrapper
 
 const NavBarAdmin: React.FC = () => {
   const [searchValue, setSearchValue] = useState("");
@@ -28,9 +30,31 @@ const NavBarAdmin: React.FC = () => {
     setShowSidebar(!showSidebar);
   };
 
-  const handleLogout = () => {
-    logout();       // clear auth context + localStorage
-    navigate("/");  // redirect to homepage/login
+  const handleLogout = async () => {
+    try {
+      // 1️⃣ Get the stored token from AuthMemory
+      const token = AuthMemory.getToken(); // assuming you store it after login
+
+      // 2️⃣ Call backend logout to revoke the token
+      await apiFetch("/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`, // include token
+        },
+      });
+
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // 3️⃣ Clear memory-only auth
+      AuthMemory.clear();
+
+      // 4️⃣ Clear auth context
+      logout();
+
+      // 5️⃣ Redirect to login page
+      navigate("/");
+    }
   };
 
   return (

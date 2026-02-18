@@ -1,115 +1,95 @@
-// src/components/ProfileInfo.tsx
+// src/components/ProfileInfo/ProfileInfo.tsx
 import React, { useState } from "react";
 import Pagination from "react-bootstrap/Pagination";
-import Button from "react-bootstrap/Button";
-import Dropdown from "react-bootstrap/Dropdown";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import { User } from "../../../../../../../data/userData"; // ✅ still using same interface
+import ProfileDetailsPage from "./components/Profile1";
+import ProfileStatusPage from "./components/Profile2";
+import EditProfileModal from "./components/EditProfile";
+import { updateUser } from "../../../../../../../hooks/user";
+import { useClientData, User } from "../../../../../../../context/ClientDataContext";
 
-interface ProfileInfoProps {
-  user: User;
-}
+const ProfileInfo: React.FC = () => {
+  const { authUser, cases, setUserData } = useClientData();
 
-const ProfileInfo: React.FC<ProfileInfoProps> = ({ user }) => {
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<"Active" | "Inactive">("Active");
+  const [showEdit, setShowEdit] = useState(false);
 
-  const handleStatusChange = (newStatus: "Active" | "Inactive") => {
-    setStatus(newStatus);
-    alert(`Status changed to ${newStatus}`);
+  // local editable user for the modal
+  const [editableUser, setEditableUser] = useState<User>(authUser!);
+
+  const [status, setStatus] = useState<"Active" | "Inactive">(
+    authUser?.status === "Inactive" ? "Inactive" : "Active"
+  );
+
+  // Save changes from modal
+  const handleSave = async (updatedUser: User) => {
+    try {
+      // Call Laravel API
+      const response = await updateUser(updatedUser.firmID, updatedUser);
+
+      // Update context
+      setUserData(response.user, cases);
+
+      // Update local state
+      setEditableUser(response.user);
+
+      // Update status if changed
+      if (updatedUser.status) setStatus(updatedUser.status as "Active" | "Inactive");
+
+      setShowEdit(false);
+      alert("Profile updated successfully!");
+    } catch (error: any) {
+      console.error("Failed to update profile:", error.response?.data || error);
+      alert(error.response?.data?.message || "Failed to update profile.");
+    }
   };
 
+  if (!authUser) return <p>Loading user...</p>;
+
   return (
-    <div
-      style={{
-        marginTop: "1rem",
-        textAlign: "left",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "1rem",
-        background: "#f9f9f9",
-      }}
-    >
-      {page === 1 ? (
-        <>
-          <p>
-            <strong>Name:</strong> {user.name}
-          </p>
-          <p>
-            <strong>Age:</strong> {user.age}
-          </p>
+    <>
+      <div
+        style={{
+          marginTop: "1rem",
+          textAlign: "left",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          padding: "1rem",
+          background: "#f9f9f9",
+        }}
+      >
+        {page === 1 && (
+          <ProfileDetailsPage
+            user={editableUser}
+            onEdit={() => setShowEdit(true)}
+          />
+        )}
 
-          <div style={{ marginTop: "1rem" }}>
-            <Button
-              variant="primary"
-              onClick={() => alert("Edit Information clicked")}
-            >
-              Edit Information
-            </Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p>
-            <strong>Email:</strong> {user.email}
-          </p>
-          <p>
-            <strong>Username:</strong> {user.username}
-          </p>
-          <p>
-            <strong>Status:</strong>{" "}
-            <span style={{ color: status === "Active" ? "green" : "red" }}>
-              {status}
-            </span>
-          </p>
+        {page === 2 && (
+          <ProfileStatusPage
+            user={editableUser}
+            status={status}
+            setStatus={setStatus}
+            onEdit={() => setShowEdit(true)}
+          />
+        )}
 
-          <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
-            {/* Dropdown to change status */}
-            <Dropdown as={ButtonGroup}>
-              <Button variant={status === "Active" ? "success" : "secondary"}>
-                {status}
-              </Button>
-              <Dropdown.Toggle
-                split
-                variant={status === "Active" ? "success" : "secondary"}
-                id="dropdown-split-basic"
-              />
-              <Dropdown.Menu>
-                <Dropdown.Item onClick={() => handleStatusChange("Active")}>
-                  Active
-                </Dropdown.Item>
-                <Dropdown.Item onClick={() => handleStatusChange("Inactive")}>
-                  Inactive
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
+        <Pagination style={{ justifyContent: "center", marginTop: "1rem" }}>
+          <Pagination.Item active={page === 1} onClick={() => setPage(1)}>
+            1
+          </Pagination.Item>
+          <Pagination.Item active={page === 2} onClick={() => setPage(2)}>
+            2
+          </Pagination.Item>
+        </Pagination>
+      </div>
 
-            <Button
-              variant="primary"
-              onClick={() => alert("Edit Information clicked")}
-            >
-              Edit Information
-            </Button>
-
-            <Button
-              variant="warning"
-              onClick={() => alert("Reset Password clicked")}
-            >
-              Reset Password
-            </Button>
-          </div>
-        </>
-      )}
-
-      <Pagination style={{ justifyContent: "center", marginTop: "1rem" }}>
-        <Pagination.Item active={page === 1} onClick={() => setPage(1)}>
-          1
-        </Pagination.Item>
-        <Pagination.Item active={page === 2} onClick={() => setPage(2)}>
-          2
-        </Pagination.Item>
-      </Pagination>
-    </div>
+      <EditProfileModal
+        show={showEdit}
+        user={editableUser}
+        onClose={() => setShowEdit(false)}
+        onSave={handleSave} // sends full user to backend and updates context
+      />
+    </>
   );
 };
 

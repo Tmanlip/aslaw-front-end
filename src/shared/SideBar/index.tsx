@@ -26,7 +26,11 @@ const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
             !r.path?.includes("billing") &&
             !r.path?.includes("manage_user/register") &&
             !r.path?.includes("manage_user/manage_profile") &&
-            !r.path?.includes("manage_case/edit_case")
+            !r.path?.includes("manage_case/edit_case") &&
+            !r.path?.includes("manage_case/assign_case") &&
+            !r.path?.includes("manage_case/register_case") &&
+            !r.path?.includes("client/reset_password") &&
+            !r.path?.includes("lawyer/reset_password")
         )
       : roleRoutes;
 

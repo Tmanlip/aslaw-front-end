@@ -1,15 +1,24 @@
 // src/pages/ClientDashboard.tsx
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import NavBarClient from "../../../../shared/Navbar/NavBar Client/new";
 import Alert from "react-bootstrap/Alert";
+import AuthMemory from "../../../../data/authMemory";
 
 const ClientDashboard: React.FC = () => {
-  // ✅ Get success message from navigation state
   const location = useLocation();
+  const navigate = useNavigate();
   const successMessage = location.state?.successMessage || null;
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
+  const [user, setUser] = useState(AuthMemory.getUser());
+
+  useEffect(() => {
+    if (!AuthMemory.isLoggedIn()) {
+      // Redirect to login if no valid session
+      navigate("/login");
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (successMessage) {
@@ -48,7 +57,7 @@ const ClientDashboard: React.FC = () => {
 
       {/* ✅ Main content */}
       <div style={{ padding: "2rem" }}>
-        <h1>Welcome, Client 🎉</h1>
+        <h1>Welcome, {user?.name || "Client"} 🎉</h1>
         <p>You can view your cases, appointments, and messages here.</p>
       </div>
     </>

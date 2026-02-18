@@ -1,15 +1,23 @@
 // src/pages/LawyerDashboard.tsx
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new";
 import Alert from "react-bootstrap/Alert";
+import AuthMemory from "../../../../data/authMemory";
 
 const LawyerDashboard: React.FC = () => {
-  // ✅ Get success message from navigation state
   const location = useLocation();
+  const navigate = useNavigate();
   const successMessage = location.state?.successMessage || null;
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
+  const [user, setUser] = useState(AuthMemory.getUser());
+
+  useEffect(() => {
+    if (!AuthMemory.isLoggedIn() || user?.role !== "lawyer") {
+      navigate("/login"); // redirect if not logged in or wrong role
+    }
+  }, [navigate, user]);
 
   useEffect(() => {
     if (successMessage) {
@@ -23,7 +31,7 @@ const LawyerDashboard: React.FC = () => {
     <>
       <NavBarLawyer />
 
-      {/* ✅ Floating Alert at top */}
+      {/* Floating Alert */}
       {showAlert && successMessage && (
         <div
           style={{
@@ -46,9 +54,9 @@ const LawyerDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ✅ Main content */}
+      {/* Main content */}
       <div style={{ padding: "2rem" }}>
-        <h1>Welcome, Lawyer 🎉</h1>
+        <h1>Welcome, {user?.name || "Lawyer"} 🎉</h1>
         <p>Here you can manage your assigned cases, client communication, and tasks.</p>
       </div>
     </>

@@ -1,25 +1,19 @@
-// src/components/CustomAlert.tsx
-import React, { useEffect } from 'react';
-import Alert from 'react-bootstrap/Alert';
+import React from "react";
+import { Alert } from "react-bootstrap";
 
-type CustomAlertProps = {
-  variant: 'success' | 'danger' | 'warning' | 'info';
-  message: string;
-  onClose: () => void;
-  duration?: number; // in ms, default 3000
-};
+interface CustomAlertProps {
+  variant: string;
+  message: React.ReactNode; // ✅ FIX HERE
+  onClose?: () => void;
+}
 
-const CustomAlert: React.FC<CustomAlertProps> = ({ variant, message, onClose, duration = 4000 }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, duration);
-
-    return () => clearTimeout(timer);
-  }, [onClose, duration]);
-
+const CustomAlert: React.FC<CustomAlertProps> = ({
+  variant,
+  message,
+  onClose,
+}) => {
   return (
-    <Alert variant={variant} dismissible onClose={onClose}>
+    <Alert variant={variant} dismissible={!!onClose} onClose={onClose}>
       {message}
     </Alert>
   );

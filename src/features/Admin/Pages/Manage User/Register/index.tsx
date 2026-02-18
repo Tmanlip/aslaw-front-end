@@ -1,5 +1,6 @@
 // src/pages/HomePage.tsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
 import Pagination from "react-bootstrap/Pagination";
 import axios from "axios";
@@ -16,6 +17,8 @@ type CreatedUser = {
 };
 
 const RegisterUser: React.FC = () => {
+  const navigate = useNavigate();
+
   const [page, setPage] = useState(1);
   const [showRegisterCase, setShowRegisterCase] = useState(false);
 
@@ -24,7 +27,8 @@ const RegisterUser: React.FC = () => {
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<"Male" | "Female" | "">("");
   const [identification, setIdentification] = useState("");
-  const [maritalStatus, setMaritalStatus] = useState<"Single" | "Married" | "Divorce" | "">("");
+  const [maritalStatus, setMaritalStatus] =
+    useState<"Single" | "Married" | "Divorce" | "">("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
 
@@ -40,7 +44,6 @@ const RegisterUser: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      // Convert age to number and validate
       const ageNumber = parseInt(age, 10);
       if (isNaN(ageNumber)) {
         alert("Age must be a number");
@@ -68,7 +71,10 @@ const RegisterUser: React.FC = () => {
 
       console.log("Submitting payload:", payload);
 
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/registerusers`, payload);
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/registerusers`,
+        payload
+      );
 
       setCreatedUser({
         id: response.data.user.id,
@@ -79,8 +85,14 @@ const RegisterUser: React.FC = () => {
 
       alert("User registered successfully!");
     } catch (error: any) {
-      console.error("Registration error:", error.response?.data || error.message);
-      alert("Failed to register user: " + JSON.stringify(error.response?.data || error.message));
+      console.error(
+        "Registration error:",
+        error.response?.data || error.message
+      );
+      alert(
+        "Failed to register user: " +
+          JSON.stringify(error.response?.data || error.message)
+      );
     }
   };
 
@@ -132,12 +144,23 @@ const RegisterUser: React.FC = () => {
 
         <div className="d-flex justify-content-between mt-4">
           <Pagination>
-            <Pagination.Item active={page === 1} onClick={() => setPage(1)}>1</Pagination.Item>
-            <Pagination.Item active={page === 2} onClick={() => setPage(2)}>2</Pagination.Item>
+            <Pagination.Item
+              active={page === 1}
+              onClick={() => setPage(1)}
+            >
+              1
+            </Pagination.Item>
+            <Pagination.Item
+              active={page === 2}
+              onClick={() => setPage(2)}
+            >
+              2
+            </Pagination.Item>
           </Pagination>
 
           {page === 2 && (
             <div className="d-flex gap-2">
+              {/* Go to Register Case */}
               <button
                 className="btn btn-primary"
                 disabled={!createdUser}
@@ -146,12 +169,22 @@ const RegisterUser: React.FC = () => {
                 Go to Register Case
               </button>
 
-              <button
-                className="btn btn-success"
-                onClick={handleSubmit}
-              >
-                Submit
-              </button>
+              {/* Conditional Submit / Back Button */}
+              {!createdUser ? (
+                <button
+                  className="btn btn-success"
+                  onClick={handleSubmit}
+                >
+                  Submit
+                </button>
+              ) : (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => navigate("/admin/users")} // <-- change if your route is different
+                >
+                  Back to User Table
+                </button>
+              )}
             </div>
           )}
         </div>

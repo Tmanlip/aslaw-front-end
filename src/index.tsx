@@ -1,17 +1,22 @@
 // index.tsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import { BrowserRouter } from 'react-router-dom';  // ✅ import router
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import { BrowserRouter } from "react-router-dom";
+import { ClientDataProvider } from "./context/ClientDataContext";
 
-const root = ReactDOM.createRoot(document.getElementById('root')!);
+const root = ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement
+);
 
 root.render(
   <React.StrictMode>
-    <BrowserRouter>   {/* ✅ Wrap App inside BrowserRouter */}
-      <App />
+    <BrowserRouter>
+      <ClientDataProvider>
+        <App />
+      </ClientDataProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

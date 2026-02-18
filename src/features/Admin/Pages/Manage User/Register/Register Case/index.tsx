@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 import NavBarAdmin from "../../../../../../shared/Navbar/NavBar Admin/new";
 import Page1Form from "./pageoneform";
-import { UserRole} from "../../../../../../constant/user";
+import { UserRole } from "../../../../../../constant/user";
 
 export type User = {
   id: number;
@@ -16,6 +18,8 @@ type RegisterCaseProps = {
 };
 
 const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
+  const navigate = useNavigate();
+
   const [caseName, setCaseName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -42,66 +46,67 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
     fetchUsers();
   }, []);
 
- const handleSubmit = async () => {
-  if (!caseName || !lawyer || !client) {
-    alert("Please fill in all required fields");
-    return;
-  }
-
-  try {
-    const payload = {
-      title: caseName,
-      description,
-      lawyerID: lawyer.firmID,
-      clientID: client.firmID,
-    };
-
-    const res = await axios.post(
-      `${process.env.REACT_APP_API_URL}/registercases`,
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    alert("Case created successfully!");
-    setCaseName("");
-    setDescription("");
-    setLawyer(null);
-    setClient(null);
-
-  } catch (error: any) {
-    console.error(error);
-
-    // Handle HTTP errors
-    if (error.response) {
-      const status = error.response.status;
-
-      if (status === 422) {
-        // Validation error
-        alert(
-          error.response.data.error || 
-          "Validation failed. Check lawyer and client selection."
-        );
-      } else if (status === 404) {
-        alert(error.response.data.error || "Lawyer or client not found.");
-      } else {
-        alert(
-          error.response.data.error ||
-          "Server error occurred. Please check the data."
-        );
-      }
-    } else if (error.request) {
-      // No response received
-      alert("No response from server. Check your connection.");
-    } else {
-      // Other errors
-      alert("Error: " + error.message);
+  const handleSubmit = async () => {
+    if (!caseName || !lawyer || !client) {
+      alert("Please fill in all required fields");
+      return;
     }
-  }
-};
+
+    try {
+      const payload = {
+        title: caseName,
+        description,
+        lawyerID: lawyer.firmID,
+        clientID: client.firmID,
+      };
+
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/registercases`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      alert("Case created successfully!");
+
+      // Reset form (optional)
+      setCaseName("");
+      setDescription("");
+      setLawyer(null);
+      setClient(null);
+
+      // ✅ Redirect to Manage User page
+      navigate("/admin/manage_user/manage");
+
+    } catch (error: any) {
+      console.error(error);
+
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 422) {
+          alert(
+            error.response.data.error ||
+              "Validation failed. Check lawyer and client selection."
+          );
+        } else if (status === 404) {
+          alert(error.response.data.error || "Lawyer or client not found.");
+        } else {
+          alert(
+            error.response.data.error ||
+              "Server error occurred. Please check the data."
+          );
+        }
+      } else if (error.request) {
+        alert("No response from server. Check your connection.");
+      } else {
+        alert("Error: " + error.message);
+      }
+    }
+  };
 
   return (
     <>

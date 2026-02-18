@@ -1,31 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { colors } from "../../../../../../constant/color";
 import Alert from "react-bootstrap/Alert";
 import CreateReportOffcanvas from "../OffCanvas/Reports";
 import Form from "react-bootstrap/Form";
 import SelectToggleButton from "../Select Files/select";
 
-interface ReportsSectionProps {
-  files: string[];
+interface DocumentsSectionProps {
+  selectedCase?: {
+    lawyerFirmID: string;
+    clientFirmID?: string;
+    caseId?: string;
+    blob_folder_path?: string;
+    // add other fields if needed
+  };
 }
 
-const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
+const API_URL = process.env.REACT_APP_API_URL;
+
+const ReportsSection: React.FC = () => {
+  const [files, setFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Fetch reports from Laravel
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API_URL}/files`, {
+        headers: { Accept: "application/json" },
+      });
+
+      const data = await res.json();
+
+      // ✅ IMPORTANT FIX
+      setFiles(Array.isArray(data.files) ? data.files : []);
+    } catch (err) {
+      console.error("Failed to fetch reports", err);
+      setFiles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
   const toggleSelectionMode = () => {
-    if (selectionMode) {
-      // Cancel selection
-      setSelectionMode(false);
-      setSelectedFiles([]);
-    } else {
-      // Enter selection mode (checkboxes only, no auto select)
-      setSelectionMode(true);
-      setSelectedFiles([]);
-    }
+    setSelectionMode((prev) => !prev);
+    setSelectedFiles([]);
   };
 
   const toggleCheckbox = (file: string) => {
@@ -36,7 +64,7 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
 
   return (
     <>
-      {/* Fixed Success Alert */}
+      {/* ✅ Success Alert */}
       {successMessage && (
         <div
           style={{
@@ -45,14 +73,13 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 2000,
-            width: "auto",
             maxWidth: "600px",
           }}
         >
           <Alert
             variant="success"
-            onClose={() => setSuccessMessage(null)}
             dismissible
+            onClose={() => setSuccessMessage(null)}
           >
             {successMessage}
           </Alert>
@@ -69,6 +96,7 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
         }}
       >
         <h2 style={{ margin: 0 }}>Reports</h2>
+
         <div style={{ display: "flex", gap: "1rem" }}>
           <button
             style={{
@@ -77,7 +105,6 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
               color: "white",
               borderRadius: "8px",
               border: "none",
-              cursor: "pointer",
               fontWeight: "bold",
             }}
             onClick={() => setShowOffcanvas(true)}
@@ -85,32 +112,6 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
             Create
           </button>
 
-          <label
-            style={{
-              padding: "0.5rem 1rem",
-              background: colors.gold,
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            Upload Report
-            <input
-              type="file"
-              accept="application/pdf"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setSuccessMessage(
-                    `Report "${e.target.files[0].name}" uploaded successfully!`
-                  );
-                }
-              }}
-            />
-          </label>
-
-          {/* ✅ Toggle Select/Cancel */}
           <SelectToggleButton
             selectionMode={selectionMode}
             onToggle={toggleSelectionMode}
@@ -120,11 +121,20 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
 
       <hr style={{ border: `2px solid ${colors.red}`, marginBottom: "1rem" }} />
 
+      {/* Loading */}
+      {loading && <p>Loading reports…</p>}
+
+      {/* Empty state */}
+      {!loading && files.length === 0 && (
+        <p style={{ color: "#777" }}>No reports uploaded yet.</p>
+      )}
+
       {/* Reports List */}
       <ul>
         {files.map((file, index) => (
           <li key={index} style={{ marginBottom: "1.5rem" }}>
-            <span style={{ fontWeight: "bold" }}>{file}</span>
+            <strong>{file}</strong>
+
             <div
               style={{
                 marginTop: "0.5rem",
@@ -134,6 +144,7 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
             >
               {!selectionMode && (
                 <>
+                  {/* ✅ PREVIEW */}
                   <button
                     style={{
                       marginRight: "1rem",
@@ -142,14 +153,17 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
                       color: "white",
                       borderRadius: "8px",
                       border: "none",
-                      cursor: "pointer",
                     }}
-                    onClick={() => setPreviewFile(`/${file}`)}
+                    onClick={() =>
+                      setPreviewFile(`${API_URL}/read/${encodeURIComponent(file)}`)
+                    }
                   >
                     Preview
                   </button>
+
+                  {/* ✅ DOWNLOAD */}
                   <a
-                    href={`/${file}`}
+                    href={`${API_URL}/read/${encodeURIComponent(file)}`}
                     download
                     style={{
                       marginRight: "1rem",
@@ -165,42 +179,30 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
                 </>
               )}
 
-              {/* ✅ Bootstrap Checkbox with fade */}
-              <div
-                style={{
-                  opacity: selectionMode ? 1 : 0,
-                  maxWidth: selectionMode ? "200px" : "0px",
-                  transition: "all 0.4s ease",
-                  overflow: "hidden",
-                }}
-              >
-                {selectionMode && (
-                  <Form.Check
-                    type="checkbox"
-                    label="Choose"
-                    checked={selectedFiles.includes(file)}
-                    onChange={() => toggleCheckbox(file)}
-                  />
-                )}
-              </div>
+              {/* Selection mode */}
+              {selectionMode && (
+                <Form.Check
+                  type="checkbox"
+                  label="Choose"
+                  checked={selectedFiles.includes(file)}
+                  onChange={() => toggleCheckbox(file)}
+                />
+              )}
             </div>
           </li>
         ))}
       </ul>
 
-      {/* PDF Preview Modal */}
+      {/* ✅ Preview Modal */}
       {previewFile && (
         <div
           style={{
             position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
+            inset: 0,
             backgroundColor: "rgba(0,0,0,0.7)",
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
+            alignItems: "center",
             zIndex: 1000,
           }}
           onClick={() => setPreviewFile(null)}
@@ -209,10 +211,10 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
             style={{
               width: "80%",
               height: "80%",
-              backgroundColor: "white",
-              position: "relative",
+              background: "white",
               borderRadius: "10px",
               overflow: "hidden",
+              position: "relative",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -221,6 +223,7 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
               style={{ width: "100%", height: "100%", border: "none" }}
               title="PDF Preview"
             />
+
             <button
               onClick={() => setPreviewFile(null)}
               style={{
@@ -230,9 +233,8 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
                 background: colors.red,
                 color: "white",
                 border: "none",
-                borderRadius: "5px",
+                borderRadius: "6px",
                 padding: "0.5rem 1rem",
-                cursor: "pointer",
               }}
             >
               Close
@@ -244,7 +246,10 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({ files }) => {
       {/* Offcanvas */}
       <CreateReportOffcanvas
         show={showOffcanvas}
-        onHide={() => setShowOffcanvas(false)}
+        onHide={() => {
+          setShowOffcanvas(false);
+          fetchReports(); // ✅ refresh after create
+        }}
       />
     </>
   );

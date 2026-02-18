@@ -1,7 +1,7 @@
 // src/pages/HomePage.tsx
 import React from "react";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
-import UserTable from "./Table";
+import CaseTable from "./Table";
 
 const DisplayCase: React.FC = () => {
   return (
@@ -12,7 +12,7 @@ const DisplayCase: React.FC = () => {
       {/* Main content */}
       <div style={{ padding: "2rem" }}>
         <h2>Cases List</h2>
-        <UserTable />
+        <CaseTable />
       </div>
     </>
   );

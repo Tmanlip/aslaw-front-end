@@ -9,39 +9,58 @@ import { LeftSection, MenuIcon, Logo } from "./style";
 import SearchBar from "../../../components/SearchBar/Search";
 import CustomButton from "../../../components/Button/button";
 import SideBar from "../../SideBar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import AuthMemory from "../../../data/authMemory";
+import { apiFetch } from "../../../hooks/api";
 
 const NavBarClient: React.FC = () => {
   const [searchValue, setSearchValue] = useState("");
   const [showSidebar, setShowSidebar] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSearch = () => {
-    console.log("Searching for:", searchValue);
-  };
+  const handleSearch = () => console.log("Searching for:", searchValue);
 
-  const toggleSideBar = () => {
-    setShowSidebar(!showSidebar);
+  const toggleSideBar = () => setShowSidebar(!showSidebar);
+
+  const handleLogout = async () => {
+    try {
+      // 1️⃣ Get the stored token from AuthMemory
+      const token = AuthMemory.getToken(); // assuming you store it after login
+
+      // 2️⃣ Call backend logout to revoke the token
+      await apiFetch("/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`, // include token
+        },
+      });
+
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // 3️⃣ Clear memory-only auth
+      AuthMemory.clear();
+
+      // 4️⃣ Clear auth context
+      logout();
+
+      // 5️⃣ Redirect to login page
+      navigate("/");
+    }
   };
 
   return (
     <>
-      {/* Navbar */}
       <Navbar
         expand="lg"
-        style={{
-          backgroundColor: colors.gold,
-          color: colors.white,
-          padding: "0 1rem",
-        }}
+        style={{ backgroundColor: colors.gold, color: colors.white, padding: "0 1rem" }}
       >
         <Container
           fluid
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
         >
-          {/* Left Section: Hamburger + Logo */}
           <LeftSection style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <MenuIcon
               src={menuIcon}
@@ -53,7 +72,6 @@ const NavBarClient: React.FC = () => {
               <Logo src={logo} alt="Logo" />
             </Navbar.Brand>
 
-            {/* SearchBar: visible only on md+ screens */}
             <div className="d-none d-lg-block" style={{ marginLeft: "1rem" }}>
               <SearchBar
                 value={searchValue}
@@ -65,11 +83,11 @@ const NavBarClient: React.FC = () => {
             </div>
           </LeftSection>
 
-          {/* Right-side Logout button */}
           <Nav>
             <CustomButton
               customColor="darkSilver"
               size="lg"
+              onClick={handleLogout}
               className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
             >
               Logout
@@ -78,9 +96,7 @@ const NavBarClient: React.FC = () => {
         </Container>
       </Navbar>
 
-      {/* Sidebar: contains menu + SearchBar on small screens */}
       <SideBar show={showSidebar} handleClose={() => setShowSidebar(false)}>
-        {/* Optional: put SearchBar inside sidebar on small screens */}
         <div className="d-lg-none" style={{ marginBottom: "1rem" }}>
           <SearchBar
             value={searchValue}
@@ -90,7 +106,6 @@ const NavBarClient: React.FC = () => {
             buttonLabel="Search"
           />
         </div>
-        {/* You can also put your menu links here */}
       </SideBar>
     </>
   );

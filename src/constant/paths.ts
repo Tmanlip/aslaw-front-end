@@ -3,8 +3,10 @@ const PATH = {
     ROOT : "/admin",
     DASHBOARD : "/admin/dashboard",
     BILLING : "/admin/billing",
+    LAWYER_BILLING : "/admin/lawyerbilling", 
     MANAGE_CASE : "/admin/manage_case",
     ASSIGN_CASE : "/admin/manage_case/assign_case",
+    REGISTER_CASE : "/admin/manage_case/register_case",
     EDIT_CASE : "/admin/manage_case/edit_case",
     MANAGE_USER : "/admin/manage_user/manage",
     MANAGE_PROFILE : "/admin/manage_user/manage_profile",
@@ -33,7 +35,10 @@ const PATH = {
   },
 
   AUTH : {
-    LOGOUT : "/logout"
+    LOGOUT : "/logout",
+    FORGOT_PASSWORD : "/forgot_password",
+    RESET_PASSWORD : "/reset_password",
+    LOGIN : "/login"
   }
 };
 

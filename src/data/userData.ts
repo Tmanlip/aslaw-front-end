@@ -10,9 +10,11 @@ export interface User {
   username: string;
   photo: string; // ✅ add photo field
   progress: number
+  role: "admin" | "lawyer" | "client";
 }
 
 export const userData: User = {
+  role: "admin",
   name: "John Doe",
   firstname: "John",
   lastname: "Doe",
