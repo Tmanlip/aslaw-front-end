@@ -4,6 +4,7 @@ import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import SelectToggleButton from "../Select Files/select";
+import AuthMemory from "../../../../../../data/authMemory";
 
 interface CaseInfo {
   lawyerFirmID: string;
@@ -27,6 +28,19 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   renameFileWithSection = false,
   title,
 }) => {
+  const currentUser = AuthMemory.getUser();
+  const token = AuthMemory.getToken();
+
+  const mutationHeaders: HeadersInit = {
+    Accept: "application/json",
+    "X-User-Role": currentUser?.role || "",
+    "X-User-FirmID": currentUser?.firmID || "",
+  };
+
+  if (token) {
+    (mutationHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+
   const [files, setFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -79,6 +93,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       const response = await fetch(`${process.env.REACT_APP_API_URL}/upload`, {
         method: "POST",
         body: formData,
+        headers: mutationHeaders,
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
@@ -100,7 +115,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
         method: "DELETE",
-        headers: { Accept: "application/json" },
+        headers: mutationHeaders,
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);

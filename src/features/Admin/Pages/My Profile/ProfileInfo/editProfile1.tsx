@@ -1,46 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Row, Col, Button } from "react-bootstrap";
-import { Client } from "../../../../../data/userInfo";
-import ConfirmSaveModal from "../../../../../components/confirmSaveModal"; // your confirmation modal
+import { Lawyer } from "../../../../../data/userInfo";
+import ConfirmSaveModal from "../../../../../components/confirmSaveModal";
 
-interface EditClientModalProps {
+interface EditAdminModalProps {
   show: boolean;
-  client: Client;
+  admin: Lawyer;
   onClose: () => void;
-  onSave: (updatedClient: Client) => Promise<void>;
+  onSave: (updatedAdmin: Lawyer) => Promise<void>;
 }
 
-const EditClientModal: React.FC<EditClientModalProps> = ({
+const EditAdminModal: React.FC<EditAdminModalProps> = ({
   show,
-  client,
+  admin,
   onClose,
   onSave,
 }) => {
-  const [formData, setFormData] = useState<Client>(client);
+  const [formData, setFormData] = useState<Lawyer>(admin);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  // Changed fields only
   const [changedFields, setChangedFields] = useState<
-    Partial<Record<keyof Client, any>>
+    Partial<Record<keyof Lawyer, any>>
   >({});
 
-  // Update form when client prop changes
   useEffect(() => {
-    setFormData(client);
-  }, [client]);
+    setFormData(admin);
+  }, [admin]);
 
-  const handleChange = (field: keyof Client, value: any) => {
+  const handleChange = (field: keyof Lawyer, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // On save click: compute changed fields and open confirm modal
   const handleSaveClick = () => {
-    const updates: Partial<Record<keyof Client, any>> = {};
+    const updates: Partial<Record<keyof Lawyer, any>> = {};
 
     Object.keys(formData).forEach((key) => {
-      const k = key as keyof Client;
-      if (formData[k] !== client[k]) {
-        updates[k] = formData[k];
+      const typedKey = key as keyof Lawyer;
+      if (formData[typedKey] !== admin[typedKey]) {
+        updates[typedKey] = formData[typedKey];
       }
     });
 
@@ -48,9 +44,8 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
     setShowConfirm(true);
   };
 
-  // When user confirms changes
   const handleConfirmSave = async () => {
-    await onSave({ ...client, ...changedFields }); // merge original + changed fields
+    await onSave({ ...admin, ...changedFields });
     setShowConfirm(false);
     onClose();
   };
@@ -59,7 +54,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
     <>
       <Modal show={show} onHide={onClose} centered size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Edit Client Information</Modal.Title>
+          <Modal.Title>Edit Admin Information</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
@@ -104,9 +99,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                   <Form.Control
                     type="number"
                     value={formData.age}
-                    onChange={(e) =>
-                      handleChange("age", Number(e.target.value))
-                    }
+                    onChange={(e) => handleChange("age", Number(e.target.value))}
                   />
                 </Form.Group>
               </Col>
@@ -158,9 +151,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                   <Form.Label>Marital Status</Form.Label>
                   <Form.Select
                     value={formData.maritalStatus}
-                    onChange={(e) =>
-                      handleChange("maritalStatus", e.target.value)
-                    }
+                    onChange={(e) => handleChange("maritalStatus", e.target.value)}
                   >
                     <option value="">Select Status</option>
                     <option value="Single">Single</option>
@@ -183,10 +174,9 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
         </Modal.Footer>
       </Modal>
 
-      {/* Confirmation Modal */}
       <ConfirmSaveModal
         show={showConfirm}
-        original={client}
+        original={admin}
         updated={changedFields}
         onConfirm={handleConfirmSave}
         onCancel={() => setShowConfirm(false)}
@@ -195,4 +185,4 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
   );
 };
 
-export default EditClientModal;
+export default EditAdminModal;

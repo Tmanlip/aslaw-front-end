@@ -5,6 +5,7 @@ import Alert from "react-bootstrap/Alert";
 import { colors } from "../../constant/color";
 import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
+import AuthMemory from "../../data/authMemory";
 
 type LoginFormProps = {
   onLoginSuccess?: (
@@ -45,9 +46,43 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
       console.log("LOGIN SUCCESS:", data);
 
+      const normalizedRole = String(data.role || "").toLowerCase() as
+        | "admin"
+        | "client"
+        | "lawyer";
+
+      if (!["admin", "client", "lawyer"].includes(normalizedRole)) {
+        throw new Error("Invalid user role returned from server");
+      }
+
+      const token =
+        data.token ||
+        data.access_token ||
+        data.accessToken ||
+        data.jwt ||
+        null;
+
+      const {
+        token: _token,
+        access_token: _accessToken,
+        accessToken: _accessTokenCamel,
+        jwt: _jwt,
+        message: _message,
+        ...responseUserFields
+      } = data;
+
+      const user = data.user || {
+        ...responseUserFields,
+        role: normalizedRole,
+        email: data.email || email,
+        name: data.name || data.username,
+      };
+
+      AuthMemory.setAuth(token, user);
+
       // Update your global auth context
-      login(data.role);
-      onLoginSuccess?.(data.role, data.message);
+      login(normalizedRole, user);
+      onLoginSuccess?.(normalizedRole, data.message);
 
       // Optional: redirect or show success message
       setAlertVariant("success");

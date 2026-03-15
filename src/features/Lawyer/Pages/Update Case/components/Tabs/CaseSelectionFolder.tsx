@@ -6,6 +6,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import SelectToggleButton from "../Select Files/select";
 import { Case } from "../../../../../../data/userInfo";
+import AuthMemory from "../../../../../../data/authMemory";
 
 interface CaseFolderSectionProps {
   selectedCase?: Case;
@@ -13,6 +14,10 @@ interface CaseFolderSectionProps {
   sectionOptions?: string[]; // optional section dropdown
   renameFileWithSection?: boolean; // if true, adds section prefix on upload
   title: string; // Header title
+  allowUpload?: boolean;
+  allowDelete?: boolean;
+  uploadDisabled?: boolean;
+  deleteDisabled?: boolean;
 }
 
 const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
@@ -21,7 +26,24 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   sectionOptions = [],
   renameFileWithSection = false,
   title,
+  allowUpload = true,
+  allowDelete = true,
+  uploadDisabled = false,
+  deleteDisabled = false,
 }) => {
+  const currentUser = AuthMemory.getUser();
+  const token = AuthMemory.getToken();
+
+  const mutationHeaders: HeadersInit = {
+    Accept: "application/json",
+    "X-User-Role": currentUser?.role || "",
+    "X-User-FirmID": currentUser?.firmID || "",
+  };
+
+  if (token) {
+    (mutationHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+
   const [files, setFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -40,9 +62,17 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         { method: "GET", headers: { Accept: "application/json" } }
       );
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || `Failed to fetch ${folderName}`);
+      }
       setFiles(data.files || []);
+      setSuccessMessage(null);
     } catch (err) {
       console.error(`Failed to fetch ${folderName}:`, err);
+      setFiles([]);
+      setSuccessMessage(
+        `Failed to load ${folderName}: ${err instanceof Error ? err.message : "Unexpected error"}`
+      );
     }
   };
 
@@ -52,6 +82,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   /* ================= UPLOAD ================= */
   const handleUpload = async (file: File) => {
+    if (uploadDisabled) {
+      setSuccessMessage("This case is archived. Only admin can upload files.");
+      return;
+    }
+
     if (!selectedCase?.blob_folder_path) {
       setSuccessMessage("No case selected");
       return;
@@ -73,6 +108,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       const response = await fetch(`${process.env.REACT_APP_API_URL}/upload`, {
         method: "POST",
         body: formData,
+        headers: mutationHeaders,
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
@@ -85,18 +121,31 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   /* ================= DELETE ================= */
   const handleDelete = async (file: string) => {
+    if (deleteDisabled) {
+      setSuccessMessage("This case is archived. Only admin can delete files.");
+      return;
+    }
+
     if (!selectedCase?.blob_folder_path) return;
     if (!window.confirm(`Delete "${file}"?`)) return;
+    if (!file || file.endsWith("/")) {
+      setSuccessMessage("Invalid file selected for deletion.");
+      return;
+    }
 
-    const filePath = `${selectedCase.blob_folder_path}${folderName}/${file}`;
+    const folderPath = `${selectedCase.blob_folder_path}${folderName}`.replace(/\/+$/, "");
+    const filePath = `${folderPath}/${file}`;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/files?path=${encodeURIComponent(filePath)}`,
+        {
         method: "DELETE",
-        headers: { Accept: "application/json" },
-      });
+        headers: mutationHeaders,
+        }
+      );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      if (!response.ok) throw new Error(data?.error || data?.message || "Delete failed");
       setSuccessMessage(`File "${file}" deleted successfully!`);
       fetchFiles();
     } catch (err: any) {
@@ -106,6 +155,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   /* ================= SELECTION ================= */
   const toggleSelectionMode = () => {
+    if (deleteDisabled) {
+      setSuccessMessage("This case is archived. Selection for delete is disabled.");
+      return;
+    }
+
     setSelectionMode(!selectionMode);
     setSelectedFiles([]);
   };
@@ -148,11 +202,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       >
         <h2 style={{ margin: 0 }}>{title}</h2>
         <div style={{ display: "flex", gap: "1rem" }}>
-          {sectionOptions.length > 0 && (
+          {allowUpload && sectionOptions.length > 0 && (
             <DropdownButton
               id="dropdown-upload"
               title={`Upload to ${uploadSection.toUpperCase()}`}
               variant="warning"
+              disabled={uploadDisabled}
               onSelect={(key) => setUploadSection(key || sectionOptions[0])}
             >
               {sectionOptions.map((section) => (
@@ -163,26 +218,36 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             </DropdownButton>
           )}
 
-          <label
-            style={{
-              padding: "0.5rem 1rem",
-              background: colors.gold,
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            Upload File
-            <input
-              type="file"
-              accept="application/pdf"
-              style={{ display: "none" }}
-              onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-            />
-          </label>
+          {allowUpload && (
+            <label
+              style={{
+                padding: "0.5rem 1rem",
+                background: colors.gold,
+                color: "white",
+                borderRadius: "8px",
+                cursor: uploadDisabled ? "not-allowed" : "pointer",
+                opacity: uploadDisabled ? 0.6 : 1,
+                fontWeight: "bold",
+              }}
+            >
+              Upload File
+              <input
+                type="file"
+                accept="application/pdf"
+                style={{ display: "none" }}
+                disabled={uploadDisabled}
+                onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
+              />
+            </label>
+          )}
 
-          <SelectToggleButton selectionMode={selectionMode} onToggle={toggleSelectionMode} />
+          {allowDelete && (
+            <SelectToggleButton
+              selectionMode={selectionMode}
+              onToggle={toggleSelectionMode}
+              disabled={deleteDisabled}
+            />
+          )}
         </div>
       </div>
 
@@ -228,22 +293,27 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                     Download
                   </a>
 
-                  <button
-                    style={{
-                      background: colors.red,
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      padding: "0.5rem 1rem",
-                    }}
-                    onClick={() => handleDelete(file)}
-                  >
-                    Delete
-                  </button>
+                  {allowDelete && (
+                    <button
+                      style={{
+                        background: colors.red,
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "0.5rem 1rem",
+                        opacity: deleteDisabled ? 0.6 : 1,
+                        cursor: deleteDisabled ? "not-allowed" : "pointer",
+                      }}
+                      disabled={deleteDisabled}
+                      onClick={() => handleDelete(file)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </>
               )}
 
-              {selectionMode && (
+              {allowDelete && selectionMode && (
                 <label style={{ display: "flex", gap: "0.5rem" }}>
                   <input
                     type="checkbox"

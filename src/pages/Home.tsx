@@ -29,18 +29,19 @@ const HomePage: React.FC = () => {
   };
 
   // ✅ handle login success and redirect with message
-  const handleLoginSuccess = (
-    role: "admin" | "client" | "lawyer",
-    message: string
-  ) => {
-    console.log(message);
-    if (role === "admin")
-      navigate("/admin/dashboard", { state: { successMessage: message } });
-    if (role === "client")
-      navigate("/client/dashboard", { state: { successMessage: message } });
-    if (role === "lawyer")
-      navigate("/lawyer/dashboard", { state: { successMessage: message } });
-  };
+const handleLoginSuccess = (
+  role: "admin" | "client" | "lawyer",
+  message: string
+) => {
+  // The 'login' function was called inside LoginForm. 
+  // We wait one "tick" to ensure RenderRouter sees the new role.
+  setTimeout(() => {
+    navigate(`/${role}/dashboard`, { 
+        state: { successMessage: message },
+        replace: true // Use replace so the user can't "back button" into the login 
+    });
+  }, 10);
+};
 
   const LoginPageContent = () => (
     <div

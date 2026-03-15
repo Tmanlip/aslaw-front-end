@@ -3,7 +3,8 @@ import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import axios from "axios";
-import { Case, useClientData } from "../../../../../context/ClientDataContext";
+import { Case } from "../../../../../context/ClientDataContext";
+import AuthMemory from "../../../../../data/authMemory";
 
 interface EditCaseModalProps {
   show: boolean;
@@ -18,7 +19,11 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
   selectedCase,
   setSelectedCase,
 }) => {
-  const { cases } = useClientData(); // admin view, no authUser needed
+  const asSafeString = (value: unknown): string => {
+    if (typeof value === "string") return value;
+    if (value === null || value === undefined) return "";
+    return String(value);
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -35,11 +40,11 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
   useEffect(() => {
     if (selectedCase) {
       setFormData({
-        title: selectedCase.title || "",
-        status: selectedCase.status || "Active",
-        description: selectedCase.description || "", // ensures string
-        clientFirmID: selectedCase.clientFirmID || "",
-        lawyerFirmID: selectedCase.lawyerFirmID || "",
+        title: asSafeString(selectedCase.title),
+        status: asSafeString(selectedCase.status) || "Active",
+        description: asSafeString(selectedCase.description),
+        clientFirmID: asSafeString(selectedCase.clientFirmID),
+        lawyerFirmID: asSafeString(selectedCase.lawyerFirmID),
       });
 
       // Log case data when modal opens
@@ -63,21 +68,37 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
     setLoading(true);
 
     try {
+      const currentUser = AuthMemory.getUser();
+      const token = AuthMemory.getToken();
+      const normalizedDescription = asSafeString(formData.description).trim();
+
       const payload: any = {
-        title: formData.title,
-        status: formData.status,
-        description: formData.description ?? "", // ensures string
+        title: asSafeString(formData.title),
+        status: asSafeString(formData.status) || "Active",
       };
 
-      if (formData.clientFirmID) payload.clientID = formData.clientFirmID;
-      if (formData.lawyerFirmID) payload.lawyerID = formData.lawyerFirmID;
+      // If description is empty, do not send it so backend ignores description updates.
+      if (normalizedDescription.length > 0) {
+        payload.description = normalizedDescription;
+      }
+
+      if (asSafeString(formData.clientFirmID).trim()) payload.clientID = asSafeString(formData.clientFirmID).trim();
+      if (asSafeString(formData.lawyerFirmID).trim()) payload.lawyerID = asSafeString(formData.lawyerFirmID).trim();
 
       const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await axios.put(`${apiUrl}/cases/${selectedCase.caseId}`, payload);
+      const response = await axios.put(`${apiUrl}/cases/${selectedCase.caseId}`, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Role": currentUser?.role || "",
+          "X-User-FirmID": currentUser?.firmID || "",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
 
       const updatedCase: Case = {
         ...selectedCase,
         ...formData,
+        description: normalizedDescription.length > 0 ? normalizedDescription : selectedCase.description,
         updated_at: response.data.case.updated_at,
         clientFirmID: response.data.case.clientFirmID || formData.clientFirmID,
         lawyerFirmID: response.data.case.lawyerFirmID || formData.lawyerFirmID,
@@ -88,7 +109,8 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating case:", error.response?.data || error.message);
-      alert("Failed to update case. Please check the input and try again.");
+      const apiMessage = error?.response?.data?.message;
+      alert(apiMessage || "Failed to update case. Please check the input and try again.");
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ const PATH = {
   ADMIN : {
     ROOT : "/admin",
     DASHBOARD : "/admin/dashboard",
+    MY_PROFILE : "/admin/my_profile",
     BILLING : "/admin/billing",
     LAWYER_BILLING : "/admin/lawyerbilling", 
     MANAGE_CASE : "/admin/manage_case",

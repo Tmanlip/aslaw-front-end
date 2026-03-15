@@ -9,6 +9,7 @@ import { Lawyer, Case, LawyerFullData } from "../../../../../data/userInfo";
 import EditLawyerModal from "./editProfile1";
 import { updateUser } from "../../../../../hooks/user";
 import AuthMemory from "../../../../../data/authMemory";
+import LawyerResetPasswordModal from "../ResetPassword/component";
 
 interface ProfileInfoProps {
   fullData: LawyerFullData; // pass from LawyerProfile
@@ -63,6 +64,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
   const [lawyer, setLawyer] = useState<Lawyer>(fullData.lawyer);
   const [cases, setCases] = useState<Case[]>(fullData.cases || []);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const renderLawyerInfoCard = () => (
@@ -106,14 +108,21 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
         name: updatedFields.name,
         username: updatedFields.username,
         email: updatedFields.email,
-        phone_number: updatedFields.phoneNumber,
-        home_address: updatedFields.HomeAddress,
+        phoneNumber: updatedFields.phoneNumber,
+        HomeAddress: updatedFields.HomeAddress,
         age: updatedFields.age,
-        ic_number: updatedFields.ICNumber,
+        ICNumber: updatedFields.ICNumber,
         gender: updatedFields.gender,
-        marital_status: updatedFields.maritalStatus,
+        maritalStatus: updatedFields.maritalStatus,
         status: updatedFields.status,
       };
+
+      // Remove undefined keys so validation only runs for edited fields.
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
 
       const response = await updateUser(lawyer.firmID, payload);
       const updatedLawyer: Lawyer = response.user;
@@ -150,7 +159,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
           {renderLawyerInfoCard()}
 
           <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
-            <Button variant="warning">Reset Password</Button>
+            <Button
+              variant="warning"
+              onClick={() => setShowResetModal(true)}
+            >
+              Reset Password
+            </Button>
             <Button
               variant="primary"
               onClick={() => setShowEditModal(true)}
@@ -185,6 +199,13 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
         lawyer={lawyer}
         onClose={() => setShowEditModal(false)}
         onSave={handleSaveLawyer}
+      />
+
+      <LawyerResetPasswordModal
+        show={showResetModal}
+        email={lawyer.email}
+        firmID={lawyer.firmID}
+        onClose={() => setShowResetModal(false)}
       />
     </div>
   );

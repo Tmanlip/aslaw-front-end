@@ -8,7 +8,7 @@ interface EditClientModalProps {
   show: boolean;
   lawyer: Lawyer;
   onClose: () => void;
-  onSave: (updatedLawyer: Lawyer) => void;
+  onSave: (updatedLawyer: Lawyer) => Promise<void>;
 }
 
 const EditClientModal: React.FC<EditClientModalProps> = ({
@@ -50,8 +50,8 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
   };
 
   // When user confirms changes
-  const handleConfirmSave = () => {
-    onSave({ ...lawyer, ...changedFields }); // merge original + changed fields
+  const handleConfirmSave = async () => {
+    await onSave({ ...lawyer, ...changedFields }); // merge original + changed fields
     setShowConfirm(false);
     onClose();
   };

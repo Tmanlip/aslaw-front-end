@@ -1,27 +1,65 @@
-// src/components/CaseProgress.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ProgressBar from "react-bootstrap/ProgressBar";
+import Form from "react-bootstrap/Form";
+import { Case } from "../../../../../data/userInfo";
 import { userData } from "../../../../../data/userData"; // keep this for progress
-import AuthMemory from "../../../../../data/authMemory"; // for client case name
 
-const CaseProgress: React.FC = () => {
-  // Get the client's full data
-  const clientData = AuthMemory.getClientFullData();
+interface CaseProgressProps {
+  cases: Case[];
+  selectedCase: Case | null;
+  onSelectCase: (c: Case) => void;
+}
 
-  // Get the first case safely
-  const firstCase = clientData?.cases?.[0];
+const getRandomProgress = () => Math.floor(Math.random() * 76) + 15;
 
-  // Use the case name if available, fallback to userData.name
-  const caseName = firstCase?.title || userData.name;
+const CaseProgress: React.FC<CaseProgressProps> = ({ cases, selectedCase, onSelectCase }) => {
+  const [progressMap, setProgressMap] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    if (cases.length > 0) {
+      setProgressMap((prev) => {
+        const updated = { ...prev };
+        cases.forEach((c) => {
+          if (!updated[c.caseId]) {
+            updated[c.caseId] = getRandomProgress();
+          }
+        });
+        return updated;
+      });
+    }
+  }, [cases]);
+
+  const selectedCaseId = selectedCase?.caseId ?? (cases.length > 0 ? cases[0].caseId : null);
+
+  const handleSelect = (id: number) => {
+    const c = cases.find((item) => item.caseId === id);
+    if (c) onSelectCase(c);
+  };
+
+  if (cases.length === 0) return null;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-      <span style={{ fontWeight: "bold", fontSize: "1.75rem" }}>
-        {caseName} Case
-      </span>
+      {cases.length > 1 ? (
+        <Form.Select
+          value={selectedCaseId ?? ""}
+          onChange={(e) => handleSelect(Number(e.target.value))}
+          style={{ maxWidth: "260px" }}
+        >
+          {cases.map((c) => (
+            <option key={c.caseId} value={c.caseId}>
+              {c.title}
+            </option>
+          ))}
+        </Form.Select>
+      ) : (
+        <span style={{ fontWeight: "bold", fontSize: "1.75rem" }}>
+          {selectedCase?.title || userData.name}
+        </span>
+      )}
       <ProgressBar
-        now={userData.progress} // keep progress from userData
-        label={`${userData.progress}%`}
+        now={selectedCaseId ? progressMap[selectedCaseId] ?? userData.progress : userData.progress}
+        label={`${selectedCaseId ? progressMap[selectedCaseId] ?? userData.progress : userData.progress}%`}
         style={{ width: "300px", height: "28px", fontSize: "1rem" }}
       />
     </div>

@@ -51,7 +51,26 @@ const ProfileInfo: React.FC = () => {
   const handleSaveClient = async (updatedFields: Partial<Client>) => {
     try {
       setSaving(true);
-      const data = await updateUser(client.firmID, updatedFields);
+      const payload: any = {
+        name: updatedFields.name,
+        username: updatedFields.username,
+        email: updatedFields.email,
+        phoneNumber: updatedFields.phoneNumber,
+        HomeAddress: updatedFields.HomeAddress,
+        age: updatedFields.age,
+        ICNumber: updatedFields.ICNumber,
+        gender: updatedFields.gender,
+        maritalStatus: updatedFields.maritalStatus,
+        status: updatedFields.status,
+      };
+
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
+      const data = await updateUser(client.firmID, payload);
       const updatedClient: Client = data.user;
 
       setClient(updatedClient);
