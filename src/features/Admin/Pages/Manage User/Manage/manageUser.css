@@ -1,0 +1,22 @@
+.admin-manage-user-page {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.admin-manage-user-table-wrap {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .admin-manage-user-page {
+    padding: 0.9rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-manage-user-page {
+    width: min(94vw, 1880px);
+    padding: 2rem 1.5rem;
+  }
+}

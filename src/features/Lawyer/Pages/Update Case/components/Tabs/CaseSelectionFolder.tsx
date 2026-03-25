@@ -1,12 +1,13 @@
 // CaseFolderSection.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { colors } from "../../../../../../constant/color";
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import SelectToggleButton from "../Select Files/select";
-import { Case } from "../../../../../../data/userInfo";
+import { Case, EncryptedDocumentItem } from "../../../../../../data/userInfo";
 import AuthMemory from "../../../../../../data/authMemory";
+import axiosUser from "../../../../../../api/axiosUser";
 
 interface CaseFolderSectionProps {
   selectedCase?: Case;
@@ -18,6 +19,8 @@ interface CaseFolderSectionProps {
   allowDelete?: boolean;
   uploadDisabled?: boolean;
   deleteDisabled?: boolean;
+  onUploadSuccess?: () => void; // callback to refresh parent data after upload
+  onDeleteSuccess?: () => void; // callback to refresh parent data after delete
 }
 
 const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
@@ -30,6 +33,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   allowDelete = true,
   uploadDisabled = false,
   deleteDisabled = false,
+  onUploadSuccess,
+  onDeleteSuccess,
 }) => {
   const currentUser = AuthMemory.getUser();
   const token = AuthMemory.getToken();
@@ -44,29 +49,70 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     (mutationHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
-  const [files, setFiles] = useState<string[]>([]);
+  type DisplayFile = {
+    id?: string;
+    fileName: string;
+    encrypted: boolean;
+    mimeType?: string;
+    previewUrl?: string;
+    downloadUrl?: string;
+    deleteUrl?: string;
+  };
+
+  const [files, setFiles] = useState<DisplayFile[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [uploadSection, setUploadSection] = useState<string>(sectionOptions[0] || "");
 
+  const getEncryptedFilesFromCase = useCallback((): DisplayFile[] => {
+    const encrypted = selectedCase?.encrypted_documents ?? [];
+    return encrypted
+      .filter((item: EncryptedDocumentItem) => item.category === folderName && item.status !== "deleted")
+      .map((item: EncryptedDocumentItem) => ({
+        id: item.document_id,
+        fileName: item.file_name,
+        encrypted: true,
+        mimeType: item.mime_type,
+        previewUrl: item.preview_url,
+        downloadUrl: item.download_url,
+        deleteUrl: item.delete_url,
+      }));
+  }, [folderName, selectedCase?.encrypted_documents]);
+
   /* ================= FETCH FILES ================= */
-  const fetchFiles = async () => {
-    if (!selectedCase?.blob_folder_path) return;
+  const fetchFiles = useCallback(async () => {
+    const encryptedFiles = getEncryptedFilesFromCase();
+    if (encryptedFiles.length > 0) {
+      setFiles(encryptedFiles);
+      return;
+    }
+
+    if (!selectedCase?.blob_folder_path) {
+      setFiles([]);
+      return;
+    }
 
     try {
       const folderPath = `${selectedCase.blob_folder_path}${folderName}/`;
-      const response = await fetch(
+      const response = await axiosUser.get(
         `${process.env.REACT_APP_API_URL}/files?folder=${encodeURIComponent(folderPath)}`,
-        { method: "GET", headers: { Accept: "application/json" } }
+        { headers: mutationHeaders as Record<string, string> }
       );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || `Failed to fetch ${folderName}`);
-      }
-      setFiles(data.files || []);
-      setSuccessMessage(null);
+      const data = response.data;
+      const legacyFiles = (data.files || [])
+        // Hide internal encrypted blob names from legacy folder listing.
+        .filter((name: string) => {
+          const normalized = String(name || "").trim().toLowerCase();
+          return normalized !== "" && !normalized.startsWith("encrypted/");
+        })
+        .map((name: string) => ({
+          fileName: name,
+          encrypted: false,
+        }));
+
+      setFiles(legacyFiles);
     } catch (err) {
       console.error(`Failed to fetch ${folderName}:`, err);
       setFiles([]);
@@ -74,11 +120,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         `Failed to load ${folderName}: ${err instanceof Error ? err.message : "Unexpected error"}`
       );
     }
-  };
+  }, [selectedCase?.blob_folder_path, folderName, getEncryptedFilesFromCase]);
 
   useEffect(() => {
     fetchFiles();
-  }, [selectedCase]);
+  }, [fetchFiles]);
 
   /* ================= UPLOAD ================= */
   const handleUpload = async (file: File) => {
@@ -101,55 +147,119 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
     const formData = new FormData();
     formData.append("file", finalFile);
-    formData.append("folder", `${selectedCase.blob_folder_path}${folderName}/`);
-    formData.append("caseId", String(selectedCase.caseId || ""));
+    formData.append("case_id", String(selectedCase.caseId || ""));
+    formData.append("category", folderName);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/upload`, {
-        method: "POST",
-        body: formData,
-        headers: mutationHeaders,
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      await axiosUser.post(
+        `${process.env.REACT_APP_API_URL}/encrypted-documents/upload`,
+        formData,
+        { headers: mutationHeaders as Record<string, string> }
+      );
       setSuccessMessage(`File "${finalFile.name}" uploaded successfully!`);
+      // Call the callback to refresh case data in parent component
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
       fetchFiles();
     } catch (err: any) {
-      setSuccessMessage(`Upload failed: ${err.message}`);
+      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      setSuccessMessage(`Upload failed: ${message}`);
     }
   };
 
   /* ================= DELETE ================= */
-  const handleDelete = async (file: string) => {
+  const handleDelete = async (file: DisplayFile) => {
     if (deleteDisabled) {
       setSuccessMessage("This case is archived. Only admin can delete files.");
       return;
     }
 
     if (!selectedCase?.blob_folder_path) return;
-    if (!window.confirm(`Delete "${file}"?`)) return;
-    if (!file || file.endsWith("/")) {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${file.fileName}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+    if (!file.fileName || file.fileName.endsWith("/")) {
       setSuccessMessage("Invalid file selected for deletion.");
       return;
     }
 
-    const folderPath = `${selectedCase.blob_folder_path}${folderName}`.replace(/\/+$/, "");
-    const filePath = `${folderPath}/${file}`;
-
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/files?path=${encodeURIComponent(filePath)}`,
-        {
-        method: "DELETE",
-        headers: mutationHeaders,
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || data?.message || "Delete failed");
-      setSuccessMessage(`File "${file}" deleted successfully!`);
+      if (file.encrypted && file.id) {
+        await axiosUser.delete(
+          `${process.env.REACT_APP_API_URL}/encrypted-documents/${file.id}`,
+          { headers: mutationHeaders as Record<string, string> }
+        );
+      } else {
+        const folderPath = `${selectedCase.blob_folder_path}${folderName}`.replace(/\/+$/, "");
+        const filePath = `${folderPath}/${file.fileName}`;
+        await axiosUser.delete(
+          `${process.env.REACT_APP_API_URL}/files?path=${encodeURIComponent(filePath)}`,
+          { headers: mutationHeaders as Record<string, string> }
+        );
+      }
+
+      setSuccessMessage(`File "${file.fileName}" deleted successfully!`);
+      if (onDeleteSuccess) {
+        onDeleteSuccess();
+      }
       fetchFiles();
     } catch (err: any) {
-      setSuccessMessage(`Delete failed: ${err.message}`);
+      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      setSuccessMessage(`Delete failed: ${message}`);
+    }
+  };
+
+  const getFileUrl = async (endpoint: string): Promise<string> => {
+    const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}${endpoint}`, {
+      responseType: "blob",
+      headers: mutationHeaders as Record<string, string>,
+    });
+
+    return URL.createObjectURL(res.data);
+  };
+
+  const handlePreview = async (file: DisplayFile) => {
+    try {
+      if (previewFile) {
+        URL.revokeObjectURL(previewFile);
+      }
+
+      if (file.encrypted && file.id) {
+        const objectUrl = await getFileUrl(`/encrypted-documents/${file.id}/preview`);
+        setPreviewFile(objectUrl);
+        return;
+      }
+
+      setPreviewFile(`${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`);
+    } catch (err: any) {
+      setSuccessMessage(`Preview failed: ${err.message}`);
+    }
+  };
+
+  const handleDownload = async (file: DisplayFile) => {
+    try {
+      if (file.encrypted && file.id) {
+        const objectUrl = await getFileUrl(`/encrypted-documents/${file.id}/download`);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = file.fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+        return;
+      }
+
+      const a = document.createElement("a");
+      a.href = `${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
+      a.download = file.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      setSuccessMessage(`Download failed: ${err.message}`);
     }
   };
 
@@ -181,7 +291,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             top: "20px",
             left: "50%",
             transform: "translateX(-50%)",
-            maxWidth: "600px",
+            width: "min(92vw, 600px)",
             zIndex: 2000,
           }}
         >
@@ -197,11 +307,13 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginTop: "2rem",
+          marginTop: "1.25rem",
+          gap: "0.75rem",
+          flexWrap: "wrap",
         }}
       >
         <h2 style={{ margin: 0 }}>{title}</h2>
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           {allowUpload && sectionOptions.length > 0 && (
             <DropdownButton
               id="dropdown-upload"
@@ -258,8 +370,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         {files.length === 0 && <p>No files found</p>}
         {files.map((file, idx) => (
           <li key={idx} style={{ marginBottom: "1.5rem" }}>
-            <strong>{file}</strong>
-            <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+            <strong>{file.fileName}</strong>
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
               {!selectionMode && (
                 <>
                   <button
@@ -270,28 +382,23 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                       borderRadius: "8px",
                       padding: "0.5rem 1rem",
                     }}
-                    onClick={() =>
-                      setPreviewFile(
-                        `${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file}`
-                      )
-                    }
+                    onClick={() => handlePreview(file)}
                   >
                     Preview
                   </button>
 
-                  <a
-                    href={`${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file}`}
-                    download
+                  <button
                     style={{
                       background: colors.red1,
                       color: "white",
+                      border: "none",
                       borderRadius: "8px",
                       padding: "0.5rem 1rem",
-                      textDecoration: "none",
                     }}
+                    onClick={() => handleDownload(file)}
                   >
                     Download
-                  </a>
+                  </button>
 
                   {allowDelete && (
                     <button
@@ -314,11 +421,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
               )}
 
               {allowDelete && selectionMode && (
-                <label style={{ display: "flex", gap: "0.5rem" }}>
+                <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                   <input
                     type="checkbox"
-                    checked={selectedFiles.includes(file)}
-                    onChange={() => toggleCheckbox(file)}
+                    checked={selectedFiles.includes(file.fileName)}
+                    onChange={() => toggleCheckbox(file.fileName)}
                   />
                   Choose
                 </label>
@@ -344,8 +451,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         >
           <div
             style={{
-              width: "80%",
-              height: "80%",
+              width: "min(95vw, 1100px)",
+              height: "min(90vh, 900px)",
               background: "white",
               borderRadius: "10px",
               overflow: "hidden",
@@ -354,7 +461,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setPreviewFile(null)}
+              onClick={() => {
+                if (previewFile?.startsWith("blob:")) {
+                  URL.revokeObjectURL(previewFile);
+                }
+                setPreviewFile(null);
+              }}
               style={{
                 position: "absolute",
                 top: "10px",

@@ -6,6 +6,7 @@ import Button from "react-bootstrap/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../context/AuthContext"; 
 import AppRoutes from "../../../../../routes/AppRouter";
+import "./lawyerBilling.css";
 
 const LawyerBilling: React.FC = () => {
   const { cases } = useClientData();
@@ -44,20 +45,13 @@ const LawyerBilling: React.FC = () => {
     <>
       <NavBarAdmin />
 
-      <div style={{ padding: "2rem" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "2rem",
-          }}
-        >
+      <div className="admin-lawyer-billing-page">
+        <div className="admin-lawyer-billing-header-row">
           <h2>Lawyer Cases</h2>
           {role === "admin" && (
             <Button
               variant="primary"
-              style={{ fontWeight: 500, borderRadius: "8px" }}
+              className="admin-lawyer-billing-manage-btn"
               onClick={handleManageUsers}
             >
               Manage Users
@@ -72,19 +66,13 @@ const LawyerBilling: React.FC = () => {
             cases.map((c: Case) => (
               <div
                 key={c.caseId}
-                style={{
-                  padding: "1rem",
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  marginBottom: "1rem",
-                  cursor: "pointer",
-                }}
+                className="admin-lawyer-case-card"
                 onClick={() => handleCaseClick(c)}
               >
                 <h5>{c.title}</h5>
                 <p>
                   <strong>Status:</strong>{" "}
-                  <span style={{ color: c.status === "Active" ? "green" : "red" }}>
+                  <span className={c.status === "Active" ? "admin-lawyer-status-active" : "admin-lawyer-status-inactive"}>
                     {c.status}
                   </span>
                 </p>
@@ -92,7 +80,7 @@ const LawyerBilling: React.FC = () => {
                   <strong>Client:</strong> {c.clientName}
                 </p>
 
-                <div style={{ marginTop: "1rem" }}>
+                <div className="admin-lawyer-case-progress-wrap">
                   <CaseProgress caseItem={c} />
                 </div>
               </div>

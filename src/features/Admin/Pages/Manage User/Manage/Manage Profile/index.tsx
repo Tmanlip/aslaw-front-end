@@ -3,13 +3,14 @@ import NavBarAdmin from "../../../../../../shared/Navbar/NavBar Admin/new";
 import ProfileInfo from "./ProfileInfo";
 import { useClientData, User } from "../../../../../../context/ClientDataContext"; // <-- import User
 import { userData } from "../../../../../../data/userData"; // fallback photo
+import "./manageProfile.css";
 
 const ManageProfile: React.FC = () => {
   const { authUser } = useClientData(); // selected admin
 
   if (!authUser) {
     return (
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-manage-profile-state">
         <p>No admin selected. Please go back and select an admin.</p>
       </div>
     );
@@ -19,12 +20,12 @@ const ManageProfile: React.FC = () => {
     <>
       <NavBarAdmin />
 
-      <div style={{ display: "flex", padding: "2rem", gap: "2rem" }}>
+      <div className="admin-manage-profile-page">
         {/* Left column: display full name and photo */}
         <LeftColumn user={authUser} />
 
         {/* Right column: Profile info */}
-        <div style={{ flex: 1 }}>
+        <div className="admin-manage-profile-content">
           <ProfileInfo />
         </div>
       </div>
@@ -35,32 +36,13 @@ const ManageProfile: React.FC = () => {
 // Left column is its own component so it re-renders on context changes
 const LeftColumn: React.FC<{ user: User }> = ({ user }) => {
   return (
-    <div
-      style={{
-        flexShrink: 0,
-        textAlign: "center",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        position: "sticky",
-        top: 0,
-      }}
-    >
+    <div className="admin-manage-profile-sidebar">
       <img
         src={userData.photo} // fallback
         alt="Passport"
-        style={{
-          width: "150px",
-          height: "200px",
-          objectFit: "cover",
-          borderRadius: "8px",
-          border: "2px solid #ccc",
-          marginBottom: "1rem",
-        }}
+        className="admin-manage-profile-avatar"
       />
-      <h1>{user.name} 🎉</h1>
+      <h1 className="admin-manage-profile-title">{user.name} 🎉</h1>
     </div>
   );
 };

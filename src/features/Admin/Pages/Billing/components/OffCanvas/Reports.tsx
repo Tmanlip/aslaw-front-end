@@ -17,7 +17,7 @@ const CreateReportOffcanvas: React.FC<CreateReportOffcanvasProps> = ({
       placement="end"
       backdrop="static"   // ✅ prevents closing when clicking outside
       keyboard={false}    // ✅ prevents closing with ESC
-      style={{ width: "700px" }} // ✅ wider offcanvas
+      style={{ width: "min(92vw, 700px)" }}
     >
       <Offcanvas.Header closeButton>
         <Offcanvas.Title>Create New Report</Offcanvas.Title>

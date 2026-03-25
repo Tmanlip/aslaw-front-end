@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosUser from "../../../../../../api/axiosUser";
 import { useNavigate } from "react-router-dom";
 
 import NavBarAdmin from "../../../../../../shared/Navbar/NavBar Admin/new";
 import Page1Form from "./pageoneform";
 import { UserRole } from "../../../../../../constant/user";
+import "./registerCase.css";
 
 export type User = {
   id: number;
@@ -32,8 +33,8 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get<User[]>(
-          "http://127.0.0.1:8000/api/users"
+        const res = await axiosUser.get<User[]>(
+          `${process.env.REACT_APP_API_URL}/users`
         );
 
         setLawyerOptions(res.data.filter((u) => u.role === "lawyer"));
@@ -60,7 +61,7 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
         clientID: client.firmID,
       };
 
-      await axios.post(
+      await axiosUser.post(
         `${process.env.REACT_APP_API_URL}/registercases`,
         payload,
         {
@@ -112,7 +113,7 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
     <>
       <NavBarAdmin />
 
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-register-case-page">
         <h1>Register Case</h1>
 
         <div className="alert alert-info">
@@ -133,7 +134,7 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
           clientOptions={clientOptions}
         />
 
-        <button className="btn btn-success mt-3" onClick={handleSubmit}>
+        <button className="btn btn-success mt-3 admin-register-case-submit" onClick={handleSubmit}>
           Submit Case
         </button>
       </div>

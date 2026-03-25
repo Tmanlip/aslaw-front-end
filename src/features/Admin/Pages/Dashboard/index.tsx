@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import Alert from "react-bootstrap/Alert";
 import AuthMemory from "../../../../data/authMemory";
+import "./dashboard.css";
 
 const AdminDashboard: React.FC = () => {
   const location = useLocation();
@@ -11,7 +12,7 @@ const AdminDashboard: React.FC = () => {
   const successMessage = location.state?.successMessage || null;
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
-  const [user, setUser] = useState(AuthMemory.getUser());
+  const [user] = useState(AuthMemory.getUser());
 
   useEffect(() => {
     if (!AuthMemory.isLoggedIn() || user?.role !== "admin") {
@@ -33,17 +34,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* Floating Alert */}
       {showAlert && successMessage && (
-        <div
-          style={{
-            position: "fixed",
-            top: "1rem",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1050,
-            width: "auto",
-            maxWidth: "600px",
-          }}
-        >
+        <div className="admin-dashboard-alert-wrap">
           <Alert
             variant="success"
             onClose={() => setShowAlert(false)}
@@ -55,7 +46,7 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Main content */}
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-dashboard-page">
         <h1>Welcome, {user?.name || "Admin"} 🎉</h1>
         <p>This is your admin dashboard. You can manage users, cases, and settings here.</p>
       </div>

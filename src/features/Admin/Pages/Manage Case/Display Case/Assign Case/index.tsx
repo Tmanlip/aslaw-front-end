@@ -6,7 +6,7 @@ import Form from "react-bootstrap/Form";
 import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import Alert from "react-bootstrap/Alert";
-import axios from "axios";
+import axiosUser from "../../../../../../api/axiosUser";
 
 interface CaseRecord {
   id: number;
@@ -41,7 +41,7 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
   useEffect(() => {
     const fetchLawyers = async () => {
       try {
-        const res = await axios.get<Lawyer[]>(`${process.env.REACT_APP_API_URL}/users`);
+        const res = await axiosUser.get<Lawyer[]>(`${process.env.REACT_APP_API_URL}/users`);
         const allLawyers = res.data.filter((u: any) => u.role === "lawyer");
         setLawyers(allLawyers);
         if (allLawyers.length > 0) setSelectedLawyer(allLawyers[0]);
@@ -62,7 +62,7 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
     if (!selectedCase || !selectedLawyer) return;
 
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/registercases`, {
+      const res = await axiosUser.post(`${process.env.REACT_APP_API_URL}/registercases`, {
         title: (e.target as HTMLFormElement).caseTitle.value,
         description: (e.target as HTMLFormElement).caseDescription.value,
         clientID: selectedCase.clientFirmID,

@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const savedRole = localStorage.getItem("role");
     const savedUser = localStorage.getItem(USER_KEY);
+    let parsedUser: any | null = null;
 
     if (savedRole) {
       setRole(savedRole as Role);
@@ -36,9 +37,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
       } catch {
         setUser(null);
+      }
+    }
+
+    // Fallback: recover role from saved user payload if role key is missing.
+    if (!savedRole && parsedUser?.role) {
+      const possibleRole = String(parsedUser.role).toLowerCase();
+      if (possibleRole === "admin" || possibleRole === "client" || possibleRole === "lawyer") {
+        const validRole = possibleRole as Exclude<Role, null>;
+        setRole(validRole);
+        localStorage.setItem("role", validRole);
       }
     }
 

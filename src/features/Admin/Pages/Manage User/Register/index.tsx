@@ -3,11 +3,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
 import Pagination from "react-bootstrap/Pagination";
-import axios from "axios";
+import axiosUser from "../../../../../api/axiosUser";
 import Page1Form from "./components/pageoneform";
 import Page2Form from "./components/pagetwoform";
 import RegisterCase from "./Register Case";
 import { UserRole } from "../../../../../constant/user";
+import PATH from "../../../../../constant/paths";
+import "./registerUser.css";
 
 type CreatedUser = {
   id: number;
@@ -38,9 +40,53 @@ const RegisterUser: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "lawyer" | "client" | "">("");
+  const [picture, setPicture] = useState<File | null>(null);
 
   // Created user
   const [createdUser, setCreatedUser] = useState<CreatedUser | null>(null);
+
+  const validatePassportPicture = (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+      if (!allowedTypes.includes(file.type)) {
+        resolve("Picture must be JPG or PNG format.");
+        return;
+      }
+
+      const maxBytes = 2 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        resolve("Picture must be 2MB or smaller.");
+        return;
+      }
+
+      const imageUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        const width = image.naturalWidth;
+        const height = image.naturalHeight;
+        URL.revokeObjectURL(imageUrl);
+
+        if (width < 350 || height < 450) {
+          resolve("Picture must be at least 350x450 pixels (passport size).");
+          return;
+        }
+
+        const passportRatio = 35 / 45;
+        const actualRatio = width / height;
+        if (Math.abs(actualRatio - passportRatio) > 0.08) {
+          resolve("Picture must follow passport ratio (35:45).");
+          return;
+        }
+
+        resolve(null);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        resolve("Unable to read selected picture.");
+      };
+      image.src = imageUrl;
+    });
+  };
 
   const handleSubmit = async () => {
     try {
@@ -55,25 +101,39 @@ const RegisterUser: React.FC = () => {
         return;
       }
 
-      const payload = {
-        name: fullName,
-        email,
-        username,
-        password,
-        role,
-        age: ageNumber,
-        ICNumber: identification,
-        phoneNumber,
-        HomeAddress: address,
-        gender,
-        maritalStatus,
-      };
+      if (!picture) {
+        alert("Please upload a passport-size picture.");
+        return;
+      }
 
-      console.log("Submitting payload:", payload);
+      const pictureValidationError = await validatePassportPicture(picture);
+      if (pictureValidationError) {
+        alert(pictureValidationError);
+        return;
+      }
 
-      const response = await axios.post(
+      const payload = new FormData();
+      payload.append("name", fullName);
+      payload.append("email", email);
+      payload.append("username", username);
+      payload.append("password", password);
+      payload.append("role", role);
+      payload.append("age", String(ageNumber));
+      payload.append("ICNumber", identification);
+      payload.append("phoneNumber", phoneNumber);
+      payload.append("HomeAddress", address);
+      payload.append("gender", gender);
+      payload.append("maritalStatus", maritalStatus);
+      payload.append("picture", picture);
+
+      const response = await axiosUser.post(
         `${process.env.REACT_APP_API_URL}/registerusers`,
-        payload
+        payload,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       setCreatedUser({
@@ -105,7 +165,7 @@ const RegisterUser: React.FC = () => {
     <>
       <NavBarAdmin />
 
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-register-user-page">
         <h1>Register User</h1>
 
         {page === 1 && (
@@ -139,10 +199,12 @@ const RegisterUser: React.FC = () => {
             setEmail={setEmail}
             role={role}
             setRole={setRole}
+            picture={picture}
+            setPicture={setPicture}
           />
         )}
 
-        <div className="d-flex justify-content-between mt-4">
+        <div className="admin-register-user-footer d-flex justify-content-between mt-4">
           <Pagination>
             <Pagination.Item
               active={page === 1}
@@ -159,7 +221,7 @@ const RegisterUser: React.FC = () => {
           </Pagination>
 
           {page === 2 && (
-            <div className="d-flex gap-2">
+            <div className="admin-register-user-action-group d-flex gap-2">
               {/* Go to Register Case */}
               <button
                 className="btn btn-primary"
@@ -180,7 +242,7 @@ const RegisterUser: React.FC = () => {
               ) : (
                 <button
                   className="btn btn-secondary"
-                  onClick={() => navigate("/admin/users")} // <-- change if your route is different
+                  onClick={() => navigate(PATH.ADMIN.MANAGE_USER)}
                 >
                   Back to User Table
                 </button>

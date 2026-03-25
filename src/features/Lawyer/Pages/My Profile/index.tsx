@@ -4,6 +4,7 @@ import AuthMemory from "../../../../data/authMemory";
 import { fetchLawyerFullData } from "../../../../hooks/lawyerApi";
 import ProfileInfo from "./ProfileInfo";
 import { LawyerFullData } from "../../../../data/userInfo";
+import "./profile.css";
 
 const LawyerProfile: React.FC = () => {
   const [data, setData] = useState<LawyerFullData | null>(null);
@@ -28,7 +29,7 @@ const LawyerProfile: React.FC = () => {
     return (
       <>
         <NavBarLawyer />
-        <div style={{ padding: "2rem" }}>Loading lawyer data...</div>
+        <div className="lawyer-profile-state">Loading lawyer data...</div>
       </>
     );
   }
@@ -37,7 +38,7 @@ const LawyerProfile: React.FC = () => {
     return (
       <>
         <NavBarLawyer />
-        <div style={{ padding: "2rem" }}>No lawyer data available.</div>
+        <div className="lawyer-profile-state">No lawyer data available.</div>
       </>
     );
   }
@@ -45,39 +46,18 @@ const LawyerProfile: React.FC = () => {
   return (
     <>
       <NavBarLawyer />
-      <div style={{ display: "flex", padding: "2rem", gap: "2rem" }}>
-        {/* Left Column: Photo + Welcome */}
-        <div
-          style={{
-            flexShrink: 0,
-            textAlign: "center",
-            height: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "sticky",
-            top: 0,
-          }}
-        >
+      <div className="lawyer-profile-page">
+        <div className="lawyer-profile-sidebar">
           <img
             src={data.lawyer.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
             alt="Passport"
-            style={{
-              width: "150px",
-              height: "200px",
-              objectFit: "cover",
-              borderRadius: "8px",
-              border: "2px solid #ccc",
-              marginBottom: "1rem",
-            }}
+            className="lawyer-profile-avatar"
           />
-          <h1>Welcome {data.lawyer.name}</h1>
-          <p>{data.lawyer.email}</p>
+          <h1 className="lawyer-profile-title">Welcome {data.lawyer.name}</h1>
+          <p className="lawyer-profile-email">{data.lawyer.email}</p>
         </div>
 
-        {/* Right Column: ProfileInfo Component */}
-        <div style={{ flex: 1 }}>
+        <div className="lawyer-profile-content">
           <ProfileInfo fullData={data} />
         </div>
       </div>

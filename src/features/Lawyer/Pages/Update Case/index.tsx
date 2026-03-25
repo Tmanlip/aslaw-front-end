@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new";
 import AuthMemory from "../../../../data/authMemory";
-import { fetchLawyerFullData } from "../../../../hooks/lawyerApi";
+import { fetchLawyerFullData, invalidateLawyerCache } from "../../../../hooks/lawyerApi";
 import CaseProgress from "./components/CaseProgress";
 import FileSection from "./components/Tabs";
 import { Case, LawyerFullData } from "../../../../data/userInfo";
+import "./updateCase.css";
 
 const UpdateCase: React.FC = () => {
   const [data, setData] = useState<LawyerFullData | null>(null);
@@ -30,6 +31,31 @@ const UpdateCase: React.FC = () => {
     }
   }, []);
 
+  // Callback to refresh case data after file upload/delete
+  const handleFileChangeSuccess = async () => {
+    const firmID = AuthMemory.getUser()?.firmID;
+    if (firmID) {
+      try {
+        // Invalidate cache to force fresh fetch
+        invalidateLawyerCache(firmID);
+        // Refetch the data
+        const freshData = await fetchLawyerFullData(firmID);
+        setData(freshData);
+        AuthMemory.setLawyerFullData?.(freshData);
+        
+        // Update selected case with fresh data if it exists
+        if (selectedCase && freshData.cases?.length) {
+          const updatedCase = freshData.cases.find((c) => c.caseId === selectedCase.caseId);
+          if (updatedCase) {
+            setSelectedCase(updatedCase);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to refresh case data after file change:", err);
+      }
+    }
+  };
+
   // Debug log for cases
   useEffect(() => {
     if (data) {
@@ -41,7 +67,7 @@ const UpdateCase: React.FC = () => {
     return (
       <>
         <NavBarLawyer />
-        <div style={{ padding: "2rem" }}>Loading case data...</div>
+        <div className="lawyer-update-case-state">Loading case data...</div>
       </>
     );
   }
@@ -50,7 +76,7 @@ const UpdateCase: React.FC = () => {
     return (
       <>
         <NavBarLawyer />
-        <div style={{ padding: "2rem" }}>No case available.</div>
+        <div className="lawyer-update-case-state">No case available.</div>
       </>
     );
   }
@@ -59,9 +85,9 @@ const UpdateCase: React.FC = () => {
     <>
       <NavBarLawyer />
 
-      <div style={{ padding: "2rem" }}>
+      <div className="lawyer-update-case-page">
         {/* Case Progress with multi-case support */}
-        <div style={{ marginTop: "2rem" }}>
+        <div className="lawyer-update-case-progress-wrap">
           <CaseProgress 
             cases={data.cases} 
             selectedCase={selectedCase} 
@@ -70,7 +96,13 @@ const UpdateCase: React.FC = () => {
         </div>
 
         {/* Documents / Reports / Cheques */}
-        {selectedCase && <FileSection selectedCase={selectedCase} />}
+        {selectedCase && (
+          <FileSection
+            selectedCase={selectedCase}
+            onUploadSuccess={handleFileChangeSuccess}
+            onDeleteSuccess={handleFileChangeSuccess}
+          />
+        )}
       </div>
     </>
   );

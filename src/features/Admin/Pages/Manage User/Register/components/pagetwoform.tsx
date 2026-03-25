@@ -17,6 +17,8 @@ type Page2FormProps = {
   setEmail: (val: string) => void;
   role: Role | "";
   setRole: (val: Role) => void;
+  picture: File | null;
+  setPicture: (file: File | null) => void;
 };
 
 const Page2Form: React.FC<Page2FormProps> = ({
@@ -30,6 +32,8 @@ const Page2Form: React.FC<Page2FormProps> = ({
   setEmail,
   role,
   setRole,
+  picture,
+  setPicture,
 }) => {
   return (
     <Form>
@@ -93,6 +97,28 @@ const Page2Form: React.FC<Page2FormProps> = ({
               ]}
               onSelect={(val) => setRole(val as Role)}
             />
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form.Group controlId="formPassportPicture">
+            <Form.Label>Passport Picture</Form.Label>
+            <Form.Control
+              type="file"
+              accept="image/png,image/jpeg"
+              onChange={(e) => {
+                const input = e.target as HTMLInputElement;
+                setPicture(input.files?.[0] || null);
+              }}
+            />
+            <Form.Text className="text-muted">
+              Upload JPG/PNG passport-size photo (35:45 ratio, min 350x450, max 2MB).
+            </Form.Text>
+            {picture && (
+              <div className="mt-2 small text-success">Selected: {picture.name}</div>
+            )}
           </Form.Group>
         </Col>
       </Row>

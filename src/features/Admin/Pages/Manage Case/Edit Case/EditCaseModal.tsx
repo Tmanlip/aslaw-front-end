@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import axios from "axios";
+import axiosUser from "../../../../../api/axiosUser";
 import { Case } from "../../../../../context/ClientDataContext";
 import AuthMemory from "../../../../../data/authMemory";
 
@@ -69,7 +69,6 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
 
     try {
       const currentUser = AuthMemory.getUser();
-      const token = AuthMemory.getToken();
       const normalizedDescription = asSafeString(formData.description).trim();
 
       const payload: any = {
@@ -86,12 +85,11 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
       if (asSafeString(formData.lawyerFirmID).trim()) payload.lawyerID = asSafeString(formData.lawyerFirmID).trim();
 
       const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await axios.put(`${apiUrl}/cases/${selectedCase.caseId}`, payload, {
+      const response = await axiosUser.put(`${apiUrl}/cases/${selectedCase.caseId}`, payload, {
         headers: {
           "Content-Type": "application/json",
           "X-User-Role": currentUser?.role || "",
           "X-User-FirmID": currentUser?.firmID || "",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 

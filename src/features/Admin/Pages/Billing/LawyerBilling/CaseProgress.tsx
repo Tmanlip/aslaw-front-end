@@ -11,14 +11,14 @@ const LawyerCaseProgress: React.FC<CaseProgressProps> = ({ caseItem }) => {
   const dummyProgress = Math.floor(Math.random() * 50) + 40;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-      <span style={{ fontWeight: "bold", fontSize: "1rem" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flexWrap: "wrap" }}>
+      <span style={{ fontWeight: "bold", fontSize: "clamp(0.95rem, 2.2vw, 1rem)", lineHeight: 1.35 }}>
         {caseItem.title} ({caseItem.lawyerName})
       </span>
       <ProgressBar
         now={dummyProgress}
         label={`${dummyProgress}%`}
-        style={{ width: "200px", height: "20px", fontSize: "0.9rem" }}
+        style={{ width: "clamp(170px, 30vw, 230px)", height: "20px", fontSize: "0.9rem", flexShrink: 0 }}
       />
     </div>
   );

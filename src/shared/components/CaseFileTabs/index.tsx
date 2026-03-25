@@ -4,23 +4,27 @@ import Tab from "react-bootstrap/Tab";
 import { Case } from "../../../data/userInfo";
 import { colors } from "../../../constant/color";
 import CaseFolderSection from "../../../features/Lawyer/Pages/Update Case/components/Tabs/CaseSelectionFolder";
-import { useAuth } from "../../../context/AuthContext";
 
 interface CaseFileTabsProps {
   selectedCase: Case;
   readOnly?: boolean;
+  onUploadSuccess?: () => void; // callback to refresh case data
+  onDeleteSuccess?: () => void; // callback to refresh case data
 }
 
-const CaseFileTabs: React.FC<CaseFileTabsProps> = ({ selectedCase, readOnly = false }) => {
+const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
+  selectedCase,
+  readOnly = false,
+  onUploadSuccess,
+  onDeleteSuccess,
+}) => {
   const [activeKey, setActiveKey] = useState<string>("documents");
-  const { role } = useAuth();
 
   const isArchived = (selectedCase.status || "").toLowerCase() === "archived";
-  const isAdmin = role === "admin";
-  const lockArchivedActions = isArchived && !isAdmin;
+  const lockArchivedActions = isArchived;
 
   return (
-    <div style={{ marginTop: "2rem" }}>
+    <div style={{ marginTop: "1.25rem" }}>
       {lockArchivedActions && (
         <div
           style={{
@@ -32,7 +36,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({ selectedCase, readOnly = fa
             border: "1px solid #ffecb5",
           }}
         >
-          This case is archived. Upload, delete, and case edits are locked for non-admin users.
+          This case is archived. Upload, delete, and case edits are locked.
         </div>
       )}
 
@@ -40,12 +44,15 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({ selectedCase, readOnly = fa
         id="case-file-tabs"
         activeKey={activeKey}
         onSelect={(k) => k && setActiveKey(k)}
+        mountOnEnter
+        unmountOnExit
         className="mb-3"
         justify
         style={{
           backgroundColor: colors.gold,
           borderRadius: "8px",
           padding: "0.5rem",
+          rowGap: "0.5rem",
         }}
       >
         <Tab eventKey="documents" title="Documents">
@@ -57,6 +64,8 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({ selectedCase, readOnly = fa
             allowDelete={!readOnly}
             uploadDisabled={lockArchivedActions}
             deleteDisabled={lockArchivedActions}
+            onUploadSuccess={onUploadSuccess}
+            onDeleteSuccess={onDeleteSuccess}
           />
         </Tab>
 
@@ -69,6 +78,8 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({ selectedCase, readOnly = fa
             allowDelete={!readOnly}
             uploadDisabled={lockArchivedActions}
             deleteDisabled={lockArchivedActions}
+            onUploadSuccess={onUploadSuccess}
+            onDeleteSuccess={onDeleteSuccess}
           />
         </Tab>
 
@@ -83,6 +94,8 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({ selectedCase, readOnly = fa
             allowDelete={!readOnly}
             uploadDisabled={lockArchivedActions}
             deleteDisabled={lockArchivedActions}
+            onUploadSuccess={onUploadSuccess}
+            onDeleteSuccess={onDeleteSuccess}
           />
         </Tab>
       </Tabs>

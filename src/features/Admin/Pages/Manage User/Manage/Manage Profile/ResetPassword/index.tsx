@@ -8,6 +8,7 @@ import Col from "react-bootstrap/Col";
 import { colors } from "../../../../../../../constant/color";
 import PasswordInput from "./component/InputReset";
 import companyPic from "../../../../assets/pics/logo-landscape.png" // ✅ your company logo
+import "./resetPassword.css";
 
 const ResetPassword: React.FC = () => {
   const [oldPassword, setOldPassword] = useState("");
@@ -24,27 +25,11 @@ const ResetPassword: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: colors.gold2,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <div className="admin-reset-password-page" style={{ backgroundColor: colors.gold2 }}>
       <Container>
         <Row className="justify-content-center">
           <Col md={6} lg={5}>
-            <div
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: "12px",
-                padding: "30px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                textAlign: "center",
-              }}
-            >
+            <div className="admin-reset-password-card">
               {/* ✅ Company logo once at the top */}
               <img
                 src={companyPic}

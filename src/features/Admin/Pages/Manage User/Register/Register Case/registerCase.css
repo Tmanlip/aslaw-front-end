@@ -1,0 +1,22 @@
+.admin-register-case-page {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+@media (max-width: 768px) {
+  .admin-register-case-page {
+    padding: 0.9rem;
+  }
+
+  .admin-register-case-submit {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-register-case-page {
+    width: min(94vw, 1880px);
+    padding: 2rem 1.5rem;
+  }
+}

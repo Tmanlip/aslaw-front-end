@@ -1,0 +1,27 @@
+.admin-dashboard-page {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.admin-dashboard-alert-wrap {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: min(92vw, 620px);
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard-page {
+    padding: 0.9rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-dashboard-page {
+    width: min(94vw, 1880px);
+    padding: 2rem 1.5rem;
+  }
+}

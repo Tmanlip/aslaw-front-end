@@ -8,6 +8,7 @@ import { Client, Case } from "../../../../../data/userInfo";
 import EditClientModal from "./editProfile1";
 import { updateUser } from "../../../../../hooks/user";
 import ClientResetPasswordModal from "../ResetPassword/component"; // Import the reusable modal
+import "./profileInfo.css";
 
 const ProfileInfo: React.FC = () => {
   const [page, setPage] = useState(1);
@@ -33,11 +34,11 @@ const ProfileInfo: React.FC = () => {
 
   if (fetching) {
     return (
-      <div style={{ textAlign: "center", marginTop: "2rem" }}>
+      <div className="client-profile-loading-wrap">
         <Spinner
           animation="border"
           role="status"
-          style={{ width: "60px", height: "60px" }}
+          className="client-profile-loading-spinner"
         >
           <span className="visually-hidden">Loading...</span>
         </Spinner>
@@ -47,6 +48,25 @@ const ProfileInfo: React.FC = () => {
   }
 
   if (!client) return <p>No client data available</p>;
+
+  const leftColumn = [
+    { label: "Firm ID", value: client.firmID },
+    { label: "Full Name", value: client.name },
+    { label: "Username", value: client.username },
+    { label: "Email", value: client.email },
+    { label: "Phone Number", value: client.phoneNumber },
+    { label: "Home Address", value: client.HomeAddress },
+  ];
+
+  const rightColumn = [
+    { label: "Age", value: client.age },
+    { label: "IC Number", value: client.ICNumber },
+    { label: "Gender", value: client.gender },
+    { label: "Marital Status", value: client.maritalStatus },
+    { label: "Status", value: client.status },
+    { label: "Role", value: AuthMemory.getUser()?.role },
+    { label: "Created At", value: client.created_at },
+  ];
 
   const handleSaveClient = async (updatedFields: Partial<Client>) => {
     try {
@@ -90,82 +110,38 @@ const ProfileInfo: React.FC = () => {
   };
 
   const renderClientInfoCard = () => (
-    <div
-      style={{
-        display: "flex",
-        gap: "1.5rem",
-        padding: "1rem",
-        border: "1px solid #ccc",
-        borderRadius: "6px",
-        background: "#fff",
-        flexWrap: "wrap",
-      }}
-    >
-      <div style={{ flex: "1 1 300px" }}>
-        <p>
-          <strong>Firm ID:</strong> {client.firmID}
-        </p>
-        <p>
-          <strong>Full Name:</strong> {client.name}
-        </p>
-        <p>
-          <strong>Username:</strong> {client.username}
-        </p>
-        <p>
-          <strong>Email:</strong> {client.email}
-        </p>
-        <p>
-          <strong>Phone Number:</strong> {client.phoneNumber}
-        </p>
-        <p>
-          <strong>Home Address:</strong> {client.HomeAddress}
-        </p>
+    <div className="client-profile-info-card">
+      <div className="client-profile-info-column">
+        {leftColumn.map((item) => (
+          <div className="client-profile-info-row" key={item.label}>
+            <span className="client-profile-info-label">{item.label}</span>
+            <span className="client-profile-info-value">{item.value || "-"}</span>
+          </div>
+        ))}
       </div>
 
-      <div style={{ flex: "1 1 300px" }}>
-        <p>
-          <strong>Age:</strong> {client.age}
-        </p>
-        <p>
-          <strong>IC Number:</strong> {client.ICNumber}
-        </p>
-        <p>
-          <strong>Gender:</strong> {client.gender}
-        </p>
-        <p>
-          <strong>Marital Status:</strong> {client.maritalStatus}
-        </p>
-        <p>
-          <strong>Status:</strong> {client.status}
-        </p>
-        <p>
-          <strong>Role:</strong> {AuthMemory.getUser()?.role}
-        </p>
-        <p>
-          <strong>Created At:</strong> {client.created_at}
-        </p>
+      <div className="client-profile-info-column">
+        {rightColumn.map((item) => (
+          <div className="client-profile-info-row" key={item.label}>
+            <span className="client-profile-info-label">{item.label}</span>
+            <span className="client-profile-info-value">{item.value || "-"}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 
   return (
-    <div
-      style={{
-        marginTop: "1rem",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "1rem",
-        background: "#f9f9f9",
-      }}
-    >
+    <div className="client-profile-info-shell">
       {page === 1 && (
         <>
-          <h3>Client Information</h3>
+          <h3 className="client-profile-info-title">Client Information</h3>
           {renderClientInfoCard()}
-          <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+          <div className="client-profile-action-row">
             <Button
               variant="warning"
               onClick={() => setShowResetModal(true)}
+              className="client-profile-action-btn"
             >
               Reset Password
             </Button>
@@ -173,7 +149,7 @@ const ProfileInfo: React.FC = () => {
               variant="primary"
               onClick={() => setShowClientModal(true)}
               disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+              className="client-profile-action-btn client-profile-save-btn"
             >
               {saving && <Spinner animation="border" size="sm" role="status" />}
               {saving ? "Saving..." : "Edit Information"}
@@ -184,18 +160,12 @@ const ProfileInfo: React.FC = () => {
 
       {page === 2 && (
         <>
-          <h3>Cases</h3>
+          <h3 className="client-profile-info-title">Cases</h3>
           {cases && cases.length > 0 ? (
             cases.map((c) => (
               <div
                 key={c.caseId}
-                style={{
-                  marginBottom: "1rem",
-                  padding: "1rem",
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  background: "#fff",
-                }}
+                className="client-profile-case-card"
               >
                 <p>
                   <strong>Case Title:</strong> {c.title}
@@ -221,7 +191,7 @@ const ProfileInfo: React.FC = () => {
         </>
       )}
 
-      <Pagination style={{ justifyContent: "center", marginTop: "1rem" }}>
+      <Pagination className="client-profile-pagination">
         <Pagination.Item active={page === 1} onClick={() => setPage(1)}>
           Client Info
         </Pagination.Item>

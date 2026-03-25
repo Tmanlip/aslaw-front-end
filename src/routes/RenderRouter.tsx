@@ -6,7 +6,12 @@ import chatbotRoutes from "./ChatbotRoutes";
 import ForgotPasswordPage from "../pages/ForgotPassword"
 
 export default function RenderRouter() {
-  const { role, loading } = useAuth();
+  const { role, user, loading } = useAuth();
+  const effectiveRole = (role || String(user?.role || "").toLowerCase() || null) as
+    | "admin"
+    | "client"
+    | "lawyer"
+    | null;
 
   // 1. Define specific public routes
   const publicRoutes = [
@@ -16,7 +21,7 @@ export default function RenderRouter() {
   ];
 
   // 2. Get role-based routes
-  const roleRoutes = loading ? [] : AppRoutes(role);
+  const roleRoutes = loading ? [] : AppRoutes(effectiveRole);
 
   // 3. Combine them, but handle the 404/Catch-all carefully
   const element = useRoutes([

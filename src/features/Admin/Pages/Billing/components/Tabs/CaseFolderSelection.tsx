@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { colors } from "../../../../../../constant/color";
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import SelectToggleButton from "../Select Files/select";
 import AuthMemory from "../../../../../../data/authMemory";
+import axiosUser from "../../../../../../api/axiosUser";
 
 interface CaseInfo {
   lawyerFirmID: string;
@@ -49,25 +50,35 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [uploadSection, setUploadSection] = useState<string>(sectionOptions[0] || "");
 
   /* ================= FETCH FILES ================= */
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     if (!selectedCase?.blob_folder_path) return;
 
     try {
       const folderPath = `${selectedCase.blob_folder_path}${folderName}/`;
-      const response = await fetch(
+      const response = await axiosUser.get(
         `${process.env.REACT_APP_API_URL}/files?folder=${encodeURIComponent(folderPath)}`,
-        { method: "GET", headers: { Accept: "application/json" } }
+        { headers: mutationHeaders as Record<string, string> }
       );
-      const data = await response.json();
-      setFiles(data.files || []);
+      const data = response.data;
+      const rawFiles: unknown[] = Array.isArray(data.files) ? data.files : [];
+      const visibleFiles = rawFiles.filter((file): file is string => {
+        if (typeof file !== "string") {
+          return false;
+        }
+
+        const normalized = file.toLowerCase();
+        return !normalized.startsWith("encrypted/") && !normalized.includes("/encrypted/");
+      });
+
+      setFiles(visibleFiles);
     } catch (err) {
       console.error(`Failed to fetch ${folderName}:`, err);
     }
-  };
+  }, [selectedCase?.blob_folder_path, folderName]);
 
   useEffect(() => {
     fetchFiles();
-  }, [selectedCase]);
+  }, [fetchFiles]);
 
   /* ================= UPLOAD ================= */
   const handleUpload = async (file: File) => {
@@ -90,18 +101,15 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     formData.append("caseId", selectedCase.caseId || "");
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/upload`, {
-        method: "POST",
-        body: formData,
-        headers: mutationHeaders,
+      await axiosUser.post(`${process.env.REACT_APP_API_URL}/upload`, formData, {
+        headers: mutationHeaders as Record<string, string>,
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
 
       setSuccessMessage(`File "${finalFile.name}" uploaded successfully!`);
       fetchFiles();
     } catch (err: any) {
-      setSuccessMessage(`Upload failed: ${err.message}`);
+      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      setSuccessMessage(`Upload failed: ${message}`);
     }
   };
 
@@ -113,17 +121,15 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     const filePath = `${selectedCase.blob_folder_path}${folderName}/${file}`;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
-        method: "DELETE",
-        headers: mutationHeaders,
+      await axiosUser.delete(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
+        headers: mutationHeaders as Record<string, string>,
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
 
       setSuccessMessage(`File "${file}" deleted successfully!`);
       fetchFiles();
     } catch (err: any) {
-      setSuccessMessage(`Delete failed: ${err.message}`);
+      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      setSuccessMessage(`Delete failed: ${message}`);
     }
   };
 
@@ -150,7 +156,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             top: "20px",
             left: "50%",
             transform: "translateX(-50%)",
-            maxWidth: "600px",
+            width: "min(92vw, 600px)",
             zIndex: 2000,
           }}
         >
@@ -161,10 +167,10 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1.25rem", gap: "0.75rem", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>{title}</h2>
 
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           {sectionOptions.length > 0 && (
             <DropdownButton
               id="dropdown-upload"
@@ -211,7 +217,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         {files.map((file, idx) => (
           <li key={idx} style={{ marginBottom: "1.5rem" }}>
             <strong>{file}</strong>
-            <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
               {!selectionMode && (
                 <>
                   <button
@@ -257,7 +263,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
               )}
 
               {selectionMode && (
-                <label style={{ display: "flex", gap: "0.5rem" }}>
+                <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                   <input
                     type="checkbox"
                     checked={selectedFiles.includes(file)}
@@ -287,8 +293,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         >
           <div
             style={{
-              width: "80%",
-              height: "80%",
+              width: "min(95vw, 1100px)",
+              height: "min(90vh, 900px)",
               background: "white",
               borderRadius: "10px",
               overflow: "hidden",

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import DocumentsSection from "./UpdateDocument";
@@ -18,30 +18,25 @@ interface FileSectionProps {
 }
 
 const FileSection: React.FC<FileSectionProps> = ({ fileListUrl, selectedCase }) => {
-  const [pdfFiles, setPdfFiles] = useState<string[]>([]);
   const [activeKey, setActiveKey] = useState<string>("documents");
 
-  useEffect(() => {
-    fetch(fileListUrl)
-      .then((res) => res.json())
-      .then((data: string[]) => setPdfFiles(data))
-      .catch((err) => console.error("Error loading file list:", err));
-  }, [fileListUrl]);
-
-  const cheques = pdfFiles.slice(3);
+  void fileListUrl;
 
   return (
-    <div style={{ marginTop: "2rem" }}>
+    <div style={{ marginTop: "1.25rem" }}>
       <Tabs
         id="file-tabs"
         activeKey={activeKey}
         onSelect={(k) => k && setActiveKey(k)}
+        mountOnEnter
+        unmountOnExit
         className="mb-3"
         justify
         style={{
           backgroundColor: colors.gold,
           borderRadius: "8px",
           padding: "0.5rem",
+          rowGap: "0.5rem",
         }}
       >
         <Tab eventKey="documents" title="Documents">

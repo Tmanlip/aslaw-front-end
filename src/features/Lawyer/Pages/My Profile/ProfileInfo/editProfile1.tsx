@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Modal, Form, Row, Col, Button } from "react-bootstrap";
 import { Lawyer } from "../../../../../data/userInfo";
 import ConfirmSaveModal from "../../../../../components/confirmSaveModal"; // your confirmation modal
-import lawyerRoutes from "../../../../../routes/LawyerRoutes";
 
 interface EditClientModalProps {
   show: boolean;

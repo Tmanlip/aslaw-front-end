@@ -1,0 +1,20 @@
+.lawyer-dashboard-page {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.lawyer-dashboard-alert-wrap {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: min(92vw, 620px);
+}
+
+@media (max-width: 768px) {
+  .lawyer-dashboard-page {
+    padding: 0.9rem;
+  }
+}

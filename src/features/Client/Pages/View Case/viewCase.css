@@ -1,0 +1,17 @@
+.client-view-case-page,
+.client-view-case-state {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.client-view-case-progress-wrap {
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .client-view-case-page,
+  .client-view-case-state {
+    padding: 0.9rem;
+  }
+}

@@ -1,0 +1,66 @@
+.admin-lawyer-billing-page {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.admin-lawyer-billing-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-lawyer-billing-manage-btn {
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.admin-lawyer-case-card {
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  background: #ffffff;
+}
+
+.admin-lawyer-status-active {
+  color: green;
+}
+
+.admin-lawyer-status-inactive {
+  color: red;
+}
+
+.admin-lawyer-case-progress-wrap {
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .admin-lawyer-billing-page {
+    padding: 0.9rem;
+  }
+
+  .admin-lawyer-billing-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1rem;
+  }
+
+  .admin-lawyer-billing-manage-btn {
+    width: 100%;
+  }
+
+  .admin-lawyer-case-card {
+    padding: 0.85rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-lawyer-billing-page {
+    width: min(94vw, 1880px);
+    padding: 2rem 1.5rem;
+  }
+}

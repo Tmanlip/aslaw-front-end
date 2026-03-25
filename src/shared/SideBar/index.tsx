@@ -4,6 +4,7 @@ import Offcanvas from "react-bootstrap/Offcanvas";
 import Nav from "react-bootstrap/Nav";
 import { Link } from "react-router-dom";
 import { colors } from "../../constant/color";
+import PATH from "../../constant/paths";
 import { useAuth } from "../../context/AuthContext";
 import AppRoutes from "../../routes/AppRouter";
 import chatbotRoutes from "../../routes/ChatbotRoutes";
@@ -17,8 +18,8 @@ type SideBarProps = {
 const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
   const { role } = useAuth();
   const roleRoutes = AppRoutes(role);
+  const adminExtraRoutes = role === "admin" ? [{ path: PATH.ADMIN.LOGS }] : [];
 
-  // 🧹 Exclude Billing & RegisterUser ONLY for sidebar display
   const sidebarRoutes =
     role === "admin"
       ? roleRoutes.filter(
@@ -34,6 +35,15 @@ const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
         )
       : roleRoutes;
 
+  const sidebarRouteMap = new Map<string, { path?: string }>();
+  [...sidebarRoutes, ...adminExtraRoutes].forEach((route) => {
+    if (route.path) {
+      sidebarRouteMap.set(route.path, route);
+    }
+  });
+
+  const sidebarRouteItems = Array.from(sidebarRouteMap.values());
+
   return (
     <Offcanvas
       show={show}
@@ -47,7 +57,7 @@ const SideBar: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
         {children}
 
         <Nav className="flex-column">
-          {sidebarRoutes.map((route, i) =>
+          {sidebarRouteItems.map((route, i) =>
             route.path ? (
               <Nav.Link
                 key={i}

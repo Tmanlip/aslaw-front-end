@@ -1,0 +1,144 @@
+.lawyer-profile-info-shell {
+  margin-top: 1rem;
+  border: 1px solid #dce3eb;
+  border-radius: 14px;
+  padding: clamp(0.85rem, 1.4vw, 1.5rem);
+  background: linear-gradient(180deg, #f9fbfd, #f4f8fc);
+}
+
+.lawyer-profile-info-title {
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+}
+
+.lawyer-profile-info-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.lawyer-profile-info-column,
+.lawyer-profile-case-card {
+  background: #ffffff;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.lawyer-profile-info-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 40%) minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed #e6edf4;
+}
+
+.lawyer-profile-info-row:last-child {
+  border-bottom: 0;
+}
+
+.lawyer-profile-info-label {
+  font-weight: 600;
+  color: #2a3a4b;
+}
+
+.lawyer-profile-info-value {
+  color: #3f4f5f;
+  overflow-wrap: anywhere;
+}
+
+.lawyer-profile-case-filter {
+  margin-bottom: 1rem;
+}
+
+.lawyer-profile-action-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lawyer-profile-action-btn {
+  min-height: 42px;
+}
+
+.lawyer-profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lawyer-profile-pagination {
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .lawyer-profile-info-card {
+    gap: 0.75rem;
+  }
+
+  .lawyer-profile-info-column,
+  .lawyer-profile-case-card {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .lawyer-profile-info-shell {
+    margin-top: 0.6rem;
+    border-radius: 12px;
+    padding: 0.75rem;
+  }
+
+  .lawyer-profile-info-card {
+    grid-template-columns: 1fr;
+  }
+
+  .lawyer-profile-info-row {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .lawyer-profile-info-label {
+    font-size: 0.9rem;
+  }
+
+  .lawyer-profile-info-value {
+    font-size: 0.95rem;
+  }
+
+  .lawyer-profile-action-row {
+    flex-direction: column;
+  }
+
+  .lawyer-profile-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1800px) {
+  .lawyer-profile-info-shell {
+    border-radius: 16px;
+    padding: 1.6rem;
+  }
+
+  .lawyer-profile-info-card {
+    gap: 1.25rem;
+  }
+
+  .lawyer-profile-info-column,
+  .lawyer-profile-case-card {
+    padding: 1rem;
+  }
+
+  .lawyer-profile-info-title {
+    margin-bottom: 1rem;
+    font-size: 1.6rem;
+  }
+
+  .lawyer-profile-info-row {
+    padding: 0.55rem 0;
+  }
+}

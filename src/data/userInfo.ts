@@ -1,5 +1,20 @@
+export interface EncryptedDocumentItem {
+  document_id: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  category: "documents" | "reports" | "cheques";
+  status: string;
+  created_at: string;
+  preview_url: string;
+  download_url: string;
+  delete_url: string;
+}
+
 export interface Case {
   caseId: number;
+  id?: number;
+  caseName?: string;
   title: string;
   description: string;
   status: string;
@@ -11,6 +26,7 @@ export interface Case {
   clientFirmID: string;
   clientId: number;
   lawyerId: number;
+  encrypted_documents?: EncryptedDocumentItem[];
 }
 
 export interface Client {

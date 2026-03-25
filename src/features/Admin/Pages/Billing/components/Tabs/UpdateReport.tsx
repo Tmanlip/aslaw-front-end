@@ -4,20 +4,24 @@ import Alert from "react-bootstrap/Alert";
 import CreateReportOffcanvas from "../OffCanvas/Reports";
 import Form from "react-bootstrap/Form";
 import SelectToggleButton from "../Select Files/select";
-
-interface DocumentsSectionProps {
-  selectedCase?: {
-    lawyerFirmID: string;
-    clientFirmID?: string;
-    caseId?: string;
-    blob_folder_path?: string;
-    // add other fields if needed
-  };
-}
+import AuthMemory from "../../../../../../data/authMemory";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
 const ReportsSection: React.FC = () => {
+  const currentUser = AuthMemory.getUser();
+  const token = AuthMemory.getToken();
+
+  const requestHeaders: HeadersInit = {
+    Accept: "application/json",
+    "X-User-Role": currentUser?.role || "",
+    "X-User-FirmID": currentUser?.firmID || "",
+  };
+
+  if (token) {
+    (requestHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+
   const [files, setFiles] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -32,13 +36,23 @@ const ReportsSection: React.FC = () => {
       setLoading(true);
 
       const res = await fetch(`${API_URL}/files`, {
-        headers: { Accept: "application/json" },
+        headers: requestHeaders,
       });
 
       const data = await res.json();
 
       // ✅ IMPORTANT FIX
-      setFiles(Array.isArray(data.files) ? data.files : []);
+      const rawFiles: unknown[] = Array.isArray(data.files) ? data.files : [];
+      const visibleFiles = rawFiles.filter((file): file is string => {
+        if (typeof file !== "string") {
+          return false;
+        }
+
+        const normalized = file.toLowerCase();
+        return !normalized.startsWith("encrypted/") && !normalized.includes("/encrypted/");
+      });
+
+      setFiles(visibleFiles);
     } catch (err) {
       console.error("Failed to fetch reports", err);
       setFiles([]);
@@ -73,7 +87,7 @@ const ReportsSection: React.FC = () => {
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 2000,
-            maxWidth: "600px",
+            width: "min(92vw, 600px)",
           }}
         >
           <Alert
@@ -92,12 +106,14 @@ const ReportsSection: React.FC = () => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginTop: "2rem",
+          marginTop: "1.25rem",
+          gap: "0.75rem",
+          flexWrap: "wrap",
         }}
       >
         <h2 style={{ margin: 0 }}>Reports</h2>
 
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <button
             style={{
               padding: "0.5rem 1rem",
@@ -140,6 +156,8 @@ const ReportsSection: React.FC = () => {
                 marginTop: "0.5rem",
                 display: "flex",
                 alignItems: "center",
+                gap: "0.75rem",
+                flexWrap: "wrap",
               }}
             >
               {!selectionMode && (
@@ -209,8 +227,8 @@ const ReportsSection: React.FC = () => {
         >
           <div
             style={{
-              width: "80%",
-              height: "80%",
+              width: "min(95vw, 1100px)",
+              height: "min(90vh, 900px)",
               background: "white",
               borderRadius: "10px",
               overflow: "hidden",

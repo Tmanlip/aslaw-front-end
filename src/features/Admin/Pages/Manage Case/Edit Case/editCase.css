@@ -1,0 +1,46 @@
+.admin-edit-case-page {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.admin-edit-case-alert-wrap {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: min(92vw, 600px);
+}
+
+.admin-edit-case-detail-wrap {
+  margin-top: 1.25rem;
+}
+
+.admin-edit-case-action-btn {
+  margin-top: 1rem;
+}
+
+.admin-edit-case-empty-text {
+  margin-top: 1rem;
+}
+
+.admin-edit-case-selector-list {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .admin-edit-case-page {
+    padding: 0.9rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-edit-case-page {
+    width: min(94vw, 1880px);
+    padding: 2rem 1.5rem;
+  }
+}

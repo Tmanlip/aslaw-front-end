@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NavBarClient from "../../../../shared/Navbar/NavBar Client/new";
 import Alert from "react-bootstrap/Alert";
 import AuthMemory from "../../../../data/authMemory";
+import "./dashboard.css";
 
 const ClientDashboard: React.FC = () => {
   const location = useLocation();
@@ -11,7 +12,7 @@ const ClientDashboard: React.FC = () => {
   const successMessage = location.state?.successMessage || null;
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
-  const [user, setUser] = useState(AuthMemory.getUser());
+  const [user] = useState(AuthMemory.getUser());
 
   useEffect(() => {
     if (!AuthMemory.isLoggedIn()) {
@@ -34,17 +35,7 @@ const ClientDashboard: React.FC = () => {
 
       {/* ✅ Floating Alert at top */}
       {showAlert && successMessage && (
-        <div
-          style={{
-            position: "fixed",
-            top: "1rem",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1050,
-            width: "auto",
-            maxWidth: "600px",
-          }}
-        >
+        <div className="client-dashboard-alert-wrap">
           <Alert
             variant="success"
             onClose={() => setShowAlert(false)}
@@ -56,7 +47,7 @@ const ClientDashboard: React.FC = () => {
       )}
 
       {/* ✅ Main content */}
-      <div style={{ padding: "2rem" }}>
+      <div className="client-dashboard-page">
         <h1>Welcome, {user?.name || "Client"} 🎉</h1>
         <p>You can view your cases, appointments, and messages here.</p>
       </div>

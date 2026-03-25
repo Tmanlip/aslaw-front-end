@@ -1,17 +1,41 @@
-import axios from "axios";
-import AuthMemory from "../data/authMemory";
+import axiosUser from "../api/axiosUser";
 import { LawyerFullData } from "../data/userInfo";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+const CACHE_TTL_MS = 5000;
+
+const lawyerCache = new Map<string, { data: LawyerFullData; timestamp: number }>();
+const inFlightRequests = new Map<string, Promise<LawyerFullData>>();
+
 export const fetchLawyerFullData = async (firmID: string): Promise<LawyerFullData> => {
-  const token = AuthMemory.getToken();
-  const response = await axios.get<LawyerFullData>(`http://localhost:8000/api/lawyers/${firmID}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const now = Date.now();
+  const cached = lawyerCache.get(firmID);
 
-  // Optional: store in AuthMemory if you want
-  // AuthMemory.setLawyerFullData(response.data);
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
 
-  return response.data;
+  const existingRequest = inFlightRequests.get(firmID);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = axiosUser
+    .get<LawyerFullData>(`${API_URL}/lawyers/${firmID}`)
+    .then((response) => {
+      lawyerCache.set(firmID, { data: response.data, timestamp: Date.now() });
+      return response.data;
+    })
+    .finally(() => {
+      inFlightRequests.delete(firmID);
+    });
+
+  inFlightRequests.set(firmID, request);
+
+  return request;
+};
+
+// Clear cache and refetch data to reflect recent changes (e.g., after file upload)
+export const invalidateLawyerCache = (firmID: string) => {
+  lawyerCache.delete(firmID);
 };

@@ -4,6 +4,7 @@ import AuthMemory from "../../../../data/authMemory";
 import { fetchClientFullData } from "../../../../hooks/clientApi";
 import ProfileInfo from "./ProfileInfo"; // <-- the component
 import { ClientFullData } from "../../../../data/userInfo";
+import "./profile.css";
 
 const ClientProfile: React.FC = () => {
   const [data, setData] = useState<ClientFullData | null>(null);
@@ -24,7 +25,7 @@ const ClientProfile: React.FC = () => {
     return (
       <>
         <NavBarClient />
-        <div style={{ padding: "2rem" }}>Loading client data...</div>
+        <div className="client-profile-state">Loading client data...</div>
       </>
     );
   }
@@ -33,7 +34,7 @@ const ClientProfile: React.FC = () => {
     return (
       <>
         <NavBarClient />
-        <div style={{ padding: "2rem" }}>No client data available.</div>
+        <div className="client-profile-state">No client data available.</div>
       </>
     );
   }
@@ -41,39 +42,18 @@ const ClientProfile: React.FC = () => {
   return (
     <>
       <NavBarClient />
-      <div style={{ display: "flex", padding: "2rem", gap: "2rem" }}>
-        {/* Left Column: Photo + Welcome */}
-        <div
-          style={{
-            flexShrink: 0,
-            textAlign: "center",
-            height: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "sticky",
-            top: 0,
-          }}
-        >
+      <div className="client-profile-page">
+        <div className="client-profile-sidebar">
           <img
             src={data.client.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
             alt="Passport"
-            style={{
-              width: "150px",
-              height: "200px",
-              objectFit: "cover",
-              borderRadius: "8px",
-              border: "2px solid #ccc",
-              marginBottom: "1rem",
-            }}
+            className="client-profile-avatar"
           />
-          <h1>Welcome {data.client.name}</h1>
-          <p>{data.client.email}</p>
+          <h1 className="client-profile-title">Welcome {data.client.name}</h1>
+          <p className="client-profile-email">{data.client.email}</p>
         </div>
 
-        {/* Right Column: ProfileInfo Component */}
-        <div style={{ flex: 1 }}>
+        <div className="client-profile-content">
           <ProfileInfo />
         </div>
       </div>

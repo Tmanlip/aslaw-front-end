@@ -5,6 +5,7 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import { useClientData, Case } from "../../../../../context/ClientDataContext";
 import EditCaseModal from "./EditCaseModal";
+import "./editCase.css";
 
 const EditCase: React.FC = () => {
   const location = useLocation();
@@ -30,28 +31,18 @@ const EditCase: React.FC = () => {
       <NavBarAdmin />
 
       {showAlert && (
-        <div
-          style={{
-            position: "fixed",
-            top: "1rem",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1050,
-            width: "auto",
-            maxWidth: "600px",
-          }}
-        >
+        <div className="admin-edit-case-alert-wrap">
           <Alert variant="success" onClose={() => setShowAlert(false)} dismissible>
             {successMessage || "Case updated successfully!"}
           </Alert>
         </div>
       )}
 
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-edit-case-page">
         <h2>Manage Case</h2>
 
         {selectedCase ? (
-          <div style={{ marginTop: "1.5rem" }}>
+          <div className="admin-edit-case-detail-wrap">
             <p><strong>Case ID:</strong> {selectedCase.caseId}</p>
             <p><strong>Title:</strong> {selectedCase.title}</p>
             <p><strong>Status:</strong> {selectedCase.status}</p>
@@ -61,7 +52,7 @@ const EditCase: React.FC = () => {
 
             <Button
               variant="warning"
-              style={{ marginTop: "1rem" }}
+              className="admin-edit-case-action-btn"
               onClick={() => setShowModal(true)}
             >
               Edit Case
@@ -69,8 +60,8 @@ const EditCase: React.FC = () => {
           </div>
         ) : (
           <>
-            <p style={{ marginTop: "1rem" }}>No case selected. Please select a case below:</p>
-            <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <p className="admin-edit-case-empty-text">No case selected. Please select a case below:</p>
+            <div className="admin-edit-case-selector-list">
               {cases.length > 0 ? (
                 cases.map((c) => (
                   <Button

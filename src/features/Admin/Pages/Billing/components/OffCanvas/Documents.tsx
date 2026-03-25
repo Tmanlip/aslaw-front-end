@@ -17,7 +17,7 @@ const CreateDocumentOffcanvas: React.FC<CreateDocumentOffcanvasProps> = ({
       placement="end"
       backdrop="static"   // ✅ cannot close by clicking outside
       keyboard={false}    // ✅ cannot close with ESC
-      style={{ width: "700px" }} // ✅ wide offcanvas
+      style={{ width: "min(92vw, 700px)" }}
     >
       <Offcanvas.Header closeButton>
         <Offcanvas.Title>Create New Document</Offcanvas.Title>

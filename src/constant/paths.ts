@@ -12,6 +12,7 @@ const PATH = {
     MANAGE_USER : "/admin/manage_user/manage",
     MANAGE_PROFILE : "/admin/manage_user/manage_profile",
     REGISTER_USER : "/admin/manage_user/register",
+    LOGS : "/admin/logs",
     CHATBOT : "/admin/chatbot"
   },
 

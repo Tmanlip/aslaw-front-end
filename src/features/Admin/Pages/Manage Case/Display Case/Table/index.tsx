@@ -1,5 +1,5 @@
 import * as React from "react";
-import axios from "axios";
+import axiosUser from "../../../../../../api/axiosUser";
 import { useNavigate } from "react-router-dom";
 
 import Table from "@mui/material/Table";
@@ -16,7 +16,6 @@ import { Modal, Button, Spinner } from "react-bootstrap";
 import AssignCase from "../Assign Case";
 import { colors } from "../../../../../../constant/color";
 import { useAuth } from "../../../../../../context/AuthContext";
-import { useClientData } from "../../../../../../context/ClientDataContext";
 
 interface CaseRecord {
   id: number;
@@ -32,7 +31,6 @@ interface CaseRecord {
 export default function CaseTable() {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { setUserData } = useClientData();
 
   const [cases, setCases] = React.useState<CaseRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -46,7 +44,7 @@ export default function CaseTable() {
   React.useEffect(() => {
     const fetchCases = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/cases`);
+        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`);
         setCases(res.data);
       } catch (err) {
         console.error(err);
@@ -155,7 +153,7 @@ export default function CaseTable() {
   return (
     <>
       {/* ================= TABLE ================= */}
-      <Paper style={{ height: 500, width: "100%" }}>
+      <Paper style={{ height: "min(62vh, 560px)", width: "max-content", minWidth: "100%" }}>
         <TableVirtuoso
           data={cases}
           components={VirtuosoTableComponents}

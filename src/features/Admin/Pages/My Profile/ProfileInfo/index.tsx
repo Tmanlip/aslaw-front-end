@@ -7,6 +7,7 @@ import EditAdminModal from "./editProfile1";
 import { updateUser } from "../../../../../hooks/user";
 import AuthMemory from "../../../../../data/authMemory";
 import AdminResetPasswordModal from "../ResetPassword/component";
+import "./profileInfo.css";
 
 interface ProfileInfoProps {
   admin: Lawyer;
@@ -18,35 +19,43 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ admin, onAdminUpdated }) => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const leftColumn = [
+    { label: "Firm ID", value: admin.firmID },
+    { label: "Full Name", value: admin.name },
+    { label: "Username", value: admin.username },
+    { label: "Email", value: admin.email },
+    { label: "Phone Number", value: admin.phoneNumber },
+    { label: "Home Address", value: admin.HomeAddress },
+  ];
+
+  const rightColumn = [
+    { label: "Age", value: admin.age },
+    { label: "IC Number", value: admin.ICNumber },
+    { label: "Gender", value: admin.gender },
+    { label: "Marital Status", value: admin.maritalStatus },
+    { label: "Status", value: admin.status },
+    { label: "Role", value: AuthMemory.getUser()?.role },
+    { label: "Created At", value: admin.created_at },
+  ];
+
   const renderAdminInfoCard = () => (
-    <div
-      style={{
-        display: "flex",
-        gap: "1.5rem",
-        padding: "1rem",
-        border: "1px solid #ccc",
-        borderRadius: "6px",
-        background: "#fff",
-        flexWrap: "wrap",
-      }}
-    >
-      <div style={{ flex: "1 1 300px" }}>
-        <p><strong>Firm ID:</strong> {admin.firmID}</p>
-        <p><strong>Full Name:</strong> {admin.name}</p>
-        <p><strong>Username:</strong> {admin.username}</p>
-        <p><strong>Email:</strong> {admin.email}</p>
-        <p><strong>Phone Number:</strong> {admin.phoneNumber}</p>
-        <p><strong>Home Address:</strong> {admin.HomeAddress}</p>
+    <div className="admin-profile-info-card">
+      <div className="admin-profile-info-column">
+        {leftColumn.map((item) => (
+          <div className="admin-profile-info-row" key={item.label}>
+            <span className="admin-profile-info-label">{item.label}</span>
+            <span className="admin-profile-info-value">{item.value || "-"}</span>
+          </div>
+        ))}
       </div>
 
-      <div style={{ flex: "1 1 300px" }}>
-        <p><strong>Age:</strong> {admin.age}</p>
-        <p><strong>IC Number:</strong> {admin.ICNumber}</p>
-        <p><strong>Gender:</strong> {admin.gender}</p>
-        <p><strong>Marital Status:</strong> {admin.maritalStatus}</p>
-        <p><strong>Status:</strong> {admin.status}</p>
-        <p><strong>Role:</strong> {AuthMemory.getUser()?.role}</p>
-        <p><strong>Created At:</strong> {admin.created_at}</p>
+      <div className="admin-profile-info-column">
+        {rightColumn.map((item) => (
+          <div className="admin-profile-info-row" key={item.label}>
+            <span className="admin-profile-info-label">{item.label}</span>
+            <span className="admin-profile-info-value">{item.value || "-"}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -96,22 +105,15 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ admin, onAdminUpdated }) => {
   };
 
   return (
-    <div
-      style={{
-        marginTop: "1rem",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "1rem",
-        background: "#f9f9f9",
-      }}
-    >
-      <h3>Admin Information</h3>
+    <div className="admin-profile-info-shell">
+      <h3 className="admin-profile-info-title">Admin Information</h3>
       {renderAdminInfoCard()}
 
-      <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+      <div className="admin-profile-action-row">
         <Button
           variant="warning"
           onClick={() => setShowResetModal(true)}
+          className="admin-profile-action-btn"
         >
           Reset Password
         </Button>
@@ -119,7 +121,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ admin, onAdminUpdated }) => {
           variant="primary"
           onClick={() => setShowEditModal(true)}
           disabled={saving}
-          style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+          className="admin-profile-action-btn admin-profile-save-btn"
         >
           {saving && <Spinner animation="border" size="sm" role="status" />}
           {saving ? "Saving..." : "Edit Information"}

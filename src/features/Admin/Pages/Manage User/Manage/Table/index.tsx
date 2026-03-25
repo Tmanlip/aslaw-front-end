@@ -1,6 +1,6 @@
 // src/components/UserTable.tsx
 import * as React from "react";
-import axios from "axios";
+import axiosUser from "../../../../../../api/axiosUser";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -46,7 +46,6 @@ export default function UserTable() {
 
   const [showModal, setShowModal] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-  const [loadingNavigate, setLoadingNavigate] = React.useState(false);
 
   const [showOffcanvas, setShowOffcanvas] = React.useState(false);
   const [selectedCase, setSelectedCase] = React.useState<CaseRecord | null>(null);
@@ -54,7 +53,7 @@ export default function UserTable() {
   React.useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get<User[]>(`${process.env.REACT_APP_API_URL}/users`);
+        const res = await axiosUser.get<User[]>(`${process.env.REACT_APP_API_URL}/users`);
         setUsers(res.data);
       } catch (err) {
         console.error(err);
@@ -83,9 +82,8 @@ export default function UserTable() {
 
   const handleDirectManageUser = async (user: User) => {
     setSelectedUser(user);
-    setLoadingNavigate(true);
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/clients/${user.firmID}`);
+      const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${user.firmID}`);
       const { client, cases } = res.data;
       setUserData(client, cases);
       navigate(
@@ -94,18 +92,15 @@ export default function UserTable() {
       );
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoadingNavigate(false);
     }
   };
 
   const handleNavigate = async () => {
     if (!selectedUser) return;
-    setLoadingNavigate(true);
 
     try {
       if (selectedUser.role === "client") {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/clients/${selectedUser.firmID}`);
+        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${selectedUser.firmID}`);
         const { client, cases } = res.data;
         setUserData(client, cases);
         navigate(
@@ -114,7 +109,7 @@ export default function UserTable() {
       }
 
       if (selectedUser.role === "lawyer") {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/lawyers/${selectedUser.firmID}`);
+        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/lawyers/${selectedUser.firmID}`);
         const { lawyer, cases } = res.data;
         setUserData(lawyer, cases);
         navigate(
@@ -123,7 +118,7 @@ export default function UserTable() {
       }
 
       if (selectedUser.role === "admin") {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/admins/${selectedUser.firmID}`);
+        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/admins/${selectedUser.firmID}`);
         const { admin, cases } = res.data;
         setUserData(admin, cases || []);
         navigate(
@@ -134,8 +129,6 @@ export default function UserTable() {
       setShowModal(false);
     } catch (error) {
       console.error("Failed to fetch user data", error);
-    } finally {
-      setLoadingNavigate(false);
     }
   };
 
@@ -178,7 +171,7 @@ export default function UserTable() {
 
   return (
     <>
-      <Paper style={{ height: 500, width: "100%" }}>
+      <Paper style={{ height: "min(62vh, 560px)", width: "max-content", minWidth: "100%" }}>
         <TableVirtuoso
           data={users}
           components={VirtuosoTableComponents}

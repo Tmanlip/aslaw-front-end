@@ -1,0 +1,28 @@
+.admin-manage-profile-info-shell {
+  margin-top: 1rem;
+  text-align: left;
+  border: 1px solid #dce3eb;
+  border-radius: 14px;
+  padding: clamp(0.85rem, 1.4vw, 1.5rem);
+  background: linear-gradient(180deg, #f9fbfd, #f4f8fc);
+}
+
+.admin-manage-profile-pagination {
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .admin-manage-profile-info-shell {
+    margin-top: 0.6rem;
+    border-radius: 12px;
+    padding: 0.75rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-manage-profile-info-shell {
+    border-radius: 16px;
+    padding: 1.6rem;
+  }
+}

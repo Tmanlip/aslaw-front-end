@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosUser from "../api/axiosUser";
 import { User } from "../context/ClientDataContext";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -8,13 +8,12 @@ export const updateUser = async (
   firmID: string,
   payload: Partial<User>
 ) => {
-  const response = await axios.put(
+  const response = await axiosUser.put(
     `${API_BASE_URL}/users/${firmID}`,
     payload,
     {
       headers: {
         "Content-Type": "application/json",
-        // Authorization: `Bearer ${token}`, // if using auth
       },
     }
   );

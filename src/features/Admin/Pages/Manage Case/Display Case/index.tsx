@@ -2,6 +2,7 @@
 import React from "react";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
 import CaseTable from "./Table";
+import "./displayCase.css";
 
 const DisplayCase: React.FC = () => {
   return (
@@ -10,9 +11,11 @@ const DisplayCase: React.FC = () => {
       <NavBarAdmin />
 
       {/* Main content */}
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-display-case-page">
         <h2>Cases List</h2>
-        <CaseTable />
+        <div className="admin-display-case-table-wrap">
+          <CaseTable />
+        </div>
       </div>
     </>
   );

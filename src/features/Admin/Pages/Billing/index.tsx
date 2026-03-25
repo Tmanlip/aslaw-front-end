@@ -7,6 +7,7 @@ import FileSection from "./components/Tabs";
 import { useAuth } from "../../../../context/AuthContext"; 
 import AppRoutes from "../../../../routes/AppRouter"; 
 import { useClientData } from "../../../../context/ClientDataContext";
+import "./billing.css";
 
 const UpdateCheque: React.FC = () => {
   const navigate = useNavigate();
@@ -67,24 +68,17 @@ const UpdateCheque: React.FC = () => {
     <>
       <NavBarAdmin />
 
-      <div style={{ padding: "2rem" }}>
-        <div
-          style={{
-            marginTop: "2rem",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-          }}
-        >
+      <div className="admin-billing-page">
+        <div className="admin-billing-top-row">
           {/* Case progress */}
           <CaseProgress caseItem={caseToManage || undefined} />
 
           {/* Admin buttons */}
           {role === "admin" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div className="admin-billing-action-col">
               <Button
                 variant="primary"
-                style={{ padding: "0.6rem 1.5rem", fontWeight: 500, borderRadius: "8px" }}
+                className="admin-billing-action-btn"
                 onClick={handleManageClick}
                 disabled={lockManageUser}
               >
@@ -93,7 +87,7 @@ const UpdateCheque: React.FC = () => {
 
               <Button
                 variant="secondary"
-                style={{ padding: "0.6rem 1.5rem", fontWeight: 500, borderRadius: "8px" }}
+                className="admin-billing-action-btn"
                 onClick={handleManageCaseClick}
               >
                 Manage Case
@@ -103,7 +97,7 @@ const UpdateCheque: React.FC = () => {
         </div>
 
         {/* Files / documents section */}
-        <div style={{ marginTop: "2rem" }}>
+        <div className="admin-billing-files-wrap">
           <FileSection fileListUrl="/files/fileList.json" selectedCase={caseToManage} />
         </div>
       </div>

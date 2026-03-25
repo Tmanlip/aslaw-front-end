@@ -1,0 +1,17 @@
+.lawyer-update-case-page,
+.lawyer-update-case-state {
+  width: min(96vw, 1700px);
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.lawyer-update-case-progress-wrap {
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .lawyer-update-case-page,
+  .lawyer-update-case-state {
+    padding: 0.9rem;
+  }
+}

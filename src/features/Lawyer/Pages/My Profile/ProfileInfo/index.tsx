@@ -10,6 +10,7 @@ import EditLawyerModal from "./editProfile1";
 import { updateUser } from "../../../../../hooks/user";
 import AuthMemory from "../../../../../data/authMemory";
 import LawyerResetPasswordModal from "../ResetPassword/component";
+import "./profileInfo.css";
 
 interface ProfileInfoProps {
   fullData: LawyerFullData; // pass from LawyerProfile
@@ -22,7 +23,7 @@ const CaseSelector: React.FC<{ cases: Case[] }> = ({ cases }) => {
   return (
     <div>
       {cases.length > 1 && (
-        <Form.Group style={{ marginBottom: "1rem" }}>
+        <Form.Group className="lawyer-profile-case-filter">
           <Form.Label>Select Case:</Form.Label>
           <Form.Select
             value={selectedCaseIndex}
@@ -37,23 +38,12 @@ const CaseSelector: React.FC<{ cases: Case[] }> = ({ cases }) => {
         </Form.Group>
       )}
 
-      <div
-        style={{
-          marginBottom: "1rem",
-          padding: "1rem",
-          border: "1px solid #ccc",
-          borderRadius: "6px",
-          background: "#fff",
-        }}
-      >
-        <p><strong>Case Title:</strong> {selectedCase.title}</p>
-        <p><strong>Description:</strong> {selectedCase.description}</p>
-        <p><strong>Status:</strong> {selectedCase.status}</p>
-        <p>
-          <strong>Client:</strong> {selectedCase.clientName} |{" "}
-          <strong>Lawyer:</strong> {selectedCase.lawyerName}
-        </p>
-        <p><strong>Created At:</strong> {selectedCase.created_at}</p>
+      <div className="lawyer-profile-case-card">
+        <p><strong>Case Title:</strong> {selectedCase.title || "-"}</p>
+        <p><strong>Description:</strong> {selectedCase.description || "-"}</p>
+        <p><strong>Status:</strong> {selectedCase.status || "-"}</p>
+        <p><strong>Client:</strong> {selectedCase.clientName || "-"} | <strong>Lawyer:</strong> {selectedCase.lawyerName || "-"}</p>
+        <p><strong>Created At:</strong> {selectedCase.created_at || "-"}</p>
       </div>
     </div>
   );
@@ -62,40 +52,48 @@ const CaseSelector: React.FC<{ cases: Case[] }> = ({ cases }) => {
 const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
   const [page, setPage] = useState(1);
   const [lawyer, setLawyer] = useState<Lawyer>(fullData.lawyer);
-  const [cases, setCases] = useState<Case[]>(fullData.cases || []);
+  const [cases] = useState<Case[]>(fullData.cases || []);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const leftColumn = [
+    { label: "Firm ID", value: lawyer.firmID },
+    { label: "Full Name", value: lawyer.name },
+    { label: "Username", value: lawyer.username },
+    { label: "Email", value: lawyer.email },
+    { label: "Phone Number", value: lawyer.phoneNumber },
+    { label: "Home Address", value: lawyer.HomeAddress },
+  ];
+
+  const rightColumn = [
+    { label: "Age", value: lawyer.age },
+    { label: "IC Number", value: lawyer.ICNumber },
+    { label: "Gender", value: lawyer.gender },
+    { label: "Marital Status", value: lawyer.maritalStatus },
+    { label: "Status", value: lawyer.status },
+    { label: "Role", value: AuthMemory.getUser()?.role },
+    { label: "Created At", value: lawyer.created_at },
+  ];
+
   const renderLawyerInfoCard = () => (
-    <div
-      style={{
-        display: "flex",
-        gap: "1.5rem",
-        padding: "1rem",
-        border: "1px solid #ccc",
-        borderRadius: "6px",
-        background: "#fff",
-        flexWrap: "wrap",
-      }}
-    >
-      <div style={{ flex: "1 1 300px" }}>
-        <p><strong>Firm ID:</strong> {lawyer.firmID}</p>
-        <p><strong>Full Name:</strong> {lawyer.name}</p>
-        <p><strong>Username:</strong> {lawyer.username}</p>
-        <p><strong>Email:</strong> {lawyer.email}</p>
-        <p><strong>Phone Number:</strong> {lawyer.phoneNumber}</p>
-        <p><strong>Home Address:</strong> {lawyer.HomeAddress}</p>
+    <div className="lawyer-profile-info-card">
+      <div className="lawyer-profile-info-column">
+        {leftColumn.map((item) => (
+          <div className="lawyer-profile-info-row" key={item.label}>
+            <span className="lawyer-profile-info-label">{item.label}</span>
+            <span className="lawyer-profile-info-value">{item.value || "-"}</span>
+          </div>
+        ))}
       </div>
 
-      <div style={{ flex: "1 1 300px" }}>
-        <p><strong>Age:</strong> {lawyer.age}</p>
-        <p><strong>IC Number:</strong> {lawyer.ICNumber}</p>
-        <p><strong>Gender:</strong> {lawyer.gender}</p>
-        <p><strong>Marital Status:</strong> {lawyer.maritalStatus}</p>
-        <p><strong>Status:</strong> {lawyer.status}</p>
-        <p><strong>Role:</strong> {AuthMemory.getUser()?.role}</p>
-        <p><strong>Created At:</strong> {lawyer.created_at}</p>
+      <div className="lawyer-profile-info-column">
+        {rightColumn.map((item) => (
+          <div className="lawyer-profile-info-row" key={item.label}>
+            <span className="lawyer-profile-info-label">{item.label}</span>
+            <span className="lawyer-profile-info-value">{item.value || "-"}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -130,7 +128,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
       setLawyer(updatedLawyer);
 
       // update AuthMemory if needed
-      const full = { lawyer: updatedLawyer, cases };
       // @ts-ignore
       fullData && (fullData.lawyer = updatedLawyer);
 
@@ -144,24 +141,17 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
   };
 
   return (
-    <div
-      style={{
-        marginTop: "1rem",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "1rem",
-        background: "#f9f9f9",
-      }}
-    >
+    <div className="lawyer-profile-info-shell">
       {page === 1 && (
         <>
-          <h3>Lawyer Information</h3>
+          <h3 className="lawyer-profile-info-title">Lawyer Information</h3>
           {renderLawyerInfoCard()}
 
-          <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+          <div className="lawyer-profile-action-row">
             <Button
               variant="warning"
               onClick={() => setShowResetModal(true)}
+              className="lawyer-profile-action-btn"
             >
               Reset Password
             </Button>
@@ -169,7 +159,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
               variant="primary"
               onClick={() => setShowEditModal(true)}
               disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+              className="lawyer-profile-action-btn lawyer-profile-save-btn"
             >
               {saving && <Spinner animation="border" size="sm" role="status" />}
               {saving ? "Saving..." : "Edit Information"}
@@ -180,7 +170,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
 
       {page === 2 && (
         <>
-          <h3>Cases</h3>
+          <h3 className="lawyer-profile-info-title">Cases</h3>
           {cases.length > 0 ? (
             <CaseSelector cases={cases} />
           ) : (
@@ -189,7 +179,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
         </>
       )}
 
-      <Pagination style={{ justifyContent: "center", marginTop: "1rem" }}>
+      <Pagination className="lawyer-profile-pagination">
         <Pagination.Item active={page === 1} onClick={() => setPage(1)}>Lawyer Info</Pagination.Item>
         <Pagination.Item active={page === 2} onClick={() => setPage(2)}>Cases</Pagination.Item>
       </Pagination>

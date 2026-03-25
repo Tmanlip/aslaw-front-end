@@ -16,14 +16,14 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ caseItem }) => {
   const caseTitle = (caseItem as any).caseName || (caseItem as any).title || "No Case Assigned";
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-      <span style={{ fontWeight: "bold", fontSize: "1.75rem" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+      <span style={{ fontWeight: "bold", fontSize: "clamp(1rem, 2.6vw, 1.75rem)", lineHeight: 1.35 }}>
         {`${caseTitle} (${caseItem.clientName} - ${caseItem.lawyerName})`}
       </span>
       <ProgressBar
         now={dummyProgress}
         label={`${dummyProgress}%`}
-        style={{ width: "200px", height: "20px", fontSize: "0.9rem" }}
+        style={{ width: "clamp(180px, 32vw, 260px)", height: "20px", fontSize: "0.9rem", flexShrink: 0 }}
       />
     </div>
   );

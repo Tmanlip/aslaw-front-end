@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import AuthMemory from "../../../../data/authMemory";
 import { fetchClientFullData } from "../../../../hooks/clientApi";
 import { Case, ClientFullData } from "../../../../data/userInfo";
+import "./viewCase.css";
 
 const ViewCase: React.FC = () => {
   const [data, setData] = useState<ClientFullData | null>(null);
@@ -37,7 +38,7 @@ const ViewCase: React.FC = () => {
     return (
       <>
         <NavBarClient />
-        <div style={{ padding: "2rem" }}>Loading case data...</div>
+        <div className="client-view-case-state">Loading case data...</div>
       </>
     );
   }
@@ -46,7 +47,7 @@ const ViewCase: React.FC = () => {
     return (
       <>
         <NavBarClient />
-        <div style={{ padding: "2rem" }}>No case available.</div>
+        <div className="client-view-case-state">No case available.</div>
       </>
     );
   }
@@ -56,9 +57,9 @@ const ViewCase: React.FC = () => {
       {/* Navbar */}
       <NavBarClient />
 
-      <div style={{ padding: "2rem" }}>
+      <div className="client-view-case-page">
         {/* Case Progress Bar */}
-        <div style={{ marginTop: "2rem" }}>
+        <div className="client-view-case-progress-wrap">
           <CaseProgress
             cases={data.cases}
             selectedCase={selectedCase}

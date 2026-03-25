@@ -6,6 +6,7 @@ import ProfileStatusPage from "./components/Profile2";
 import EditProfileModal from "./components/EditProfile";
 import { updateUser } from "../../../../../../../hooks/user";
 import { useClientData, User } from "../../../../../../../context/ClientDataContext";
+import "./profileInfo.css";
 
 const ProfileInfo: React.FC = () => {
   const { authUser, cases, setUserData } = useClientData();
@@ -47,16 +48,7 @@ const ProfileInfo: React.FC = () => {
 
   return (
     <>
-      <div
-        style={{
-          marginTop: "1rem",
-          textAlign: "left",
-          border: "1px solid #ddd",
-          borderRadius: "8px",
-          padding: "1rem",
-          background: "#f9f9f9",
-        }}
-      >
+      <div className="admin-manage-profile-info-shell">
         {page === 1 && (
           <ProfileDetailsPage
             user={editableUser}
@@ -73,7 +65,7 @@ const ProfileInfo: React.FC = () => {
           />
         )}
 
-        <Pagination style={{ justifyContent: "center", marginTop: "1rem" }}>
+        <Pagination className="admin-manage-profile-pagination">
           <Pagination.Item active={page === 1} onClick={() => setPage(1)}>
             1
           </Pagination.Item>

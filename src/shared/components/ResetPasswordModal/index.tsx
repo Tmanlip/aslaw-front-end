@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
 import Alert from "react-bootstrap/Alert";
 import axios from "axios";
+import axiosUser from "../../../api/axiosUser";
 
 interface ResetPasswordModalProps {
   show: boolean;
@@ -33,13 +34,6 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
 
   const [verified, setVerified] = useState(false);
 
-  useEffect(() => {
-    if (show) {
-      resetStates();
-      void sendOtp();
-    }
-  }, [show]);
-
   const resetStates = () => {
     setOtp(["", "", "", "", "", ""]);
     setOtpError(null);
@@ -53,7 +47,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
     setVerified(false);
   };
 
-  const sendOtp = async () => {
+  const sendOtp = useCallback(async () => {
     try {
       setSendingOtp(true);
       setOtpError(null);
@@ -66,7 +60,14 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
     } finally {
       setSendingOtp(false);
     }
-  };
+  }, [email]);
+
+  useEffect(() => {
+    if (show) {
+      resetStates();
+      void sendOtp();
+    }
+  }, [show, sendOtp]);
 
   const handleOtpChange = (value: string, index: number) => {
     if (!/^\d?$/.test(value)) return;
@@ -124,7 +125,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       setResetError(null);
       setResetSuccess(null);
 
-      await axios.put(`${process.env.REACT_APP_API_URL}/users/${firmID}`, {
+      await axiosUser.put(`${process.env.REACT_APP_API_URL}/users/${firmID}`, {
         password,
       });
 

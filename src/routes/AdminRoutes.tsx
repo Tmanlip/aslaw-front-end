@@ -8,10 +8,10 @@ import ManageUser from "../features/Admin/Pages/Manage User/Manage";
 import RegisterUser from "../features/Admin/Pages/Manage User/Register";
 import ManageProfile from "../features/Admin/Pages/Manage User/Manage/Manage Profile";
 import EditCase from "../features/Admin/Pages/Manage Case/Edit Case";
-import AssignCase from "../features/Admin/Pages/Manage Case/Display Case/Assign Case";
 import LawyerCases from "../features/Admin/Pages/Billing/LawyerBilling";
 import RegisterCase from "../features/Admin/Pages/Manage Case/Register Case";
 import AdminProfile from "../features/Admin/Pages/My Profile";
+import AdminLogs from "../features/Admin/Pages/Logs/index";
 
 const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.DASHBOARD, element: <Dashboard /> },
@@ -23,7 +23,8 @@ const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.MANAGE_USER, element: <ManageUser /> },
   { path: PATH.ADMIN.REGISTER_USER, element: <RegisterUser />},
   { path: PATH.ADMIN.MANAGE_PROFILE, element: <ManageProfile />},
-  { path: PATH.ADMIN.LAWYER_BILLING, element: <LawyerCases />}
+  { path: PATH.ADMIN.LAWYER_BILLING, element: <LawyerCases />},
+  { path: PATH.ADMIN.LOGS, element: <AdminLogs />}
 ];
 
 export default adminRoutes;

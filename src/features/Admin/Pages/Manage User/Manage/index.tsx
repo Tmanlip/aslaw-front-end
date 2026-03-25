@@ -2,6 +2,7 @@
 import React from "react";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
 import UserTable from "../Manage/Table/index";
+import "./manageUser.css";
 
 const ManageUser: React.FC = () => {
   return (
@@ -10,9 +11,11 @@ const ManageUser: React.FC = () => {
       <NavBarAdmin />
 
       {/* Main content */}
-      <div style={{ padding: "2rem" }}>
+      <div className="admin-manage-user-page">
         <h2>User List</h2>
-        <UserTable />
+        <div className="admin-manage-user-table-wrap">
+          <UserTable />
+        </div>
       </div>
     </>
   );
