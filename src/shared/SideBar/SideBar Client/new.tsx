@@ -4,13 +4,13 @@ import Offcanvas from "react-bootstrap/Offcanvas";
 import Nav from "react-bootstrap/Nav";
 import { colors } from "../../../constant/color";
 
-type SideBarProps = {
+type SidebarProps = {
   show: boolean;
   handleClose: () => void;
   children?: ReactNode; // ✅ allow children
 };
 
-const SideBarClient: React.FC<SideBarProps> = ({ show, handleClose, children }) => {
+const SidebarClient: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
   return (
     <Offcanvas
       show={show}
@@ -41,4 +41,4 @@ const SideBarClient: React.FC<SideBarProps> = ({ show, handleClose, children }) 
   );
 };
 
-export default SideBarClient;
+export default SidebarClient;

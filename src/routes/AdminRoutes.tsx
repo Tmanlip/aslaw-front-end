@@ -12,6 +12,7 @@ import LawyerCases from "../features/Admin/Pages/Billing/LawyerBilling";
 import RegisterCase from "../features/Admin/Pages/Manage Case/Register Case";
 import AdminProfile from "../features/Admin/Pages/My Profile";
 import AdminLogs from "../features/Admin/Pages/Logs/index";
+import InternalChatbot from "../pages/Chatbot/InternalChatbot";
 
 const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.DASHBOARD, element: <Dashboard /> },
@@ -24,7 +25,8 @@ const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.REGISTER_USER, element: <RegisterUser />},
   { path: PATH.ADMIN.MANAGE_PROFILE, element: <ManageProfile />},
   { path: PATH.ADMIN.LAWYER_BILLING, element: <LawyerCases />},
-  { path: PATH.ADMIN.LOGS, element: <AdminLogs />}
+  { path: PATH.ADMIN.LOGS, element: <AdminLogs />},
+  { path: PATH.ADMIN.CHATBOT, element: <InternalChatbot userTypeLabel="Admin" /> }
 ];
 
 export default adminRoutes;

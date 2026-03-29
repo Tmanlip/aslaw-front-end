@@ -1,117 +1,136 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import {
-  Box,
-  TextField,
-  IconButton,
-  Typography,
-  Paper,
-  CircularProgress,
-} from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Box, CircularProgress, IconButton, Paper, TextField, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { colors } from "../../constant/color";
+import CustomButton from "../../components/Button/button";
+import logo from "../../assets/pics/logo-landscape.png";
+import { askChatbot } from "../../services/chatbotApi";
+import "../styles.css";
+import "./publicChatbot.css";
 
-// ✅ Define a clear type for messages
 type Message = {
   role: "user" | "bot";
   text: string;
+  category?: string;
 };
 
-const Chatbot: React.FC = () => {
+const PublicChatbotPage: React.FC = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
-    { role: "bot", text: "👋 Hello! I'm your assistant. How can I help today?" },
+    { role: "bot", text: "Hello. Ask me about Malaysian law.", category: "general" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Auto-scroll to latest message
+  const handleBackHome = () => {
+    navigate("/");
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
-  // ✅ Handle sending message
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    const question = input.trim();
+    if (!question || loading) return;
 
-    const userMessage: Message = { role: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, { role: "user", text: question }]);
     setInput("");
     setLoading(true);
 
-    // Simulate bot reply (you can replace this with an API call later)
-    setTimeout(() => {
-      const botMessage: Message = {
-        role: "bot",
-        text: `🤖 I understood: "${userMessage.text}"`,
-      };
-      setMessages((prev) => [...prev, botMessage]);
+    try {
+      const response = await askChatbot(question);
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: response.answer, category: response.category }
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          text: error instanceof Error ? error.message : "Server connection error.",
+          category: "error"
+        }
+      ]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
-    <Container fluid className="vh-100 d-flex flex-column bg-light">
-      <Row className="flex-grow-1 justify-content-center">
-        <Col md={10} lg={8} xl={6} className="d-flex flex-column py-3">
-          {/* Chat container */}
+    <div
+      className="homepage-container"
+      style={{ "--bg-color": colors.gold4 } as React.CSSProperties}
+    >
+      <div className="public-chatbot-wrapper">
+        <div className="public-chatbot-brand">
+          <img
+            src={logo}
+            alt="Adnan Sharida & Associates"
+            className="logo-img"
+          />
+          <h1 className="public-chatbot-title">ASLAW Public Chatbot</h1>
+          <p className="public-chatbot-subtitle">Ask legal questions in the same portal style as home page.</p>
+        </div>
+
+        <div className="public-chatbot-actions">
+          <CustomButton
+            customColor="red4"
+            size="lg"
+            onClick={handleBackHome}
+            className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-4 py-2"
+          >
+            Back to Home
+          </CustomButton>
+        </div>
+
+        <div className="public-chatbot-panel">
           <Paper
-            elevation={3}
+            elevation={6}
             sx={{
               flexGrow: 1,
               display: "flex",
               flexDirection: "column",
-              p: 2,
+              overflow: "hidden",
               borderRadius: 3,
-              backgroundColor: "#fff",
+              minHeight: "62vh"
             }}
           >
-            {/* Chat messages */}
-            <Box
-              sx={{
-                flexGrow: 1,
-                overflowY: "auto",
-                mb: 2,
-                pr: 1,
-              }}
-            >
+            <Box sx={{ px: 3, py: 2, color: "white", background: "linear-gradient(135deg, #8B7500 0%, #654321 100%)" }}>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>ASLAW Chatbot</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Public Legal Assistant</Typography>
+            </Box>
+
+            <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2, background: "#fcfdff" }}>
               {messages.map((msg, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    display: "flex",
-                    justifyContent:
-                      msg.role === "user" ? "flex-end" : "flex-start",
-                    mb: 1,
-                  }}
-                >
+                <Box key={idx} sx={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", mb: 1.5 }}>
                   <Box
                     sx={{
                       px: 2,
-                      py: 1,
+                      py: 1.2,
                       borderRadius: 2,
-                      maxWidth: "75%",
-                      backgroundColor:
-                        msg.role === "user" ? "#1976d2" : "#f1f1f1",
-                      color: msg.role === "user" ? "white" : "black",
-                      whiteSpace: "pre-wrap",
+                      maxWidth: "78%",
+                      bgcolor: msg.role === "user" ? "#8B7500" : "#f7f4e8",
+                      color: msg.role === "user" ? "white" : "#1f2937",
+                      whiteSpace: "pre-wrap"
                     }}
                   >
-                    <Typography variant="body1">{msg.text}</Typography>
+                    {msg.category && msg.role === "bot" && (
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#8B7500", mb: 0.4 }}>
+                        Category: {msg.category}
+                      </Typography>
+                    )}
+                    <Typography variant="body2">{msg.text}</Typography>
                   </Box>
                 </Box>
               ))}
 
-              {/* Loading bubble */}
               {loading && (
                 <Box display="flex" justifyContent="flex-start" mb={1}>
-                  <Box
-                    sx={{
-                      px: 2,
-                      py: 1,
-                      borderRadius: 2,
-                      backgroundColor: "#f1f1f1",
-                    }}
-                  >
+                  <Box sx={{ px: 2, py: 1, borderRadius: 2, backgroundColor: "#eef1f7" }}>
                     <CircularProgress size={16} />
                   </Box>
                 </Box>
@@ -119,26 +138,25 @@ const Chatbot: React.FC = () => {
               <div ref={chatEndRef} />
             </Box>
 
-            {/* Input area */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1.5, borderTop: "1px solid #ece6cf" }}>
               <TextField
                 fullWidth
                 variant="outlined"
                 size="small"
-                placeholder="Type a message..."
+                placeholder="Ask a Malaysian law question..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
               />
-              <IconButton color="primary" onClick={handleSend}>
+              <IconButton color="primary" disabled={loading} onClick={handleSend}>
                 <SendIcon />
               </IconButton>
             </Box>
           </Paper>
-        </Col>
-      </Row>
-    </Container>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default Chatbot;
+export default PublicChatbotPage;

@@ -2,16 +2,16 @@ const PATH = {
   ADMIN : {
     ROOT : "/admin",
     DASHBOARD : "/admin/dashboard",
-    MY_PROFILE : "/admin/my_profile",
+    MY_PROFILE : "/admin/my-profile",
     BILLING : "/admin/billing",
-    LAWYER_BILLING : "/admin/lawyerbilling", 
-    MANAGE_CASE : "/admin/manage_case",
-    ASSIGN_CASE : "/admin/manage_case/assign_case",
-    REGISTER_CASE : "/admin/manage_case/register_case",
-    EDIT_CASE : "/admin/manage_case/edit_case",
-    MANAGE_USER : "/admin/manage_user/manage",
-    MANAGE_PROFILE : "/admin/manage_user/manage_profile",
-    REGISTER_USER : "/admin/manage_user/register",
+    LAWYER_BILLING : "/admin/lawyer-billing", 
+    MANAGE_CASE : "/admin/cases",
+    ASSIGN_CASE : "/admin/cases/assign-case",
+    REGISTER_CASE : "/admin/cases/register-case",
+    EDIT_CASE : "/admin/cases/edit-case",
+    MANAGE_USER : "/admin/users",
+    MANAGE_PROFILE : "/admin/users/manage-profile",
+    REGISTER_USER : "/admin/users/register",
     LOGS : "/admin/logs",
     CHATBOT : "/admin/chatbot"
   },
@@ -19,17 +19,17 @@ const PATH = {
   CLIENT : {
     ROOT : "/client",
     DASHBOARD : "/client/dashboard",
-    MY_PROFILE : "/client/myprofile",
-    VIEW_CASE : "/client/view_case",
+    MY_PROFILE : "/client/my-profile",
+    VIEW_CASE : "/client/view-case",
     CHATBOT : "/client/chatbot"
   },
 
   LAWYER : {
     ROOT : "/lawyer",
     DASHBOARD : "/lawyer/dashboard",
-    UPDATE_CASE : "/lawyer/update_case",
-    MY_PROFILE : "/lawyer/my_profile",
-    CHATBOT : "/client/chatbot"
+    UPDATE_CASE : "/lawyer/update-case",
+    MY_PROFILE : "/lawyer/my-profile",
+    CHATBOT : "/lawyer/chatbot"
   },
 
   CHATBOT : {
@@ -38,8 +38,8 @@ const PATH = {
 
   AUTH : {
     LOGOUT : "/logout",
-    FORGOT_PASSWORD : "/forgot_password",
-    RESET_PASSWORD : "/reset_password",
+    FORGOT_PASSWORD : "/forgot-password",
+    RESET_PASSWORD : "/reset-password",
     LOGIN : "/login"
   }
 };

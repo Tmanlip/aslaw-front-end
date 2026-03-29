@@ -6,6 +6,7 @@ import Button from "react-bootstrap/Button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../context/AuthContext"; 
 import AppRoutes from "../../../../../routes/AppRouter";
+import PATH from "../../../../../constant/paths";
 import "./lawyerBilling.css";
 
 const LawyerBilling: React.FC = () => {
@@ -19,7 +20,7 @@ const LawyerBilling: React.FC = () => {
       const manageRoute = routes.find(
         (route) =>
           route.path &&
-          route.path.toLowerCase().includes("/admin/manage_user/manage_profile")
+          route.path.toLowerCase().includes(PATH.ADMIN.MANAGE_PROFILE.toLowerCase())
       );
 
       if (manageRoute?.path) {
@@ -33,7 +34,7 @@ const LawyerBilling: React.FC = () => {
   };
 
   const handleCaseClick = (caseItem: Case) => {
-    navigate("/admin/billing", {
+    navigate(PATH.ADMIN.BILLING, {
       state: {
         selectedCase: caseItem,
         lockManageUser: true, // lock Manage Client button

@@ -9,9 +9,122 @@
   margin-top: 1rem;
 }
 
+.lawyer-update-case-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}
+
+.lawyer-create-document-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.lawyer-create-document-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.lawyer-create-document-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lawyer-doc-generator-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.lawyer-doc-generator-modal {
+  width: min(95vw, 1400px);
+  height: min(92vh, 900px);
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+}
+
+.lawyer-doc-generator-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.lawyer-doc-generator-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.lawyer-doc-generator-header p {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.lawyer-doc-generator-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.lawyer-doc-generator-open-tab,
+.lawyer-doc-generator-close-btn {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.84rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.lawyer-doc-generator-close-btn {
+  font-weight: 600;
+}
+
+.lawyer-doc-generator-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 @media (max-width: 768px) {
   .lawyer-update-case-page,
   .lawyer-update-case-state {
     padding: 0.9rem;
+  }
+
+  .lawyer-doc-generator-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lawyer-doc-generator-header-actions {
+    width: 100%;
+  }
+
+  .lawyer-doc-generator-open-tab,
+  .lawyer-doc-generator-close-btn {
+    flex: 1;
+    text-align: center;
   }
 }

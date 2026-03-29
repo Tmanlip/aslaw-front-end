@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import NavBarLawyer from "../../../../shared/Navbar/NavBar Lawyer/new";
 import AuthMemory from "../../../../data/authMemory";
 import { fetchLawyerFullData, invalidateLawyerCache } from "../../../../hooks/lawyerApi";
@@ -11,6 +11,23 @@ const UpdateCase: React.FC = () => {
   const [data, setData] = useState<LawyerFullData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [isDocGeneratorOpen, setIsDocGeneratorOpen] = useState(false);
+
+  const documentGeneratorUrl =
+    process.env.REACT_APP_DOCUMENT_GENERATOR_URL || "http://localhost:5173";
+
+  const documentGeneratorSrc = useMemo(() => {
+    if (!selectedCase) return documentGeneratorUrl;
+
+    const params = new URLSearchParams({
+      source: "aslaw-front-end",
+      caseId: String(selectedCase.caseId),
+      caseTitle: selectedCase.title || "",
+    });
+
+    const separator = documentGeneratorUrl.includes("?") ? "&" : "?";
+    return `${documentGeneratorUrl}${separator}${params.toString()}`;
+  }, [documentGeneratorUrl, selectedCase]);
 
   useEffect(() => {
     const firmID = AuthMemory.getUser()?.firmID;
@@ -63,6 +80,19 @@ const UpdateCase: React.FC = () => {
     }
   }, [data]);
 
+  useEffect(() => {
+    if (!isDocGeneratorOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsDocGeneratorOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isDocGeneratorOpen]);
+
   if (loading) {
     return (
       <>
@@ -86,6 +116,17 @@ const UpdateCase: React.FC = () => {
       <NavBarLawyer />
 
       <div className="lawyer-update-case-page">
+        <div className="lawyer-update-case-actions">
+          <button
+            type="button"
+            className="lawyer-create-document-btn"
+            onClick={() => setIsDocGeneratorOpen(true)}
+            disabled={!selectedCase}
+          >
+            Create Document
+          </button>
+        </div>
+
         {/* Case Progress with multi-case support */}
         <div className="lawyer-update-case-progress-wrap">
           <CaseProgress 
@@ -102,6 +143,55 @@ const UpdateCase: React.FC = () => {
             onUploadSuccess={handleFileChangeSuccess}
             onDeleteSuccess={handleFileChangeSuccess}
           />
+        )}
+
+        {isDocGeneratorOpen && (
+          <div
+            className="lawyer-doc-generator-overlay"
+            onClick={() => setIsDocGeneratorOpen(false)}
+          >
+            <div
+              className="lawyer-doc-generator-modal"
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Create document"
+            >
+              <div className="lawyer-doc-generator-header">
+                <div>
+                  <h2>Create Document</h2>
+                  {selectedCase && (
+                    <p>
+                      Case: {selectedCase.title} (#{selectedCase.caseId})
+                    </p>
+                  )}
+                </div>
+                <div className="lawyer-doc-generator-header-actions">
+                  <a
+                    href={documentGeneratorSrc}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="lawyer-doc-generator-open-tab"
+                  >
+                    Open in New Tab
+                  </a>
+                  <button
+                    type="button"
+                    className="lawyer-doc-generator-close-btn"
+                    onClick={() => setIsDocGeneratorOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              <iframe
+                title="ASLAW Document Generator"
+                src={documentGeneratorSrc}
+                className="lawyer-doc-generator-iframe"
+              />
+            </div>
+          </div>
         )}
       </div>
     </>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { colors } from "../constant/color";
+import PATH from "../constant/paths";
 import CustomButton from "../components/Button/button";
 import BlurPopup from "../components/Popup";
 import logo from "../assets/pics/logo-landscape.png";
@@ -26,6 +27,10 @@ const HomePage: React.FC = () => {
   const handleBackToHome = () => {
     setShowLoginPopup(false);
     setShowLoginPage(false);
+  };
+
+  const handlePublicChatbot = () => {
+    navigate(PATH.CHATBOT.ROOT);
   };
 
   // ✅ handle login success and redirect with message
@@ -110,14 +115,25 @@ const handleLoginSuccess = (
         <p className="text-xl md:text-2xl text-gray-300 mb-12">
           Kindly login to use our services! Thank you!
         </p>
-        <CustomButton
-          customColor="gold6"
-          size="lg"
-          onClick={handleLogin}
-          className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
-        >
-          Login
-        </CustomButton>
+        <div className="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3">
+          <CustomButton
+            customColor="gold6"
+            size="lg"
+            onClick={handleLogin}
+            className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
+          >
+            Login
+          </CustomButton>
+
+          <CustomButton
+            customColor="red4"
+            size="lg"
+            onClick={handlePublicChatbot}
+            className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
+          >
+            Public Chatbot
+          </CustomButton>
+        </div>
       </div>
     </div>
   );

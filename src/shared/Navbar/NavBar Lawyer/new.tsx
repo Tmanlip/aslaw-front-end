@@ -8,7 +8,7 @@ import { colors } from "../../../constant/color";
 import { LeftSection, MenuIcon, Logo } from "./style";
 import SearchBar from "../../../components/SearchBar/Search";
 import CustomButton from "../../../components/Button/button";
-import SideBar from "../../SideBar";
+import Sidebar from "../../SideBar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import AuthMemory from "../../../data/authMemory";
@@ -24,7 +24,7 @@ const NavBarLawyer: React.FC = () => {
     console.log("Searching for:", searchValue);
   };
 
-  const toggleSideBar = () => setShowSidebar(!showSidebar);
+  const toggleSidebar = () => setShowSidebar(!showSidebar);
 
   const handleLogout = async () => {
     try {
@@ -67,7 +67,7 @@ const NavBarLawyer: React.FC = () => {
             <MenuIcon
               src={menuIcon}
               alt="Menu"
-              onClick={toggleSideBar}
+              onClick={toggleSidebar}
               style={{ cursor: "pointer" }}
             />
             <Navbar.Brand href="#home">
@@ -98,7 +98,7 @@ const NavBarLawyer: React.FC = () => {
         </Container>
       </Navbar>
 
-      <SideBar show={showSidebar} handleClose={() => setShowSidebar(false)}>
+      <Sidebar show={showSidebar} handleClose={() => setShowSidebar(false)}>
         <div className="d-lg-none" style={{ marginBottom: "1rem" }}>
           <SearchBar
             value={searchValue}
@@ -108,7 +108,7 @@ const NavBarLawyer: React.FC = () => {
             buttonLabel="Search"
           />
         </div>
-      </SideBar>
+      </Sidebar>
     </>
   );
 };

@@ -7,6 +7,7 @@ import FileSection from "./components/Tabs";
 import { useAuth } from "../../../../context/AuthContext"; 
 import AppRoutes from "../../../../routes/AppRouter"; 
 import { useClientData } from "../../../../context/ClientDataContext";
+import PATH from "../../../../constant/paths";
 import "./billing.css";
 
 const UpdateCheque: React.FC = () => {
@@ -30,7 +31,7 @@ const UpdateCheque: React.FC = () => {
     const manageRoute = routes.find(
       (route) =>
         route.path &&
-        route.path.toLowerCase().includes("/admin/manage_user/manage_profile")
+        route.path.toLowerCase().includes(PATH.ADMIN.MANAGE_PROFILE.toLowerCase())
     );
 
     if (manageRoute?.path) {
@@ -53,7 +54,7 @@ const UpdateCheque: React.FC = () => {
     }
 
     // Pass the full case object instead of only the ID
-    navigate("/admin/manage_case/edit_case", {
+    navigate(PATH.ADMIN.EDIT_CASE, {
       state: {
         selectedCase: caseToManage,
         successMessage: "Welcome to Manage Case",

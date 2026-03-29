@@ -7,12 +7,12 @@ import { colors } from "../../../constant/color";
 import AuthMemory from "../../../data/authMemory";
 import { useNavigate } from "react-router-dom";
 
-type SideBarProps = {
+type SidebarProps = {
   show: boolean;
   handleClose: () => void;
 };
 
-const SideBarLawyer: React.FC<SideBarProps> = ({ show, handleClose }) => {
+const SidebarLawyer: React.FC<SidebarProps> = ({ show, handleClose }) => {
   const lawyerData = AuthMemory.getLawyerFullData();
   const cases = lawyerData?.cases || [];
   const navigate = useNavigate();
@@ -67,4 +67,4 @@ const SideBarLawyer: React.FC<SideBarProps> = ({ show, handleClose }) => {
   );
 };
 
-export default SideBarLawyer;
+export default SidebarLawyer;

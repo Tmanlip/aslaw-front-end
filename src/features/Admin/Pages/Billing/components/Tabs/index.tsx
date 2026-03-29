@@ -45,7 +45,7 @@ const FileSection: React.FC<FileSectionProps> = ({ fileListUrl, selectedCase }) 
         </Tab>
 
         <Tab eventKey="reports" title="Reports">
-          <ReportsSection />
+          <ReportsSection selectedCase={selectedCase} />
         </Tab>
 
         <Tab eventKey="cheques" title="Cheques">

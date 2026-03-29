@@ -12,6 +12,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import { TableVirtuoso, TableComponents } from "react-virtuoso";
 import { colors } from "../../../../../../constant/color";
+import PATH from "../../../../../../constant/paths";
 import { useAuth } from "../../../../../../context/AuthContext";
 import AppRoutes from "../../../../../../routes/AppRouter";
 import { useNavigate } from "react-router-dom";
@@ -87,8 +88,8 @@ export default function UserTable() {
       const { client, cases } = res.data;
       setUserData(client, cases);
       navigate(
-        roleRoutes.find((r: any) => r.path === "/admin/manage_user/manage_profile")?.path ||
-        "/admin/manage_user/manage_profile"
+        roleRoutes.find((r: any) => r.path === PATH.ADMIN.MANAGE_PROFILE)?.path ||
+        PATH.ADMIN.MANAGE_PROFILE
       );
     } catch (err) {
       console.error(err);
@@ -104,7 +105,7 @@ export default function UserTable() {
         const { client, cases } = res.data;
         setUserData(client, cases);
         navigate(
-          roleRoutes.find((r: any) => r.path === "/admin/billing")?.path || "/admin/billing"
+          roleRoutes.find((r: any) => r.path === PATH.ADMIN.BILLING)?.path || PATH.ADMIN.BILLING
         );
       }
 
@@ -113,7 +114,7 @@ export default function UserTable() {
         const { lawyer, cases } = res.data;
         setUserData(lawyer, cases);
         navigate(
-          roleRoutes.find((r: any) => r.path === "/admin/lawyerbilling")?.path || "/admin/lawyerbilling"
+          roleRoutes.find((r: any) => r.path === PATH.ADMIN.LAWYER_BILLING)?.path || PATH.ADMIN.LAWYER_BILLING
         );
       }
 
@@ -122,7 +123,7 @@ export default function UserTable() {
         const { admin, cases } = res.data;
         setUserData(admin, cases || []);
         navigate(
-          roleRoutes.find((r: any) => r.path === "/admin/manage_user/manage_profile")?.path || "/admin/manage_user/manage_profile"
+          roleRoutes.find((r: any) => r.path === PATH.ADMIN.MANAGE_PROFILE)?.path || PATH.ADMIN.MANAGE_PROFILE
         );
       }
 
@@ -134,8 +135,8 @@ export default function UserTable() {
 
   const handleRegisterUser = () => {
     const registerPath =
-      roleRoutes.find((r: any) => r.path === "/admin/manage_user/register")?.path ||
-      "/admin/manage_user/register";
+      roleRoutes.find((r: any) => r.path === PATH.ADMIN.REGISTER_USER)?.path ||
+      PATH.ADMIN.REGISTER_USER;
     navigate(registerPath);
   };
 

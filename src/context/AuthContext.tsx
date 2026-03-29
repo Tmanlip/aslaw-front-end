@@ -9,12 +9,31 @@ import React, {
 
 type Role = "admin" | "client" | "lawyer" | null;
 const USER_KEY = "user";
+const ROLE_KEY = "role";
+const STORAGE_MODE_KEY = "auth_storage_mode";
+type StorageMode = "local" | "session";
+
+const getStorageByMode = (mode: StorageMode): Storage =>
+  mode === "local" ? localStorage : sessionStorage;
+
+const resolveInitialStorage = (): Storage => {
+  const mode = localStorage.getItem(STORAGE_MODE_KEY) as StorageMode | null;
+  if (mode === "local" || mode === "session") {
+    return getStorageByMode(mode);
+  }
+
+  if (localStorage.getItem(USER_KEY) || localStorage.getItem(ROLE_KEY)) {
+    return localStorage;
+  }
+
+  return sessionStorage;
+};
 
 interface AuthContextType {
   role: Role;
   user: any | null;
   loading: boolean; // ✅ Added loading state
-  login: (role: Role, user?: any | null) => void;
+  login: (role: Role, user?: any | null, persist?: boolean) => void;
   logout: () => void;
 }
 
@@ -27,8 +46,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Load role from localStorage on mount
   useEffect(() => {
-    const savedRole = localStorage.getItem("role");
-    const savedUser = localStorage.getItem(USER_KEY);
+    const storage = resolveInitialStorage();
+    const savedRole = storage.getItem(ROLE_KEY);
+    const savedUser = storage.getItem(USER_KEY);
     let parsedUser: any | null = null;
 
     if (savedRole) {
@@ -50,34 +70,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (possibleRole === "admin" || possibleRole === "client" || possibleRole === "lawyer") {
         const validRole = possibleRole as Exclude<Role, null>;
         setRole(validRole);
-        localStorage.setItem("role", validRole);
+        storage.setItem(ROLE_KEY, validRole);
       }
     }
 
     setLoading(false); // ✅ Auth ready
   }, []);
 
-  const login = (newRole: Role, userData: any | null = null) => {
+  const login = (newRole: Role, userData: any | null = null, persist: boolean = true) => {
+    const storageMode: StorageMode = persist ? "local" : "session";
+    const targetStorage = getStorageByMode(storageMode);
+
+    localStorage.removeItem(ROLE_KEY);
+    sessionStorage.removeItem(ROLE_KEY);
+
     setRole(newRole);
     if (newRole) {
-      localStorage.setItem("role", newRole);
+      targetStorage.setItem(ROLE_KEY, newRole);
+      localStorage.setItem(STORAGE_MODE_KEY, storageMode);
     } else {
-      localStorage.removeItem("role");
+      localStorage.removeItem(STORAGE_MODE_KEY);
     }
 
     setUser(userData);
+    localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(USER_KEY);
+
     if (userData) {
-      localStorage.setItem(USER_KEY, JSON.stringify(userData));
-    } else {
-      localStorage.removeItem(USER_KEY);
+      targetStorage.setItem(USER_KEY, JSON.stringify(userData));
     }
   };
 
   const logout = () => {
     setRole(null);
     setUser(null);
-    localStorage.removeItem("role");
+    localStorage.removeItem(STORAGE_MODE_KEY);
+    localStorage.removeItem(ROLE_KEY);
+    sessionStorage.removeItem(ROLE_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(USER_KEY);
   };
 
   return (

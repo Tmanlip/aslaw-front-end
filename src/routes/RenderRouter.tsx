@@ -4,6 +4,7 @@ import HomePage from "../pages/Home";
 import AppRoutes from "./AppRouter";
 import chatbotRoutes from "./ChatbotRoutes";
 import ForgotPasswordPage from "../pages/ForgotPassword"
+import PATH from "../constant/paths";
 
 export default function RenderRouter() {
   const { role, user, loading } = useAuth();
@@ -16,7 +17,7 @@ export default function RenderRouter() {
   // 1. Define specific public routes
   const publicRoutes = [
     { path: "/", element: <HomePage /> },
-    { path: "/reset_password", element: <ForgotPasswordPage /> },
+    { path: PATH.AUTH.RESET_PASSWORD, element: <ForgotPasswordPage /> },
     ...chatbotRoutes,
   ];
 

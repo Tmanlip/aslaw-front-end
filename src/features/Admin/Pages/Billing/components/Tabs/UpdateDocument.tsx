@@ -6,6 +6,7 @@ interface CaseInfo {
   clientFirmID?: string;
   caseId?: string;
   blob_folder_path?: string;
+  encrypted_documents?: any[]; // ✅ Support for encrypted documents
 }
 
 interface DocumentsSectionProps {

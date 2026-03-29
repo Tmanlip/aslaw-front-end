@@ -7,10 +7,11 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../../assets/pics/logo-landscape.png";
 import menuIcon from "../../../assets/pics/menus.png";
 import { colors } from "../../../constant/color";
+import PATH from "../../../constant/paths";
 import { LeftSection, MenuIcon, Logo } from "./style";
 import SearchBar from "../../../components/SearchBar/Search";
 import CustomButton from "../../../components/Button/button";
-import SideBar from "../../SideBar";
+import Sidebar from "../../SideBar";
 import { useAuth } from "../../../context/AuthContext";
 import AuthMemory from "../../../data/authMemory";
 import { apiFetch } from "../../../hooks/api"; // custom fetch wrapper
@@ -26,7 +27,7 @@ const NavBarAdmin: React.FC = () => {
     console.log("Searching for:", searchValue);
   };
 
-  const toggleSideBar = () => {
+  const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
@@ -81,10 +82,10 @@ const NavBarAdmin: React.FC = () => {
             <MenuIcon
               src={menuIcon}
               alt="Menu"
-              onClick={toggleSideBar}
+              onClick={toggleSidebar}
               style={{ cursor: "pointer" }}
             />
-            <Navbar.Brand href="/admin/dashboard">
+            <Navbar.Brand href={PATH.ADMIN.DASHBOARD}>
               <Logo src={logo} alt="Logo" />
             </Navbar.Brand>
 
@@ -115,7 +116,7 @@ const NavBarAdmin: React.FC = () => {
       </Navbar>
 
       {/* Sidebar */}
-      <SideBar show={showSidebar} handleClose={() => setShowSidebar(false)}>
+      <Sidebar show={showSidebar} handleClose={() => setShowSidebar(false)}>
         {/* Optional: SearchBar inside sidebar on small screens */}
         <div className="d-lg-none" style={{ marginBottom: "1rem" }}>
           <SearchBar
@@ -126,7 +127,7 @@ const NavBarAdmin: React.FC = () => {
             buttonLabel="Search"
           />
         </div>
-      </SideBar>
+      </Sidebar>
     </>
   );
 };

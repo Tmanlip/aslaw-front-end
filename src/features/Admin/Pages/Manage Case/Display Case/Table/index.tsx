@@ -15,6 +15,7 @@ import { Modal, Button, Spinner } from "react-bootstrap";
 
 import AssignCase from "../Assign Case";
 import { colors } from "../../../../../../constant/color";
+import PATH from "../../../../../../constant/paths";
 import { useAuth } from "../../../../../../context/AuthContext";
 
 interface CaseRecord {
@@ -58,7 +59,7 @@ export default function CaseTable() {
 
   /* ================= REGISTER CASE ================= */
   const handleRegisterCase = () => {
-    navigate("/admin/manage_case/register_case"); // change route if needed
+    navigate(PATH.ADMIN.REGISTER_CASE);
   };
 
   /* ================= ASSIGN CASE ================= */
@@ -97,7 +98,7 @@ export default function CaseTable() {
       blob_folder_path: selectedCase.blob_folder_path,
     });
 
-      navigate("/admin/billing", {
+      navigate(PATH.ADMIN.BILLING, {
         state: {
           selectedCase: {
             caseId: selectedCase.id,

@@ -1,28 +1,54 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { colors } from "../../../../../../constant/color";
 import Alert from "react-bootstrap/Alert";
 import CreateReportOffcanvas from "../OffCanvas/Reports";
 import Form from "react-bootstrap/Form";
 import SelectToggleButton from "../Select Files/select";
 import AuthMemory from "../../../../../../data/authMemory";
+import axiosUser from "../../../../../../api/axiosUser";
+import { EncryptedDocumentItem } from "../../../../../../data/userInfo";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-const ReportsSection: React.FC = () => {
+interface CaseInfo {
+  lawyerFirmID: string;
+  clientFirmID?: string;
+  caseId?: string;
+  blob_folder_path?: string;
+  encrypted_documents?: EncryptedDocumentItem[];
+}
+
+interface ReportsSectionProps {
+  selectedCase?: CaseInfo;
+}
+
+type DisplayFile = {
+  id?: string;
+  fileName: string;
+  encrypted: boolean;
+};
+
+type CaseApiItem = {
+  id?: number;
+  caseId?: number;
+  encrypted_documents?: EncryptedDocumentItem[];
+};
+
+const ReportsSection: React.FC<ReportsSectionProps> = ({ selectedCase }) => {
   const currentUser = AuthMemory.getUser();
   const token = AuthMemory.getToken();
 
-  const requestHeaders: HeadersInit = {
+  const mutationHeaders: HeadersInit = {
     Accept: "application/json",
     "X-User-Role": currentUser?.role || "",
     "X-User-FirmID": currentUser?.firmID || "",
   };
 
   if (token) {
-    (requestHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
+    (mutationHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<DisplayFile[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
@@ -30,40 +56,186 @@ const ReportsSection: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Fetch reports from Laravel
-  const fetchReports = async () => {
+  const getLegacyReportPath = useCallback(
+    (fileName: string) => `${selectedCase?.blob_folder_path ?? ""}reports/${fileName}`,
+    [selectedCase?.blob_folder_path]
+  );
+
+  const getPreviewUrl = useCallback(
+    (file: DisplayFile): string | null => {
+      if (file.encrypted && file.id) {
+        return `${API_URL}/encrypted-documents/${file.id}/preview`;
+      }
+
+      const legacyPath = getLegacyReportPath(file.fileName);
+      if (!legacyPath) {
+        return null;
+      }
+
+      return `${API_URL}/read/${encodeURI(legacyPath)}`;
+    },
+    [getLegacyReportPath]
+  );
+
+  const getDownloadUrl = useCallback(
+    (file: DisplayFile): string | null => {
+      if (file.encrypted && file.id) {
+        return `${API_URL}/encrypted-documents/${file.id}/download`;
+      }
+
+      const legacyPath = getLegacyReportPath(file.fileName);
+      if (!legacyPath) {
+        return null;
+      }
+
+      return `${API_URL}/download/${encodeURI(legacyPath)}`;
+    },
+    [getLegacyReportPath]
+  );
+
+  const openPreview = useCallback(
+    async (file: DisplayFile) => {
+      try {
+        const url = getPreviewUrl(file);
+        if (!url) {
+          setSuccessMessage("Invalid file path for preview.");
+          return;
+        }
+
+        const response = await axiosUser.get(url, {
+          responseType: "blob",
+          headers: mutationHeaders as Record<string, string>,
+        });
+
+        if (previewFile) {
+          URL.revokeObjectURL(previewFile);
+        }
+
+        const objectUrl = URL.createObjectURL(response.data as Blob);
+        setPreviewFile(objectUrl);
+      } catch (err: any) {
+        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+        setSuccessMessage(`Preview failed: ${message}`);
+      }
+    },
+    [getPreviewUrl, mutationHeaders, previewFile]
+  );
+
+  const downloadFile = useCallback(
+    async (file: DisplayFile) => {
+      try {
+        const url = getDownloadUrl(file);
+        if (!url) {
+          setSuccessMessage("Invalid file path for download.");
+          return;
+        }
+
+        const response = await axiosUser.get(url, {
+          responseType: "blob",
+          headers: mutationHeaders as Record<string, string>,
+        });
+
+        const objectUrl = URL.createObjectURL(response.data as Blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = file.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
+      } catch (err: any) {
+        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+        setSuccessMessage(`Download failed: ${message}`);
+      }
+    },
+    [getDownloadUrl, mutationHeaders]
+  );
+
+  const buildEncryptedDisplayFiles = (encryptedDocs: EncryptedDocumentItem[] = []): DisplayFile[] => {
+    return encryptedDocs
+      .filter((item) => item.category === "reports" && item.status !== "deleted")
+      .map((item) => ({
+        id: item.document_id,
+        fileName: item.file_name,
+        encrypted: true,
+      }));
+  };
+
+  // ✅ Fetch reports from Laravel (using axiosUser for consistency)
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_URL}/files`, {
-        headers: requestHeaders,
-      });
+      // First, refresh encrypted docs from backend for the selected case.
+      const selectedCaseId = Number(selectedCase?.caseId);
+      if (Number.isFinite(selectedCaseId) && selectedCaseId > 0) {
+        const casesResponse = await axiosUser.get(`${API_URL}/cases`, {
+          headers: mutationHeaders as Record<string, string>,
+        });
 
-      const data = await res.json();
-
-      // ✅ IMPORTANT FIX
-      const rawFiles: unknown[] = Array.isArray(data.files) ? data.files : [];
-      const visibleFiles = rawFiles.filter((file): file is string => {
-        if (typeof file !== "string") {
-          return false;
+        const cases: CaseApiItem[] = Array.isArray(casesResponse.data) ? casesResponse.data : [];
+        const matchedCase = cases.find((c) => Number(c.caseId ?? c.id) === selectedCaseId);
+        const encryptedFiles = buildEncryptedDisplayFiles(matchedCase?.encrypted_documents ?? []);
+        if (encryptedFiles.length > 0) {
+          setFiles(encryptedFiles);
+          return;
         }
+      } else {
+        // Fallback to locally available case data if caseId is not present.
+        const encryptedFiles = buildEncryptedDisplayFiles(selectedCase?.encrypted_documents ?? []);
+        if (encryptedFiles.length > 0) {
+          setFiles(encryptedFiles);
+          return;
+        }
+      }
 
-        const normalized = file.toLowerCase();
-        return !normalized.startsWith("encrypted/") && !normalized.includes("/encrypted/");
-      });
+      // If no encrypted reports, fetch from Azure blob
+      if (!selectedCase?.blob_folder_path) {
+        setFiles([]);
+        return;
+      }
 
-      setFiles(visibleFiles);
+      const folderPath = `${selectedCase.blob_folder_path}reports/`;
+      const response = await axiosUser.get(
+        `${API_URL}/files?folder=${encodeURIComponent(folderPath)}`,
+        {
+          headers: mutationHeaders as Record<string, string>,
+        }
+      );
+
+      const data = response.data;
+
+      // ✅ Filter out encrypted folder items from legacy files
+      const rawFiles: unknown[] = Array.isArray(data.files) ? data.files : [];
+      const legacyFiles = rawFiles
+        .filter((file): file is string => {
+          if (typeof file !== "string") {
+            return false;
+          }
+
+          const normalized = file.toLowerCase();
+          return (
+            !normalized.startsWith("encrypted/") &&
+            !normalized.includes("/encrypted/")
+          );
+        })
+        .map((fileName: string) => ({
+          fileName,
+          encrypted: false,
+        }));
+
+      setFiles(legacyFiles);
     } catch (err) {
       console.error("Failed to fetch reports", err);
       setFiles([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCase?.blob_folder_path, selectedCase?.caseId, selectedCase?.encrypted_documents]);
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [selectedCase?.blob_folder_path, selectedCase?.caseId]);
 
   const toggleSelectionMode = () => {
     setSelectionMode((prev) => !prev);
@@ -148,8 +320,24 @@ const ReportsSection: React.FC = () => {
       {/* Reports List */}
       <ul>
         {files.map((file, index) => (
-          <li key={index} style={{ marginBottom: "1.5rem" }}>
-            <strong>{file}</strong>
+          <li key={file.id || index} style={{ marginBottom: "1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <strong>{file.fileName}</strong>
+              {file.encrypted && (
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "0.25rem 0.5rem",
+                    background: colors.gold,
+                    color: "black",
+                    borderRadius: "4px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ENCRYPTED
+                </span>
+              )}
+            </div>
 
             <div
               style={{
@@ -172,28 +360,25 @@ const ReportsSection: React.FC = () => {
                       borderRadius: "8px",
                       border: "none",
                     }}
-                    onClick={() =>
-                      setPreviewFile(`${API_URL}/read/${encodeURIComponent(file)}`)
-                    }
+                    onClick={() => openPreview(file)}
                   >
                     Preview
                   </button>
 
                   {/* ✅ DOWNLOAD */}
-                  <a
-                    href={`${API_URL}/read/${encodeURIComponent(file)}`}
-                    download
+                  <button
+                    onClick={() => downloadFile(file)}
                     style={{
                       marginRight: "1rem",
                       padding: "0.5rem 1rem",
                       background: colors.red1,
                       color: "white",
                       borderRadius: "8px",
-                      textDecoration: "none",
+                      border: "none",
                     }}
                   >
                     Download
-                  </a>
+                  </button>
                 </>
               )}
 
@@ -202,8 +387,8 @@ const ReportsSection: React.FC = () => {
                 <Form.Check
                   type="checkbox"
                   label="Choose"
-                  checked={selectedFiles.includes(file)}
-                  onChange={() => toggleCheckbox(file)}
+                  checked={selectedFiles.includes(file.fileName)}
+                  onChange={() => toggleCheckbox(file.fileName)}
                 />
               )}
             </div>
@@ -223,7 +408,12 @@ const ReportsSection: React.FC = () => {
             alignItems: "center",
             zIndex: 1000,
           }}
-          onClick={() => setPreviewFile(null)}
+          onClick={() => {
+            if (previewFile) {
+              URL.revokeObjectURL(previewFile);
+            }
+            setPreviewFile(null);
+          }}
         >
           <div
             style={{
@@ -243,7 +433,12 @@ const ReportsSection: React.FC = () => {
             />
 
             <button
-              onClick={() => setPreviewFile(null)}
+              onClick={() => {
+                if (previewFile) {
+                  URL.revokeObjectURL(previewFile);
+                }
+                setPreviewFile(null);
+              }}
               style={{
                 position: "absolute",
                 top: "10px",

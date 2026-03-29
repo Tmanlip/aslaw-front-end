@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import NavBarAdmin from "../../../../../../shared/Navbar/NavBar Admin/new";
 import Page1Form from "./pageoneform";
 import { UserRole } from "../../../../../../constant/user";
+import PATH from "../../../../../../constant/paths";
 import "./registerCase.css";
 
 export type User = {
@@ -80,7 +81,7 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
       setClient(null);
 
       // ✅ Redirect to Manage User page
-      navigate("/admin/manage_user/manage");
+      navigate(PATH.ADMIN.MANAGE_USER);
 
     } catch (error: any) {
       console.error(error);

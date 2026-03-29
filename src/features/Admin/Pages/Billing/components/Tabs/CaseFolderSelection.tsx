@@ -6,12 +6,15 @@ import DropdownButton from "react-bootstrap/DropdownButton";
 import SelectToggleButton from "../Select Files/select";
 import AuthMemory from "../../../../../../data/authMemory";
 import axiosUser from "../../../../../../api/axiosUser";
+import { EncryptedDocumentItem } from "../../../../../../data/userInfo";
 
 interface CaseInfo {
   lawyerFirmID: string;
   clientFirmID?: string;
+  id?: number;
   caseId?: string;
   blob_folder_path?: string;
+  encrypted_documents?: EncryptedDocumentItem[];
 }
 
 interface CaseFolderSectionProps {
@@ -21,6 +24,18 @@ interface CaseFolderSectionProps {
   renameFileWithSection?: boolean; // if true, adds section prefix on upload
   title: string; // Header title
 }
+
+type DisplayFile = {
+  id?: string;
+  fileName: string;
+  encrypted: boolean;
+};
+
+type CaseApiItem = {
+  id?: number;
+  caseId?: number;
+  encrypted_documents?: EncryptedDocumentItem[];
+};
 
 const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   selectedCase,
@@ -42,15 +57,147 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     (mutationHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<DisplayFile[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [uploadSection, setUploadSection] = useState<string>(sectionOptions[0] || "");
 
+  const getLegacyFilePath = useCallback(
+    (fileName: string) => `${selectedCase?.blob_folder_path ?? ""}${folderName}/${fileName}`,
+    [selectedCase?.blob_folder_path, folderName]
+  );
+
+  const getPreviewUrl = useCallback(
+    (file: DisplayFile): string | null => {
+      if (file.encrypted && file.id) {
+        return `${process.env.REACT_APP_API_URL}/encrypted-documents/${file.id}/preview`;
+      }
+
+      const legacyPath = getLegacyFilePath(file.fileName);
+      if (!legacyPath) {
+        return null;
+      }
+
+      return `${process.env.REACT_APP_API_URL}/read/${encodeURI(legacyPath)}`;
+    },
+    [getLegacyFilePath]
+  );
+
+  const getDownloadUrl = useCallback(
+    (file: DisplayFile): string | null => {
+      if (file.encrypted && file.id) {
+        return `${process.env.REACT_APP_API_URL}/encrypted-documents/${file.id}/download`;
+      }
+
+      const legacyPath = getLegacyFilePath(file.fileName);
+      if (!legacyPath) {
+        return null;
+      }
+
+      return `${process.env.REACT_APP_API_URL}/download/${encodeURI(legacyPath)}`;
+    },
+    [getLegacyFilePath]
+  );
+
+  const openPreview = useCallback(
+    async (file: DisplayFile) => {
+      try {
+        const url = getPreviewUrl(file);
+        if (!url) {
+          setSuccessMessage("Invalid file path for preview.");
+          return;
+        }
+
+        const response = await axiosUser.get(url, {
+          responseType: "blob",
+          headers: mutationHeaders as Record<string, string>,
+        });
+
+        if (previewFile) {
+          URL.revokeObjectURL(previewFile);
+        }
+
+        const objectUrl = URL.createObjectURL(response.data as Blob);
+        setPreviewFile(objectUrl);
+      } catch (err: any) {
+        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+        setSuccessMessage(`Preview failed: ${message}`);
+      }
+    },
+    [getPreviewUrl, mutationHeaders, previewFile]
+  );
+
+  const downloadFile = useCallback(
+    async (file: DisplayFile) => {
+      try {
+        const url = getDownloadUrl(file);
+        if (!url) {
+          setSuccessMessage("Invalid file path for download.");
+          return;
+        }
+
+        const response = await axiosUser.get(url, {
+          responseType: "blob",
+          headers: mutationHeaders as Record<string, string>,
+        });
+
+        const objectUrl = URL.createObjectURL(response.data as Blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = file.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
+      } catch (err: any) {
+        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+        setSuccessMessage(`Download failed: ${message}`);
+      }
+    },
+    [getDownloadUrl, mutationHeaders]
+  );
+
+  const buildEncryptedDisplayFiles = (encryptedDocs: EncryptedDocumentItem[] = []): DisplayFile[] => {
+    return encryptedDocs
+      .filter((item) => item.category === folderName && item.status !== "deleted")
+      .map((item) => ({
+        id: item.document_id,
+        fileName: item.file_name,
+        encrypted: true,
+      }));
+  };
+
   /* ================= FETCH FILES ================= */
   const fetchFiles = useCallback(async () => {
+    // First, refresh encrypted docs for the selected case from backend.
+    const selectedCaseId = Number(selectedCase?.caseId ?? selectedCase?.id);
+    if (Number.isFinite(selectedCaseId) && selectedCaseId > 0) {
+      try {
+        const casesResponse = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`, {
+          headers: mutationHeaders as Record<string, string>,
+        });
+
+        const cases: CaseApiItem[] = Array.isArray(casesResponse.data) ? casesResponse.data : [];
+        const matchedCase = cases.find((c) => Number(c.caseId ?? c.id) === selectedCaseId);
+        const encryptedFiles = buildEncryptedDisplayFiles(matchedCase?.encrypted_documents ?? []);
+        if (encryptedFiles.length > 0) {
+          setFiles(encryptedFiles);
+          return;
+        }
+      } catch (err) {
+        console.error(`Failed to refresh encrypted ${folderName} for case ${selectedCaseId}:`, err);
+      }
+    } else {
+      // Fallback to locally available case data.
+      const encryptedFiles = buildEncryptedDisplayFiles(selectedCase?.encrypted_documents ?? []);
+      if (encryptedFiles.length > 0) {
+        setFiles(encryptedFiles);
+        return;
+      }
+    }
+
     if (!selectedCase?.blob_folder_path) return;
 
     try {
@@ -61,20 +208,28 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       );
       const data = response.data;
       const rawFiles: unknown[] = Array.isArray(data.files) ? data.files : [];
-      const visibleFiles = rawFiles.filter((file): file is string => {
-        if (typeof file !== "string") {
-          return false;
-        }
+      const legacyFiles = rawFiles
+        .filter((file): file is string => {
+          if (typeof file !== "string") {
+            return false;
+          }
 
-        const normalized = file.toLowerCase();
-        return !normalized.startsWith("encrypted/") && !normalized.includes("/encrypted/");
-      });
+          const normalized = file.toLowerCase();
+          return (
+            !normalized.startsWith("encrypted/") &&
+            !normalized.includes("/encrypted/")
+          );
+        })
+        .map((fileName: string) => ({
+          fileName,
+          encrypted: false,
+        }));
 
-      setFiles(visibleFiles);
+      setFiles(legacyFiles);
     } catch (err) {
       console.error(`Failed to fetch ${folderName}:`, err);
     }
-  }, [selectedCase?.blob_folder_path, folderName]);
+  }, [selectedCase?.blob_folder_path, selectedCase?.caseId, selectedCase?.id, selectedCase?.encrypted_documents, folderName]);
 
   useEffect(() => {
     fetchFiles();
@@ -114,22 +269,24 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   };
 
   /* ================= DELETE ================= */
-  const handleDelete = async (file: string) => {
-    if (!selectedCase?.blob_folder_path) return;
-    if (!window.confirm(`Delete "${file}"?`)) return;
+  const handleDelete = async (file: DisplayFile) => {
+    if (!selectedCase?.blob_folder_path && !file.encrypted) return;
+    if (!window.confirm(`Delete "${file.fileName}"?`)) return;
 
-    const filePath = `${selectedCase.blob_folder_path}${folderName}/${file}`;
+    // For legacy files, use the blob delete endpoint
+    if (!file.encrypted) {
+      const filePath = `${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
+      try {
+        await axiosUser.delete(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
+          headers: mutationHeaders as Record<string, string>,
+        });
 
-    try {
-      await axiosUser.delete(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
-        headers: mutationHeaders as Record<string, string>,
-      });
-
-      setSuccessMessage(`File "${file}" deleted successfully!`);
-      fetchFiles();
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      setSuccessMessage(`Delete failed: ${message}`);
+        setSuccessMessage(`File "${file.fileName}" deleted successfully!`);
+        fetchFiles();
+      } catch (err: any) {
+        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+        setSuccessMessage(`Delete failed: ${message}`);
+      }
     }
   };
 
@@ -139,9 +296,9 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     setSelectedFiles([]);
   };
 
-  const toggleCheckbox = (file: string) => {
+  const toggleCheckbox = (fileName: string) => {
     setSelectedFiles((prev) =>
-      prev.includes(file) ? prev.filter((f) => f !== file) : [...prev, file]
+      prev.includes(fileName) ? prev.filter((f) => f !== fileName) : [...prev, fileName]
     );
   };
 
@@ -215,8 +372,24 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       <ul>
         {files.length === 0 && <p>No files found</p>}
         {files.map((file, idx) => (
-          <li key={idx} style={{ marginBottom: "1.5rem" }}>
-            <strong>{file}</strong>
+          <li key={file.id || idx} style={{ marginBottom: "1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <strong>{file.fileName}</strong>
+              {file.encrypted && (
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "0.25rem 0.5rem",
+                    background: colors.gold,
+                    color: "black",
+                    borderRadius: "4px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ENCRYPTED
+                </span>
+              )}
+            </div>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
               {!selectionMode && (
                 <>
@@ -228,25 +401,22 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                       borderRadius: "8px",
                       padding: "0.5rem 1rem",
                     }}
-                    onClick={() =>
-                      setPreviewFile(`${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file}`)
-                    }
+                    onClick={() => openPreview(file)}
                   >
                     Preview
                   </button>
-                  <a
-                    href={`${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file}`}
-                    download
+                  <button
+                    onClick={() => downloadFile(file)}
                     style={{
                       background: colors.red1,
                       color: "white",
                       borderRadius: "8px",
                       padding: "0.5rem 1rem",
-                      textDecoration: "none",
+                      border: "none",
                     }}
                   >
                     Download
-                  </a>
+                  </button>
                   <button
                     style={{
                       background: colors.red,
@@ -254,8 +424,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                       border: "none",
                       borderRadius: "8px",
                       padding: "0.5rem 1rem",
+                      opacity: file.encrypted ? 0.5 : 1,
+                      cursor: file.encrypted ? "not-allowed" : "pointer",
                     }}
                     onClick={() => handleDelete(file)}
+                    disabled={file.encrypted}
                   >
                     Delete
                   </button>
@@ -266,8 +439,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                 <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                   <input
                     type="checkbox"
-                    checked={selectedFiles.includes(file)}
-                    onChange={() => toggleCheckbox(file)}
+                    checked={selectedFiles.includes(file.fileName)}
+                    onChange={() => toggleCheckbox(file.fileName)}
                   />
                   Choose
                 </label>
@@ -289,7 +462,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             alignItems: "center",
             zIndex: 1000,
           }}
-          onClick={() => setPreviewFile(null)}
+          onClick={() => {
+            if (previewFile) {
+              URL.revokeObjectURL(previewFile);
+            }
+            setPreviewFile(null);
+          }}
         >
           <div
             style={{
@@ -303,7 +481,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setPreviewFile(null)}
+              onClick={() => {
+                if (previewFile) {
+                  URL.revokeObjectURL(previewFile);
+                }
+                setPreviewFile(null);
+              }}
               style={{
                 position: "absolute",
                 top: "10px",

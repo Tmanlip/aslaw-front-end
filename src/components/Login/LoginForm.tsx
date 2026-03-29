@@ -19,6 +19,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<"success" | "danger">(
     "success"
@@ -35,7 +36,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember: rememberMe }),
       });
 
       const data = await response.json();
@@ -78,10 +79,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         name: data.name || data.username,
       };
 
-      AuthMemory.setAuth(token, user);
+      AuthMemory.setAuth(token, user, rememberMe);
 
       // Update your global auth context
-      login(normalizedRole, user);
+      login(normalizedRole, user, rememberMe);
       onLoginSuccess?.(normalizedRole, data.message);
 
       // Optional: redirect or show success message
@@ -134,7 +135,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
       {/* Remember me & Forgot password */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <Form.Check type="checkbox" id="rememberMe" label="Remember me" />
+        <Form.Check
+          type="checkbox"
+          id="rememberMe"
+          label="Remember me"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+        />
         <button
           type="button"
           onClick={() => setForgotPasswordPage(true)}
