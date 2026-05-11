@@ -33,6 +33,8 @@ interface AuthContextType {
   role: Role;
   user: any | null;
   loading: boolean; // ✅ Added loading state
+  isArchived: boolean; // ✅ Track if user is archived
+  isInactive: boolean; // ✅ Track if user is inactive
   login: (role: Role, user?: any | null, persist?: boolean) => void;
   logout: () => void;
 }
@@ -43,6 +45,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [role, setRole] = useState<Role>(null);
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true); // ✅ Auth loading state
+  const [isArchived, setIsArchived] = useState(false); // ✅ Track archived status
+  const [isInactive, setIsInactive] = useState(false); // ✅ Track inactive status
 
   // Load role from localStorage on mount
   useEffect(() => {
@@ -59,8 +63,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
+        // Check if user is archived or inactive
+        const status = parsedUser?.status ? String(parsedUser.status).toLowerCase() : '';
+        setIsArchived(status === 'archived');
+        setIsInactive(status === 'inactive');
       } catch {
         setUser(null);
+        setIsArchived(false);
+        setIsInactive(false);
       }
     }
 
@@ -98,12 +108,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (userData) {
       targetStorage.setItem(USER_KEY, JSON.stringify(userData));
+      // Check if user is archived or inactive
+      const status = userData?.status ? String(userData.status).toLowerCase() : '';
+      setIsArchived(status === 'archived');
+      setIsInactive(status === 'inactive');
+    } else {
+      setIsArchived(false);
+      setIsInactive(false);
     }
   };
 
   const logout = () => {
     setRole(null);
     setUser(null);
+    setIsArchived(false);
+    setIsInactive(false);
     localStorage.removeItem(STORAGE_MODE_KEY);
     localStorage.removeItem(ROLE_KEY);
     sessionStorage.removeItem(ROLE_KEY);
@@ -112,7 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ role, user, loading, login, logout }}>
+    <AuthContext.Provider value={{ role, user, loading, isArchived, isInactive, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -124,3 +143,6 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 };
+
+// Export for consumption
+export default AuthContext;

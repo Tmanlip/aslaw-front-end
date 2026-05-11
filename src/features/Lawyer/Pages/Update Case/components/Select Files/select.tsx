@@ -14,6 +14,7 @@ const SelectToggleButton: React.FC<SelectToggleButtonProps> = ({
 }) => {
   return (
     <button
+      type="button"
       style={{
         padding: "0.5rem 1rem",
         background: colors.red1,
@@ -23,6 +24,10 @@ const SelectToggleButton: React.FC<SelectToggleButtonProps> = ({
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,
         fontWeight: "bold",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: "160px",
       }}
       disabled={disabled}
       onClick={onToggle}

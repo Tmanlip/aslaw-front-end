@@ -35,6 +35,8 @@ const ManageProfile: React.FC = () => {
 
 // Left column is its own component so it re-renders on context changes
 const LeftColumn: React.FC<{ user: User }> = ({ user }) => {
+  const userStatus = user.status || "Active";
+
   return (
     <div className="admin-manage-profile-sidebar">
       <img
@@ -42,7 +44,16 @@ const LeftColumn: React.FC<{ user: User }> = ({ user }) => {
         alt="Passport"
         className="admin-manage-profile-avatar"
       />
-      <h1 className="admin-manage-profile-title">{user.name} 🎉</h1>
+      <h1 className="admin-manage-profile-title">{user.name}</h1>
+
+      <div className="admin-manage-profile-meta">
+        <span className="admin-manage-profile-meta-item">
+          Firm ID: {user.firmID || "-"}
+        </span>
+        <span className={`admin-manage-profile-status ${String(userStatus).toLowerCase() === "inactive" ? "is-inactive" : "is-active"}`}>
+          {userStatus}
+        </span>
+      </div>
     </div>
   );
 };

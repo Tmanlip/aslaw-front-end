@@ -1,0 +1,226 @@
+.assign-case-offcanvas {
+  --assign-bg: #f3f5f9;
+  --assign-card: #ffffff;
+  --assign-border: #d6dce7;
+  --assign-title: #28384f;
+  --assign-subtitle: #738198;
+  --assign-primary: #2f7fca;
+  --assign-focus: rgba(47, 127, 202, 0.2);
+}
+
+.assign-case-offcanvas.offcanvas-end {
+  width: min(78vw, 1180px);
+  max-width: min(78vw, 1180px);
+}
+
+.assign-case-header {
+  border-bottom: 1px solid #e5ebf3;
+  padding: 0.85rem 1rem;
+}
+
+.assign-case-title-wrap {
+  width: 100%;
+}
+
+.assign-case-title-wrap h2 {
+  margin: 0;
+  color: var(--assign-title);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.assign-case-title-wrap p {
+  margin: 0.35rem 0 0;
+  color: var(--assign-subtitle);
+  font-size: 0.9rem;
+}
+
+.assign-case-body {
+  overflow-y: auto;
+  background: linear-gradient(180deg, #f8fafd 0%, var(--assign-bg) 58%);
+  padding: 1rem;
+}
+
+.assign-case-alert {
+  border-radius: 10px;
+}
+
+.assign-case-card {
+  background: var(--assign-card);
+  border: 1px solid var(--assign-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(36, 46, 66, 0.08);
+  padding: 1rem;
+}
+
+.assign-case-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 1px solid #e5ebf3;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.assign-case-card-header h3 {
+  margin: 0;
+  color: #2a3d57;
+  font-size: 1.03rem;
+  font-weight: 700;
+}
+
+.assign-case-card-header p {
+  margin: 0.35rem 0 0;
+  color: #74839a;
+  font-size: 0.88rem;
+}
+
+.assign-case-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #e8f2fc;
+  color: #275f96;
+  border: 1px solid #bdd7f2;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0.62rem;
+}
+
+.assign-case-card-body {
+  background: #fbfdff;
+  border: 1px solid #e7edf5;
+  border-radius: 8px;
+  padding: 0.85rem;
+}
+
+.assign-case-form .form-label {
+  font-weight: 700;
+  color: #33475f;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.assign-case-form .form-control,
+.assign-case-form .form-select,
+.assign-case-form .dropdown-toggle {
+  border-radius: 6px;
+  min-height: 42px;
+  border-color: #d5dde8;
+}
+
+.assign-case-form .form-control:focus,
+.assign-case-form .form-select:focus,
+.assign-case-form .dropdown-toggle:focus {
+  border-color: var(--assign-primary);
+  box-shadow: 0 0 0 0.2rem var(--assign-focus);
+}
+
+.assign-case-dropdown,
+.assign-case-dropdown .dropdown-toggle {
+  width: 100%;
+  text-align: left;
+}
+
+.assign-case-dropdown .dropdown-toggle {
+  background: #fff;
+  color: #2f4159;
+  border: 1px solid #d5dde8;
+}
+
+.assign-case-dropdown .dropdown-menu {
+  width: 100%;
+}
+
+.assign-case-inline-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.assign-case-section-title-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0.9rem;
+}
+
+.assign-case-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #275f96;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #dbe8f5;
+  border-radius: 6px;
+  background: #f3f9ff;
+}
+
+.assign-case-payment-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.assign-case-footer {
+  border-top: 1px solid #e5ebf3;
+  padding-top: 0.9rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.assign-case-save-btn {
+  border-radius: 6px;
+  min-width: 170px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+@media (max-width: 1024px) {
+  .assign-case-offcanvas.offcanvas-end {
+    width: 92vw;
+    max-width: 92vw;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .assign-case-offcanvas.offcanvas-end {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .assign-case-body {
+    padding: 0.75rem;
+  }
+
+  .assign-case-card {
+    padding: 0.85rem;
+  }
+
+  .assign-case-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .assign-case-inline-grid,
+  .assign-case-payment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assign-case-section-title-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .assign-case-save-btn {
+    width: 100%;
+  }
+}

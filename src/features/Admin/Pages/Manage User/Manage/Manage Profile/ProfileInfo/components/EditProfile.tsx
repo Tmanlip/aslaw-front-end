@@ -9,7 +9,7 @@ interface EditProfileModalProps {
   show: boolean;
   user: User;
   onClose: () => void;
-  onSave: (user: User) => void;
+  onSave: (user: User) => Promise<void> | void;
 }
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -20,36 +20,71 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<User>(user);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [changedData, setChangedData] = useState<Partial<User>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setFormData(user);
+    setChangedData({});
   }, [user]);
 
   const handleChange = (field: keyof User, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const buildChangedData = (original: User, updated: User): Partial<User> => {
+    const diff: Partial<User> = {};
+
+    (Object.keys(updated) as Array<keyof User>).forEach((key) => {
+      const oldValue = original[key];
+      const newValue = updated[key];
+
+      const normalizedOld = typeof oldValue === "string" ? oldValue.trim() : oldValue;
+      const normalizedNew = typeof newValue === "string" ? newValue.trim() : newValue;
+
+      if (normalizedOld !== normalizedNew) {
+        (diff as Record<string, unknown>)[key as string] = newValue;
+      }
+    });
+
+    return diff;
+  };
+
   const handleSaveClick = () => {
+    const diff = buildChangedData(user, formData);
+    setChangedData(diff);
+
+    if (Object.keys(diff).length === 0) {
+      alert("No changes detected.");
+      return;
+    }
+
     setShowConfirm(true);
   };
 
-  const handleConfirmSave = () => {
-    onSave(formData); // send full updated user
-    setShowConfirm(false);
+  const handleConfirmSave = async () => {
+    try {
+      setIsSaving(true);
+      await onSave(formData); // send full updated user
+      setShowConfirm(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <Modal show={show} onHide={onClose} size="lg" centered>
+    <Modal show={show} onHide={onClose} size="lg" centered dialogClassName="admin-profile-edit-modal">
       <Modal.Header closeButton>
         <Modal.Title>Edit Profile Information</Modal.Title>
       </Modal.Header>
 
-      <Modal.Body>
+      <Modal.Body className="admin-profile-edit-modal-body">
         {showConfirm && (
           <ProfileEditConfirmAlert
             show={showConfirm}
             originalData={user}
-            updatedData={formData}
+            updatedData={changedData}
+            isSaving={isSaving}
             onConfirm={handleConfirmSave}
             onCancel={() => setShowConfirm(false)}
           />
@@ -59,7 +94,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           {/* Name & Username */}
           <Row>
             <Col md={6}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 admin-profile-edit-field">
                 <Form.Label>Full Name</Form.Label>
                 <Form.Control
                   value={formData.name || ""}
@@ -68,12 +103,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 admin-profile-edit-field">
                 <Form.Label>Username</Form.Label>
                 <Form.Control
                   value={formData.username || ""}
-                  onChange={(e) => handleChange("username", e.target.value)}
+                  readOnly
+                  disabled
                 />
+                <Form.Text className="text-muted">Username cannot be changed.</Form.Text>
               </Form.Group>
             </Col>
           </Row>
@@ -81,7 +118,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           {/* Age & Email */}
           <Row>
             <Col md={4}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 admin-profile-edit-field">
                 <Form.Label>Age</Form.Label>
                 <Form.Control
                   type="number"
@@ -91,19 +128,21 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </Form.Group>
             </Col>
             <Col md={8}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 admin-profile-edit-field">
                 <Form.Label>Email</Form.Label>
                 <Form.Control
                   type="email"
                   value={formData.email || ""}
-                  onChange={(e) => handleChange("email", e.target.value)}
+                  readOnly
+                  disabled
                 />
+                <Form.Text className="text-muted">Email cannot be changed.</Form.Text>
               </Form.Group>
             </Col>
           </Row>
 
           {/* IC, Phone, Address */}
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3 admin-profile-edit-field">
             <Form.Label>IC Number</Form.Label>
             <Form.Control
               value={formData.ICNumber || ""}
@@ -111,7 +150,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3 admin-profile-edit-field">
             <Form.Label>Phone Number</Form.Label>
             <Form.Control
               value={formData.phoneNumber || ""}
@@ -119,7 +158,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3 admin-profile-edit-field">
             <Form.Label>Home Address</Form.Label>
             <Form.Control
               as="textarea"
@@ -132,7 +171,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           {/* Gender & Marital Status */}
           <Row>
             <Col md={6}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 admin-profile-edit-field">
                 <Form.Label>Gender</Form.Label>
                 <Form.Select
                   value={formData.gender || ""}
@@ -145,7 +184,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 admin-profile-edit-field">
                 <Form.Label>Marital Status</Form.Label>
                 <Form.Select
                   value={formData.maritalStatus || ""}
@@ -159,10 +198,28 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </Form.Group>
             </Col>
           </Row>
+
+          {/* Account Status */}
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3 admin-profile-edit-field">
+                <Form.Label>Account Status</Form.Label>
+                <Form.Select
+                  value={formData.status || ""}
+                  onChange={(e) => handleChange("status", e.target.value)}
+                >
+                  <option value="">Select Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Archived">Archived</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
         </Form>
       </Modal.Body>
 
-      <Modal.Footer>
+      <Modal.Footer className="admin-profile-edit-modal-footer">
         <CustomButton variant="secondary" onClick={onClose}>
           Cancel
         </CustomButton>

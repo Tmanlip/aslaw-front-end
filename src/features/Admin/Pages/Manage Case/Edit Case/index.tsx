@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
+import axiosUser from "../../../../../api/axiosUser";
 import { useClientData, Case } from "../../../../../context/ClientDataContext";
 import EditCaseModal from "./EditCaseModal";
 import "./editCase.css";
@@ -11,11 +12,16 @@ const EditCase: React.FC = () => {
   const location = useLocation();
   const { cases } = useClientData();
   
-  const { selectedCase: stateCase, successMessage } = location.state || {};
+  const {
+    selectedCase: stateCase,
+    successMessage,
+    editMode,
+    autoStartEdit,
+  } = location.state || {};
   const [selectedCase, setSelectedCase] = useState<Case | null>(stateCase || null);
+  const selectedCaseId = Number((selectedCase as any)?.caseId ?? (selectedCase as any)?.id ?? 0);
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
-  const [showModal, setShowModal] = useState(false);
 
   // Show success message alert
   useEffect(() => {
@@ -25,6 +31,30 @@ const EditCase: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  useEffect(() => {
+    const refreshSelectedCase = async () => {
+      if (!selectedCaseId) return;
+
+      try {
+        const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`);
+        const list = Array.isArray(response.data) ? response.data : [];
+        const latestCase = list.find((item: any) => Number(item.caseId ?? item.id) === selectedCaseId);
+        if (latestCase) {
+          setSelectedCase((prev) => ({
+            ...(prev || ({} as Case)),
+            ...latestCase,
+            caseId: Number(latestCase.caseId ?? latestCase.id ?? selectedCaseId),
+            title: latestCase.title || latestCase.caseName || prev?.title || "",
+          } as Case));
+        }
+      } catch (error) {
+        console.error("Failed to refresh selected case in Edit Case", error);
+      }
+    };
+
+    refreshSelectedCase();
+  }, [selectedCaseId]);
 
   return (
     <>
@@ -42,22 +72,12 @@ const EditCase: React.FC = () => {
         <h2>Manage Case</h2>
 
         {selectedCase ? (
-          <div className="admin-edit-case-detail-wrap">
-            <p><strong>Case ID:</strong> {selectedCase.caseId}</p>
-            <p><strong>Title:</strong> {selectedCase.title}</p>
-            <p><strong>Status:</strong> {selectedCase.status}</p>
-            <p><strong>Client Name:</strong> {selectedCase.clientName}</p>
-            <p><strong>Lawyer Name:</strong> {selectedCase.lawyerName}</p>
-            {selectedCase.description && <p><strong>Description:</strong> {selectedCase.description}</p>}
-
-            <Button
-              variant="warning"
-              className="admin-edit-case-action-btn"
-              onClick={() => setShowModal(true)}
-            >
-              Edit Case
-            </Button>
-          </div>
+          <EditCaseModal
+            selectedCase={selectedCase}
+            setSelectedCase={setSelectedCase}
+            editMode={editMode === "lawyerOnly" ? "lawyerOnly" : "full"}
+            autoStartEdit={Boolean(autoStartEdit)}
+          />
         ) : (
           <>
             <p className="admin-edit-case-empty-text">No case selected. Please select a case below:</p>
@@ -79,15 +99,6 @@ const EditCase: React.FC = () => {
           </>
         )}
       </div>
-
-      {selectedCase && (
-        <EditCaseModal
-          show={showModal}
-          onClose={() => setShowModal(false)}
-          selectedCase={selectedCase}
-          setSelectedCase={setSelectedCase}
-        />
-      )}
     </>
   );
 };

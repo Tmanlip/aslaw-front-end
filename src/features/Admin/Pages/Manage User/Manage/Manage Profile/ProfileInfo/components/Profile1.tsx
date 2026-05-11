@@ -13,65 +13,81 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({
   onEdit,
 }) => {
   return (
-    <>
-      <p>
-        <strong>Full Name:</strong> {user.name}
-      </p>
+    <div className="admin-profile-page-card">
+      <div className="admin-profile-page-header">
+        <h4>Profile Information</h4>
+        <p className="admin-profile-page-subtitle">Personal and account details</p>
+      </div>
 
-      {user.age && (
-        <p>
-          <strong>Age:</strong> {user.age}
-        </p>
-      )}
+      <div className="admin-profile-field-list">
+        <div className="admin-profile-field-item">
+          <p className="admin-profile-field-label">Full Name</p>
+          <p className="admin-profile-field-value">{user.name}</p>
+        </div>
 
-      {user.email && (
-        <p>
-          <strong>Email:</strong> {user.email}
-        </p>
-      )}
+        {user.age && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Age</p>
+            <p className="admin-profile-field-value">{user.age}</p>
+          </div>
+        )}
 
-      {user.username && (
-        <p>
-          <strong>Username:</strong> {user.username}
-        </p>
-      )}
+        {user.email && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Email</p>
+            <p className="admin-profile-field-value">{user.email}</p>
+          </div>
+        )}
 
-      {user.ICNumber && (
-        <p>
-          <strong>IC Number:</strong> {user.ICNumber}
-        </p>
-      )}
+        {user.username && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Username</p>
+            <p className="admin-profile-field-value">{user.username}</p>
+          </div>
+        )}
 
-      {user.phoneNumber && (
-        <p>
-          <strong>Phone Number:</strong> {user.phoneNumber}
-        </p>
-      )}
+        {user.ICNumber && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">IC Number</p>
+            <p className="admin-profile-field-value">{user.ICNumber}</p>
+          </div>
+        )}
 
-      {user.HomeAddress && (
-        <p>
-          <strong>Home Address:</strong> {user.HomeAddress}
-        </p>
-      )}
+        {user.phoneNumber && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Phone Number</p>
+            <p className="admin-profile-field-value">{user.phoneNumber}</p>
+          </div>
+        )}
 
-      {user.gender && (
-        <p>
-          <strong>Gender:</strong> {user.gender}
-        </p>
-      )}
+        {user.HomeAddress && (
+          <div className="admin-profile-field-item is-full">
+            <p className="admin-profile-field-label">Home Address</p>
+            <p className="admin-profile-field-value">{user.HomeAddress}</p>
+          </div>
+        )}
 
-      {user.maritalStatus && (
-        <p>
-          <strong>Marital Status:</strong> {user.maritalStatus}
-        </p>
-      )}
+        {user.gender && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Gender</p>
+            <p className="admin-profile-field-value">{user.gender}</p>
+          </div>
+        )}
 
-      <div style={{ marginTop: "1rem" }}>
+        {user.maritalStatus && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Marital Status</p>
+            <p className="admin-profile-field-value">{user.maritalStatus}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="admin-profile-actions">
         <Button variant="primary" onClick={onEdit}>
           Edit Information
         </Button>
       </div>
-    </>
+    </div>
   );
 };
 

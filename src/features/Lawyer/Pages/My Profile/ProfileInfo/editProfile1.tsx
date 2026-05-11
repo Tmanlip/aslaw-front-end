@@ -18,6 +18,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Lawyer>(lawyer);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Changed fields only
   const [changedFields, setChangedFields] = useState<
@@ -44,15 +45,25 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
       }
     });
 
+    if (Object.keys(updates).length === 0) {
+      alert("No changes detected.");
+      return;
+    }
+
     setChangedFields(updates);
     setShowConfirm(true);
   };
 
   // When user confirms changes
   const handleConfirmSave = async () => {
-    await onSave({ ...lawyer, ...changedFields }); // merge original + changed fields
-    setShowConfirm(false);
-    onClose();
+    try {
+      setIsSaving(true);
+      await onSave({ ...lawyer, ...changedFields }); // merge original + changed fields
+      setShowConfirm(false);
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -188,6 +199,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
         show={showConfirm}
         original={lawyer}
         updated={changedFields}
+        isSaving={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => setShowConfirm(false)}
       />

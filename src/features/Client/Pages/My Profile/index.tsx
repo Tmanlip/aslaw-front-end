@@ -39,6 +39,8 @@ const ClientProfile: React.FC = () => {
     );
   }
 
+  const clientStatus = data.client.status || "Active";
+
   return (
     <>
       <NavBarClient />
@@ -51,6 +53,12 @@ const ClientProfile: React.FC = () => {
           />
           <h1 className="client-profile-title">Welcome {data.client.name}</h1>
           <p className="client-profile-email">{data.client.email}</p>
+          <div className="client-profile-meta">
+            <span className="client-profile-meta-item">Firm ID: {data.client.firmID || "-"}</span>
+            <span className={`client-profile-status ${String(clientStatus).toLowerCase() === "inactive" ? "is-inactive" : "is-active"}`}>
+              {clientStatus}
+            </span>
+          </div>
         </div>
 
         <div className="client-profile-content">

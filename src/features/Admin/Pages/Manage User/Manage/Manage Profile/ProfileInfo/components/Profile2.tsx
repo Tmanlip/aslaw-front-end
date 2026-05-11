@@ -7,9 +7,11 @@ import { User } from "../../../../../../../../context/ClientDataContext";
 
 interface ProfileStatusPageProps {
   user: User;
-  status: "Active" | "Inactive";
-  setStatus: (status: "Active" | "Inactive") => void;
+  status: "Active" | "Inactive" | "Archived";
+  setStatus: (status: "Active" | "Inactive" | "Archived") => void;
   onEdit: () => void;
+  onStatusSave: (newStatus: "Active" | "Inactive" | "Archived") => Promise<void>;
+  onResetPassword: () => Promise<void>;
 }
 
 const ProfileStatusPage: React.FC<ProfileStatusPageProps> = ({
@@ -17,51 +19,83 @@ const ProfileStatusPage: React.FC<ProfileStatusPageProps> = ({
   status,
   setStatus,
   onEdit,
+  onStatusSave,
+  onResetPassword,
 }) => {
-  const handleStatusChange = (newStatus: "Active" | "Inactive") => {
-    setStatus(newStatus);
-    alert(`Status changed to ${newStatus}`);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [isResettingPassword, setIsResettingPassword] = React.useState(false);
+
+  const handleStatusChange = async (newStatus: "Active" | "Inactive" | "Archived") => {
+    setIsSaving(true);
+    try {
+      await onStatusSave(newStatus);
+      setStatus(newStatus);
+      alert(`Status changed to ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to save status:", error);
+      alert("Failed to save status change.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleResetPasswordClick = async () => {
+    setIsResettingPassword(true);
+    try {
+      await onResetPassword();
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   return (
-    <>
-      {/* User Information */}
-      <p>
-        <strong>Full Name:</strong> {user.name}
-      </p>
+    <div className="admin-profile-page-card">
+      <div className="admin-profile-page-header">
+        <h4>Status & Access</h4>
+        <p className="admin-profile-page-subtitle">Account visibility and profile actions</p>
+      </div>
 
-      {user.email && (
-        <p>
-          <strong>Email:</strong> {user.email}
-        </p>
-      )}
+      <div className="admin-profile-field-list">
+        <div className="admin-profile-field-item">
+          <p className="admin-profile-field-label">Full Name</p>
+          <p className="admin-profile-field-value">{user.name}</p>
+        </div>
 
-      {user.username && (
-        <p>
-          <strong>Username:</strong> {user.username}
-        </p>
-      )}
+        {user.email && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Email</p>
+            <p className="admin-profile-field-value">{user.email}</p>
+          </div>
+        )}
 
-      <hr />
+        {user.username && (
+          <div className="admin-profile-field-item">
+            <p className="admin-profile-field-label">Username</p>
+            <p className="admin-profile-field-value">{user.username}</p>
+          </div>
+        )}
 
-      {/* Status Section */}
-      <p>
-        <strong>Status:</strong>{" "}
-        <span style={{ color: status === "Active" ? "green" : "red" }}>
-          {status}
-        </span>
-      </p>
+        <div className="admin-profile-field-item">
+          <p className="admin-profile-field-label">Current Status</p>
+          <p className="admin-profile-field-value">
+            <span className={`admin-profile-status-chip ${status === "Active" ? "is-active" : status === "Inactive" ? "is-inactive" : "is-archived"}`}>
+              {status}
+            </span>
+          </p>
+        </div>
+      </div>
 
-      <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+      <div className="admin-profile-actions">
         {/* Status Dropdown */}
-        <Dropdown as={ButtonGroup}>
-          <Button variant={status === "Active" ? "success" : "secondary"}>
-            {status}
+        <Dropdown as={ButtonGroup} disabled={isSaving}>
+          <Button variant={status === "Active" ? "success" : status === "Inactive" ? "secondary" : "dark"} disabled={isSaving}>
+            {isSaving ? "Saving..." : status}
           </Button>
 
           <Dropdown.Toggle
             split
-            variant={status === "Active" ? "success" : "secondary"}
+            variant={status === "Active" ? "success" : status === "Inactive" ? "secondary" : "dark"}
+            disabled={isSaving}
           />
 
           <Dropdown.Menu>
@@ -70,6 +104,9 @@ const ProfileStatusPage: React.FC<ProfileStatusPageProps> = ({
             </Dropdown.Item>
             <Dropdown.Item onClick={() => handleStatusChange("Inactive")}>
               Inactive
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => handleStatusChange("Archived")}>
+              Archived
             </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
@@ -82,12 +119,13 @@ const ProfileStatusPage: React.FC<ProfileStatusPageProps> = ({
         {/* Reset Password */}
         <Button
           variant="warning"
-          onClick={() => alert("Reset Password clicked")}
+          onClick={() => void handleResetPasswordClick()}
+          disabled={isResettingPassword}
         >
-          Reset Password
+          {isResettingPassword ? "Resetting..." : "Reset Password"}
         </Button>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -4,13 +4,30 @@ import { Case } from "../../../../../context/ClientDataContext";
 
 interface CaseProgressProps {
   caseItem?: Case | null; // optional prop
+  progressSourceLabel?: string;
 }
 
-const CaseProgress: React.FC<CaseProgressProps> = ({ caseItem }) => {
+const toSafePercent = (value: unknown): number => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, numeric));
+};
+
+const CaseProgress: React.FC<CaseProgressProps> = ({ caseItem, progressSourceLabel }) => {
   if (!caseItem) return <p>No Case Selected</p>;
 
-  // Dummy progress between 40-90%
-  const dummyProgress = Math.floor(Math.random() * 50) + 40;
+  const invoicePhases = (caseItem as any).invoice_payment_phases;
+  const invoicePhaseValues = invoicePhases
+    ? (Object.values(invoicePhases) as Array<{ expected?: number; paid?: number }>)
+    : [];
+  const totalExpected = invoicePhaseValues.reduce((sum: number, phase) => sum + Number(phase?.expected ?? 0), 0);
+  const totalPaid = invoicePhaseValues.reduce((sum: number, phase) => sum + Number(phase?.paid ?? 0), 0);
+  const progress = Number.isFinite(Number((caseItem as any)?.progress))
+    ? toSafePercent((caseItem as any)?.progress)
+    : totalExpected > 0
+      ? toSafePercent((totalPaid / totalExpected) * 100)
+      : 0; // Force zero progress when there are no invoices
+  const progressLabel = progress === 0 ? "0%" : `${progress.toFixed(1)}%`;
 
   // Use caseName if it exists (Case Table), otherwise fall back to title (lawyer/client)
   const caseTitle = (caseItem as any).caseName || (caseItem as any).title || "No Case Assigned";
@@ -20,11 +37,22 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ caseItem }) => {
       <span style={{ fontWeight: "bold", fontSize: "clamp(1rem, 2.6vw, 1.75rem)", lineHeight: 1.35 }}>
         {`${caseTitle} (${caseItem.clientName} - ${caseItem.lawyerName})`}
       </span>
-      <ProgressBar
-        now={dummyProgress}
-        label={`${dummyProgress}%`}
-        style={{ width: "clamp(180px, 32vw, 260px)", height: "20px", fontSize: "0.9rem", flexShrink: 0 }}
-      />
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+        <ProgressBar
+          now={progress}
+          style={{ width: "clamp(180px, 32vw, 260px)", height: "20px", flexShrink: 0 }}
+        />
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+          <span style={{ fontWeight: 600, fontSize: "0.9rem", color: "#000", whiteSpace: "nowrap" }}>
+            {progressLabel}
+          </span>
+          {progressSourceLabel ? (
+            <span style={{ fontSize: "0.75rem", color: "#64748b", whiteSpace: "nowrap" }}>
+              {progressSourceLabel}
+            </span>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 };

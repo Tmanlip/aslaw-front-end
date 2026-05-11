@@ -1,11 +1,186 @@
 .admin-register-user-page {
-  width: min(96vw, 1700px);
+  --register-bg: #f3f5f9;
+  --register-card: #ffffff;
+  --register-border: #d6dce7;
+  --register-title: #28384f;
+  --register-subtitle: #738198;
+  --register-primary: #2f7fca;
+  --register-focus: rgba(47, 127, 202, 0.2);
+  width: min(96vw, 1200px);
   margin: 0 auto;
-  padding: clamp(1rem, 2vw, 2rem);
+  padding: clamp(1.15rem, 2vw, 2.2rem);
+  background: linear-gradient(180deg, #f8fafd 0%, var(--register-bg) 58%);
+  border-radius: 14px;
+  margin-top: clamp(0.75rem, 1.4vw, 1.25rem);
+}
+
+.admin-register-user-header {
+  margin-bottom: 1rem;
+}
+
+.admin-register-user-header h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  color: var(--register-title);
+  font-weight: 700;
+}
+
+.admin-register-user-header p {
+  margin: 0.45rem 0 0;
+  color: var(--register-subtitle);
+  font-size: 0.96rem;
+}
+
+.admin-register-user-card {
+  background: var(--register-card);
+  border: 1px solid var(--register-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(36, 46, 66, 0.08);
+  padding: clamp(1rem, 2vw, 1.6rem);
+}
+
+.admin-register-user-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0 0 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.admin-register-user-card-header h2 {
+  margin: 0;
+  color: #2a3d57;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.admin-register-user-card-header p {
+  margin: 0.35rem 0 0;
+  color: #74839a;
+  font-size: 0.9rem;
+}
+
+.admin-register-user-card-body {
+  background: #fbfdff;
+  border: 1px solid #e7edf5;
+  border-radius: 8px;
+  padding: clamp(0.85rem, 1.4vw, 1.15rem);
+}
+
+.admin-register-user-step-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #e8f2fc;
+  color: #275f96;
+  border: 1px solid #bdd7f2;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.34rem 0.72rem;
+  margin-bottom: 1.1rem;
+}
+
+.admin-register-user-form .form-label {
+  font-weight: 700;
+  color: #33475f;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-register-user-form .form-control,
+.admin-register-user-form .form-select,
+.admin-register-user-form .input-group-text,
+.admin-register-user-form .dropdown-toggle {
+  border-radius: 6px;
+  min-height: 42px;
+  border-color: #d5dde8;
+}
+
+.admin-register-user-form .form-control:focus,
+.admin-register-user-form .form-select:focus {
+  border-color: var(--register-primary);
+  box-shadow: 0 0 0 0.2rem var(--register-focus);
+}
+
+.admin-register-user-form .dropdown-toggle {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #d5dde8;
+  color: #2f4159;
+}
+
+.admin-register-user-form .dropdown-toggle:hover,
+.admin-register-user-form .dropdown-toggle:focus {
+  border-color: var(--register-primary);
+  box-shadow: 0 0 0 0.2rem var(--register-focus);
+}
+
+.admin-register-user-form .dropdown-menu {
+  width: 100%;
+}
+
+.admin-register-user-form-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #275f96;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0.4rem 0 0.9rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #dbe8f5;
+  border-radius: 6px;
+  background: #f3f9ff;
+}
+
+.admin-register-user-pagination .page-item .page-link {
+  color: #2f4159;
+  border-radius: 6px;
+  border-color: #ccd6e3;
+  min-width: 40px;
+  text-align: center;
+}
+
+.admin-register-user-pagination .page-item.active .page-link {
+  background: #2f7fca;
+  border-color: #2f7fca;
+}
+
+.admin-register-user-action-group .btn {
+  border-radius: 6px;
+  min-width: 160px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-register-user-footer {
+  border-top: 1px solid #e5ebf3;
+  padding-top: 1rem;
+}
+
+.admin-register-user-form .text-muted {
+  color: #7f8ca3 !important;
 }
 
 @media (max-width: 768px) {
   .admin-register-user-page {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .admin-register-user-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-register-user-card {
     padding: 0.9rem;
   }
 
@@ -26,7 +201,7 @@
 
 @media (min-width: 1800px) {
   .admin-register-user-page {
-    width: min(94vw, 1880px);
+    width: min(94vw, 1280px);
     padding: 2rem 1.5rem;
   }
 }

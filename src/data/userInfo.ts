@@ -3,7 +3,8 @@ export interface EncryptedDocumentItem {
   file_name: string;
   mime_type: string;
   size_bytes: number;
-  category: "documents" | "reports" | "cheques";
+  category: "documents" | "reports" | "invoices";
+  is_encrypted?: boolean;
   status: string;
   created_at: string;
   preview_url: string;
@@ -11,13 +12,35 @@ export interface EncryptedDocumentItem {
   delete_url: string;
 }
 
+export interface InvoicePhaseSummary {
+  expected: number;
+  paid: number;
+  balance: number;
+}
+
 export interface Case {
   caseId: number;
   id?: number;
   caseName?: string;
   title: string;
+  caseType?: "Litigation" | "Criminal" | "Corporate";
   description: string;
   status: string;
+  progress?: number;
+  expected_payment_phases?: {
+    initial: number;
+    first: number;
+    second: number;
+    third: number;
+    final: number;
+  };
+  invoice_payment_phases?: {
+    initial: InvoicePhaseSummary;
+    first: InvoicePhaseSummary;
+    second: InvoicePhaseSummary;
+    third: InvoicePhaseSummary;
+    final: InvoicePhaseSummary;
+  };
   clientName: string;
   lawyerName: string;
   created_at: string;
@@ -27,6 +50,13 @@ export interface Case {
   clientId: number;
   lawyerId: number;
   encrypted_documents?: EncryptedDocumentItem[];
+  case_type_fee_json?: {
+    initial?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    first?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    second?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    third?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    final?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+  };
 }
 
 export interface Client {
@@ -79,7 +109,7 @@ export interface User {
   name: string;
   email: string;
   role: "admin" | "client" | "lawyer";
-  status: "Active" | "Inactive";
+  status: "Active" | "Inactive" | "Archived";
   caseId?: number | null;
 }
 
@@ -89,4 +119,11 @@ export interface CaseRecord {
   lawyerId?: number | null;
   lawyerName?: string;
   blob_folder_path?: string;
+  case_type_fee_json?: {
+    initial?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    first?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    second?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    third?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+    final?: Array<{ practiceArea?: string; typeOfWork?: string; selectedFee?: number; estimationFeesRange?: string }>;
+  };
 }

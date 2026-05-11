@@ -3,6 +3,7 @@ const PATH = {
     ROOT : "/admin",
     DASHBOARD : "/admin/dashboard",
     MY_PROFILE : "/admin/my-profile",
+    SCHEDULE_MEETING : "/admin/schedule-meeting",
     BILLING : "/admin/billing",
     LAWYER_BILLING : "/admin/lawyer-billing", 
     MANAGE_CASE : "/admin/cases",
@@ -13,6 +14,7 @@ const PATH = {
     MANAGE_PROFILE : "/admin/users/manage-profile",
     REGISTER_USER : "/admin/users/register",
     LOGS : "/admin/logs",
+    SEARCH : "/admin/search",
     CHATBOT : "/admin/chatbot"
   },
 
@@ -21,6 +23,7 @@ const PATH = {
     DASHBOARD : "/client/dashboard",
     MY_PROFILE : "/client/my-profile",
     VIEW_CASE : "/client/view-case",
+    SCHEDULE_MEETING : "/client/schedule-meeting",
     CHATBOT : "/client/chatbot"
   },
 
@@ -29,11 +32,17 @@ const PATH = {
     DASHBOARD : "/lawyer/dashboard",
     UPDATE_CASE : "/lawyer/update-case",
     MY_PROFILE : "/lawyer/my-profile",
+    SCHEDULE_MEETING : "/lawyer/schedule-meeting",
     CHATBOT : "/lawyer/chatbot"
   },
 
   CHATBOT : {
     ROOT : "/chatbot"
+  },
+
+  DOCUMENT_GENERATOR: {
+    DASHBOARD: "/document-generator",
+    TEMPLATE: "/document-generator/template/:id",
   },
 
   AUTH : {

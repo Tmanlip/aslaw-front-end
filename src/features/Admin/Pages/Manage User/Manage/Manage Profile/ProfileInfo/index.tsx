@@ -1,10 +1,11 @@
 // src/components/ProfileInfo/ProfileInfo.tsx
 import React, { useState } from "react";
 import Pagination from "react-bootstrap/Pagination";
+import ConfirmModal from "../../../../../../../components/Modals/ConfirmModal";
 import ProfileDetailsPage from "./components/Profile1";
 import ProfileStatusPage from "./components/Profile2";
 import EditProfileModal from "./components/EditProfile";
-import { updateUser } from "../../../../../../../hooks/user";
+import { resetUserPasswordAuto, updateUser } from "../../../../../../../hooks/user";
 import { useClientData, User } from "../../../../../../../context/ClientDataContext";
 import "./profileInfo.css";
 
@@ -13,13 +14,32 @@ const ProfileInfo: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [showEdit, setShowEdit] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   // local editable user for the modal
   const [editableUser, setEditableUser] = useState<User>(authUser!);
 
-  const [status, setStatus] = useState<"Active" | "Inactive">(
-    authUser?.status === "Inactive" ? "Inactive" : "Active"
+  const [status, setStatus] = useState<"Active" | "Inactive" | "Archived">(
+    (authUser?.status as "Active" | "Inactive" | "Archived") || "Active"
   );
+
+  // Save status change
+  const handleStatusSave = async (newStatus: "Active" | "Inactive" | "Archived") => {
+    try {
+      const updatedUser = { ...editableUser, status: newStatus };
+      const response = await updateUser(editableUser.firmID, updatedUser);
+
+      // Update context
+      setUserData(response.user, cases);
+
+      // Update local state
+      setEditableUser(response.user);
+    } catch (error: any) {
+      console.error("Failed to update status:", error.response?.data || error);
+      throw error;
+    }
+  };
 
   // Save changes from modal
   const handleSave = async (updatedUser: User) => {
@@ -34,13 +54,40 @@ const ProfileInfo: React.FC = () => {
       setEditableUser(response.user);
 
       // Update status if changed
-      if (updatedUser.status) setStatus(updatedUser.status as "Active" | "Inactive");
+      if (updatedUser.status) setStatus(updatedUser.status as "Active" | "Inactive" | "Archived");
 
       setShowEdit(false);
       alert("Profile updated successfully!");
     } catch (error: any) {
       console.error("Failed to update profile:", error.response?.data || error);
       alert(error.response?.data?.message || "Failed to update profile.");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!editableUser?.firmID) {
+      alert("Unable to reset password because user Firm ID is missing.");
+      return;
+    }
+
+    setShowResetConfirm(true);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!editableUser?.firmID) {
+      return;
+    }
+
+    try {
+      setIsResetting(true);
+      await resetUserPasswordAuto(editableUser.firmID);
+      setShowResetConfirm(false);
+      alert("Your new password was given and sent to the registered email.");
+    } catch (error: any) {
+      console.error("Failed to reset password:", error.response?.data || error);
+      alert(error.response?.data?.message || "Failed to reset password.");
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -62,6 +109,8 @@ const ProfileInfo: React.FC = () => {
             status={status}
             setStatus={setStatus}
             onEdit={() => setShowEdit(true)}
+            onStatusSave={handleStatusSave}
+            onResetPassword={handleResetPassword}
           />
         )}
 
@@ -81,6 +130,20 @@ const ProfileInfo: React.FC = () => {
         onClose={() => setShowEdit(false)}
         onSave={handleSave} // sends full user to backend and updates context
       />
+
+      <ConfirmModal
+        show={showResetConfirm}
+        title="Reset Password"
+        confirmText="Reset"
+        confirmingText="Resetting..."
+        isConfirming={isResetting}
+        onConfirm={() => void confirmResetPassword()}
+        onCancel={() => setShowResetConfirm(false)}
+      >
+        <p style={{ marginBottom: 0 }}>
+          Reset password for {editableUser.name}? A new password will be emailed to {editableUser.email}.
+        </p>
+      </ConfirmModal>
     </>
   );
 };

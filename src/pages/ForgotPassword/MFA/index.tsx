@@ -4,8 +4,12 @@ import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import axios from "axios";
 
-const EmailConfirm: React.FC = () => {
-  const [email, setEmail] = useState("");
+type EmailConfirmProps = {
+  initialEmail?: string;
+};
+
+const EmailConfirm: React.FC<EmailConfirmProps> = ({ initialEmail = "" }) => {
+  const [email, setEmail] = useState(initialEmail);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<"success" | "danger">("success");
   const [loading, setLoading] = useState(false);

@@ -8,6 +8,7 @@ import {
   CircularProgress,
   Alert,
   Box,
+  MenuItem,
 } from "@mui/material";
 import axiosUser from "../../../../../../api/axiosUser";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,27 @@ import ClientSearch, { Client } from "./ClientSearch";
 import LawyerSearch, { Lawyer } from "./LawyerSearch";
 
 const API_URL = process.env.REACT_APP_API_URL;
+
+type ExpectedPayments = {
+  initial: string;
+  first: string;
+  second: string;
+  third: string;
+  final: string;
+};
+
+type CaseType = "Litigation" | "Criminal" | "Corporate";
+
+const getDefaultExpectedPayments = (caseType: CaseType): ExpectedPayments => {
+  switch (caseType) {
+    case "Criminal":
+      return { initial: "1200", first: "1800", second: "2000", third: "2200", final: "2800" };
+    case "Corporate":
+      return { initial: "3000", first: "4500", second: "5000", third: "5500", final: "7000" };
+    default:
+      return { initial: "1500", first: "2500", second: "3000", third: "3000", final: "4000" };
+  }
+};
 
 const CaseForm: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -26,12 +48,18 @@ const CaseForm: React.FC = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [caseType, setCaseType] = useState<CaseType>("Litigation");
+  const [expectedPayments, setExpectedPayments] = useState<ExpectedPayments>(
+    getDefaultExpectedPayments("Litigation")
+  );
 
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string>("");
   const [submitError, setSubmitError] = useState<string>("");
+  const [submitSuccess, setSubmitSuccess] = useState<string>("");
   const navigate = useNavigate();
+  const SUCCESS_REDIRECT_DELAY_MS = 1200;
 
   // 🔥 Fetch Clients
   const fetchClients = async () => {
@@ -66,6 +94,7 @@ const CaseForm: React.FC = () => {
 
   const handleSubmit = async () => {
     setSubmitError("");
+    setSubmitSuccess("");
 
     if (!title.trim()) {
       setSubmitError("Case title is required");
@@ -92,18 +121,27 @@ const CaseForm: React.FC = () => {
     try {
       const payload = {
         title,
+        caseType,
         description,
         lawyerID: selectedLawyer.firmID,
         clientID: selectedClient.firmID,
+        expected_initial_payment: Number(expectedPayments.initial || 0),
+        expected_first_payment: Number(expectedPayments.first || 0),
+        expected_second_payment: Number(expectedPayments.second || 0),
+        expected_third_payment: Number(expectedPayments.third || 0),
+        expected_final_payment: Number(expectedPayments.final || 0),
       };
 
       await axiosUser.post(`${API_URL}/registercases`, payload);
 
-      // Redirect to admin case list page
-      navigate(PATH.ADMIN.MANAGE_CASE);
+      setSubmitSuccess("Case registered successfully!");
+
+      window.setTimeout(() => {
+        navigate(PATH.ADMIN.MANAGE_CASE);
+      }, SUCCESS_REDIRECT_DELAY_MS);
     } catch (error: any) {
       console.error("Error creating case:", error);
-      
+
       const errorMessage = error.response?.data?.error || 
                           error.response?.data?.message ||
                           "Case creation failed. Please check the selected lawyer and client.";
@@ -114,10 +152,28 @@ const CaseForm: React.FC = () => {
   };
 
   return (
-    <Paper sx={{ p: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        Register Case
-      </Typography>
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 2.5, md: 4 },
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        background: "linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%)",
+        boxShadow: "0 12px 28px rgba(15, 23, 42, 0.06)",
+      }}
+    >
+      <Stack spacing={0.75} sx={{ mb: 3 }}>
+        <Typography variant="overline" sx={{ color: "#0f766e", fontWeight: 700, letterSpacing: "0.12em" }}>
+          ADMIN WORKFLOW
+        </Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: "#1f2937" }}>
+          Register Case
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Assign the parties, define the case type, and set payment milestones in a single step.
+        </Typography>
+      </Stack>
 
       {fetchLoading && (
         <Box display="flex" alignItems="center" justifyContent="center" my={4}>
@@ -145,13 +201,19 @@ const CaseForm: React.FC = () => {
       )}
 
       {submitError && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
           {submitError}
         </Alert>
       )}
 
+      {submitSuccess && (
+        <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+          {submitSuccess}
+        </Alert>
+      )}
+
       {!fetchLoading && clients.length > 0 && lawyers.length > 0 && (
-        <Stack spacing={3}>
+        <Stack spacing={2.5}>
           <ClientSearch
             clients={clients}
             selectedClient={selectedClient}
@@ -190,6 +252,22 @@ const CaseForm: React.FC = () => {
           />
 
           <TextField
+            label="Case Type"
+            select
+            fullWidth
+            value={caseType}
+            onChange={(e) => {
+              const nextType = e.target.value as CaseType;
+              setCaseType(nextType);
+              setExpectedPayments(getDefaultExpectedPayments(nextType));
+            }}
+          >
+            <MenuItem value="Litigation">Litigation</MenuItem>
+            <MenuItem value="Criminal">Criminal</MenuItem>
+            <MenuItem value="Corporate">Corporate</MenuItem>
+          </TextField>
+
+          <TextField
             label="Description"
             fullWidth
             multiline
@@ -198,14 +276,82 @@ const CaseForm: React.FC = () => {
             onChange={(e) => setDescription(e.target.value)}
           />
 
+          <Stack spacing={0.25}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1f2937" }}>
+              Expected Payment Phases
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Define the amount for each milestone before submitting the case.
+            </Typography>
+          </Stack>
+
+          <TextField
+            label="Initial Phase (RM)"
+            type="number"
+            inputProps={{ min: 0, step: "0.01" }}
+            fullWidth
+            value={expectedPayments.initial}
+            onChange={(e) => setExpectedPayments((prev) => ({ ...prev, initial: e.target.value }))}
+          />
+
+          <TextField
+            label="First Phase (RM)"
+            type="number"
+            inputProps={{ min: 0, step: "0.01" }}
+            fullWidth
+            value={expectedPayments.first}
+            onChange={(e) => setExpectedPayments((prev) => ({ ...prev, first: e.target.value }))}
+          />
+
+          <TextField
+            label="Second Phase (RM)"
+            type="number"
+            inputProps={{ min: 0, step: "0.01" }}
+            fullWidth
+            value={expectedPayments.second}
+            onChange={(e) => setExpectedPayments((prev) => ({ ...prev, second: e.target.value }))}
+          />
+
+          <TextField
+            label="Third Phase (RM)"
+            type="number"
+            inputProps={{ min: 0, step: "0.01" }}
+            fullWidth
+            value={expectedPayments.third}
+            onChange={(e) => setExpectedPayments((prev) => ({ ...prev, third: e.target.value }))}
+          />
+
+          <TextField
+            label="Final Phase (RM)"
+            type="number"
+            inputProps={{ min: 0, step: "0.01" }}
+            fullWidth
+            value={expectedPayments.final}
+            onChange={(e) => setExpectedPayments((prev) => ({ ...prev, final: e.target.value }))}
+          />
+
           <Button
             variant="contained"
             fullWidth
             size="large"
             onClick={handleSubmit}
             disabled={loading}
+            sx={{
+              py: 1.4,
+              borderRadius: 2,
+              fontWeight: 700,
+              textTransform: "none",
+              background: "linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)",
+            }}
           >
-            {loading ? <CircularProgress size={24} /> : "Register Case"}
+            {loading ? (
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+                <CircularProgress size={20} color="inherit" />
+                <span>Submitting...</span>
+              </Stack>
+            ) : (
+              "Register Case"
+            )}
           </Button>
         </Stack>
       )}

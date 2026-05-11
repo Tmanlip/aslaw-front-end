@@ -20,3 +20,17 @@ export const updateUser = async (
 
   return response.data;
 };
+
+export const resetUserPasswordAuto = async (firmID: string) => {
+  const response = await axiosUser.put(
+    `${API_BASE_URL}/users/${firmID}`,
+    { reset_password: true },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};

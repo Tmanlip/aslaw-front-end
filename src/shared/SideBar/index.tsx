@@ -2,7 +2,7 @@
 import React from "react";
 import Offcanvas from "react-bootstrap/Offcanvas";
 import Nav from "react-bootstrap/Nav";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { colors } from "../../constant/color";
 import PATH from "../../constant/paths";
 import { useAuth } from "../../context/AuthContext";
@@ -16,13 +16,19 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
   const { role, user } = useAuth();
+  const location = useLocation();
+  const isDocumentGeneratorPath = (path?: string) =>
+    Boolean(path && path.startsWith(PATH.DOCUMENT_GENERATOR.DASHBOARD));
   const effectiveRole = ((role || String(user?.role || "").toLowerCase()) as
     | "admin"
     | "client"
     | "lawyer"
     | "") || "";
   const roleRoutes = AppRoutes(effectiveRole || null);
-  const adminExtraRoutes = effectiveRole === "admin" ? [{ path: PATH.ADMIN.LOGS }] : [];
+  const adminExtraRoutes =
+    effectiveRole === "admin"
+      ? [{ path: PATH.ADMIN.SCHEDULE_MEETING }, { path: PATH.ADMIN.LOGS }]
+      : [];
   const adminExcludedPaths = new Set([
     PATH.ADMIN.BILLING,
     PATH.ADMIN.LAWYER_BILLING,
@@ -31,17 +37,22 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     PATH.ADMIN.EDIT_CASE,
     PATH.ADMIN.ASSIGN_CASE,
     PATH.ADMIN.REGISTER_CASE,
+    PATH.ADMIN.SEARCH,
     PATH.ADMIN.CHATBOT,
   ]);
 
   const sidebarRoutes =
     effectiveRole === "admin"
       ? roleRoutes.filter(
-          (r) => !r.path || !adminExcludedPaths.has(r.path)
+          (r) =>
+            !r.path ||
+            (!adminExcludedPaths.has(r.path) && !isDocumentGeneratorPath(r.path))
         )
       : roleRoutes.filter((r) =>
           r.path
-            ? r.path !== PATH.CLIENT.CHATBOT && r.path !== PATH.LAWYER.CHATBOT
+            ? r.path !== PATH.CLIENT.CHATBOT &&
+              r.path !== PATH.LAWYER.CHATBOT &&
+              !isDocumentGeneratorPath(r.path)
             : true
         );
 
@@ -64,9 +75,10 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
 
   return (
     <Offcanvas
+      className="aslaw-metis-sidebar"
       show={show}
       onHide={handleClose}
-      style={{ width: "250px", backgroundColor: colors.gold, color: colors.white }}
+      style={{ width: "min(86vw, 280px)", backgroundColor: colors.gold, color: colors.white }}
     >
       <Offcanvas.Header closeButton closeVariant="white">
         <Offcanvas.Title>Menu</Offcanvas.Title>
@@ -81,7 +93,8 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
                 key={i}
                 as={Link}
                 to={route.path}
-                style={{ color: colors.white, marginBottom: "1rem" }}
+                onClick={handleClose}
+                className={`aslaw-sidebar-link ${location.pathname === route.path ? "active" : ""}`}
               >
                 {route.path
                   .split("/")
@@ -97,7 +110,8 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
           <Nav.Link
             as={Link}
             to={chatbotPath}
-            style={{ color: colors.white, marginBottom: "1rem" }}
+            onClick={handleClose}
+            className={`aslaw-sidebar-link ${location.pathname === chatbotPath ? "active" : ""}`}
           >
             Internal Chatbot
           </Nav.Link>

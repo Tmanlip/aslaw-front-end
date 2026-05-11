@@ -16,13 +16,14 @@
   export const LeftSection = styled("div")({
     display: "flex",
     alignItems: "center",
-    gap: "10px",
+    gap: "14px",
     flex: 1,
+    minWidth: 0,
   });
 
   export const MenuIcon = styled("img")({
-    width: "28px",
-    height: "28px",
+    width: "clamp(28px, 4vw, 34px)",
+    height: "clamp(28px, 4vw, 34px)",
   });
 
   export const SearchWrapper = styled("div")({
@@ -30,6 +31,7 @@
     alignItems: "center",
     flex: 1,
     maxWidth: "450px",
+    minWidth: 0,
   });
 
   export const SearchInputContainer = styled("div")({
@@ -62,7 +64,7 @@
   });
 
   export const Logo = styled("img")({
-    height: "40px",
+    height: "clamp(38px, 6vw, 52px)",
     objectFit: "contain",
   });
 
@@ -73,6 +75,7 @@
     padding: "8px 16px",
     borderRadius: "9999px", // ✅ round pill
     fontWeight: "500",
+    whiteSpace: "nowrap",
     cursor: "pointer",
     "&:hover": {
       background: "#f8e49c",

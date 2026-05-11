@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import axiosUser from "../../../../api/axiosUser";
 import "./logs.css";
@@ -50,10 +51,18 @@ const getInteractionLabel = (log: InteractionLog): string => {
 };
 
 const AdminLogs: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = (searchParams.get("search") || searchParams.get("q") || "").trim();
+
   const [logs, setLogs] = useState<InteractionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
+
+  useEffect(() => {
+    const urlSearch = (searchParams.get("search") || searchParams.get("q") || "").trim();
+    setSearch(urlSearch);
+  }, [searchParams]);
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -105,7 +114,16 @@ const AdminLogs: React.FC = () => {
             className="admin-logs-search"
             placeholder="Search by user, interaction, or IP"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearch(value);
+              const trimmed = value.trim();
+              if (trimmed) {
+                setSearchParams({ search: trimmed });
+              } else {
+                setSearchParams({});
+              }
+            }}
           />
         </div>
 
@@ -125,12 +143,12 @@ const AdminLogs: React.FC = () => {
               <tbody>
                 {filteredLogs.map((log, index) => (
                   <tr key={`${log._id || log.path}-${index}`}>
-                    <td>
+                    <td data-label="User">
                       {log.email || `User #${log.user_id ?? "-"}`}
                       {log.firm_id ? ` (${log.firm_id})` : ""}
                     </td>
-                    <td>{getInteractionLabel(log)}</td>
-                    <td>{log.ip || "-"}</td>
+                    <td data-label="Interaction">{getInteractionLabel(log)}</td>
+                    <td data-label="IP">{log.ip || "-"}</td>
                   </tr>
                 ))}
 

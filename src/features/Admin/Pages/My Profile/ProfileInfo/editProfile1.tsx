@@ -18,6 +18,7 @@ const EditAdminModal: React.FC<EditAdminModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Lawyer>(admin);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [changedFields, setChangedFields] = useState<
     Partial<Record<keyof Lawyer, any>>
   >({});
@@ -40,14 +41,24 @@ const EditAdminModal: React.FC<EditAdminModalProps> = ({
       }
     });
 
+    if (Object.keys(updates).length === 0) {
+      alert("No changes detected.");
+      return;
+    }
+
     setChangedFields(updates);
     setShowConfirm(true);
   };
 
   const handleConfirmSave = async () => {
-    await onSave({ ...admin, ...changedFields });
-    setShowConfirm(false);
-    onClose();
+    try {
+      setIsSaving(true);
+      await onSave({ ...admin, ...changedFields });
+      setShowConfirm(false);
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -178,6 +189,7 @@ const EditAdminModal: React.FC<EditAdminModalProps> = ({
         show={showConfirm}
         original={admin}
         updated={changedFields}
+        isSaving={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => setShowConfirm(false)}
       />

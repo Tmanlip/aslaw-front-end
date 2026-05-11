@@ -1,12 +1,204 @@
 .admin-register-case-page {
-  width: min(96vw, 1700px);
+  --case-bg: #f3f5f9;
+  --case-card: #ffffff;
+  --case-border: #d6dce7;
+  --case-title: #28384f;
+  --case-subtitle: #738198;
+  --case-accent: #2f7fca;
+  width: min(96vw, 1200px);
   margin: 0 auto;
-  padding: clamp(1rem, 2vw, 2rem);
+  padding: clamp(1.15rem, 2vw, 2.2rem);
+  background: linear-gradient(180deg, #f8fafd 0%, var(--case-bg) 58%);
+  border-radius: 14px;
+  margin-top: clamp(0.75rem, 1.4vw, 1.25rem);
+}
+
+.admin-register-case-header {
+  margin-bottom: 1rem;
+}
+
+.admin-register-case-header h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  font-weight: 700;
+  color: var(--case-title);
+}
+
+.admin-register-case-header p {
+  margin: 0.45rem 0 0;
+  color: var(--case-subtitle);
+  font-size: 0.96rem;
+}
+
+.admin-register-case-card {
+  background: var(--case-card);
+  border: 1px solid var(--case-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(36, 46, 66, 0.08);
+  padding: clamp(1rem, 2vw, 1.6rem);
+}
+
+.admin-register-case-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0 0 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.admin-register-case-card-header h2 {
+  margin: 0;
+  color: #2a3d57;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.admin-register-case-card-header p {
+  margin: 0.35rem 0 0;
+  color: #74839a;
+  font-size: 0.9rem;
+}
+
+.admin-register-case-card-body {
+  background: #fbfdff;
+  border: 1px solid #e7edf5;
+  border-radius: 8px;
+  padding: clamp(0.85rem, 1.4vw, 1.15rem);
+}
+
+.admin-register-case-banner {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #f7fbff 0%, #edf5ff 100%);
+  border: 1px solid #dbe8f5;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+  min-width: min(100%, 420px);
+}
+
+.admin-register-case-banner > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-register-case-banner-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--case-subtitle);
+  font-weight: 700;
+}
+
+.admin-register-case-form-wrap {
+  padding-top: 0.2rem;
+}
+
+.admin-register-case-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #275f96;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0.4rem 0 0.9rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #dbe8f5;
+  border-radius: 6px;
+  background: #f3f9ff;
+}
+
+.admin-register-case-form .form-label {
+  font-weight: 700;
+  color: #33475f;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-register-case-form .form-control,
+.admin-register-case-form .form-select,
+.admin-register-case-form .dropdown-toggle {
+  border-radius: 6px;
+  min-height: 42px;
+  border-color: #d5dde8;
+}
+
+.admin-register-case-form .form-control:focus,
+.admin-register-case-form .form-select:focus {
+  border-color: var(--case-accent);
+  box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.16);
+}
+
+.admin-register-case-form .dropdown-toggle {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #d5dde8;
+  color: #2f4159;
+}
+
+.admin-register-case-form .dropdown-toggle:hover,
+.admin-register-case-form .dropdown-toggle:focus {
+  border-color: var(--case-accent);
+  box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.16);
+}
+
+.admin-register-case-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #e5ebf3;
+  margin-top: 1rem;
+}
+
+.admin-register-case-submit {
+  min-width: 180px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #2f7fca 0%, #2c6bb4 100%);
+  border: none;
+}
+
+.admin-register-case-submit:hover {
+  filter: brightness(1.02);
+}
+
+.admin-register-case-form .btn-outline-secondary {
+  border-color: #b5c7dc;
+  color: #35557a;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
 }
 
 @media (max-width: 768px) {
   .admin-register-case-page {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .admin-register-case-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-register-case-card {
     padding: 0.9rem;
+  }
+
+  .admin-register-case-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-register-case-footer {
+    justify-content: stretch;
   }
 
   .admin-register-case-submit {
@@ -16,7 +208,7 @@
 
 @media (min-width: 1800px) {
   .admin-register-case-page {
-    width: min(94vw, 1880px);
+    width: min(94vw, 1280px);
     padding: 2rem 1.5rem;
   }
 }

@@ -1,0 +1,813 @@
+.meeting-scheduler-page {
+  min-height: calc(100vh - 76px);
+  padding: 1.4rem 1.1rem 2rem;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 215, 0, 0.18), transparent 26%),
+    radial-gradient(circle at 82% 10%, rgba(224, 179, 0, 0.15), transparent 24%),
+    linear-gradient(180deg, #fff8dc 0%, #fbf4dd 42%, #f7efd3 100%);
+}
+
+.meeting-scheduler-hero {
+  max-width: 1440px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  border: 1px solid rgba(127, 85, 57, 0.16);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 10px 24px rgba(43, 32, 20, 0.12);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.meeting-scheduler-role {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: #1f2937;
+  font-weight: 800;
+}
+
+.meeting-scheduler-hero h1 {
+  margin: 0.45rem 0;
+  font-size: clamp(1.55rem, 3vw, 2.2rem);
+  color: #1f2937;
+}
+
+.meeting-scheduler-hero p {
+  margin: 0;
+  color: rgba(31, 41, 55, 0.82);
+}
+
+.meeting-scheduler-meta {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.meeting-scheduler-meta span {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  color: #1f2937;
+  font-size: 0.86rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meeting-scheduler-toolbar-card {
+  max-width: 1440px;
+  margin: 0 auto 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.95rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid #d9cc9e;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 8px 22px rgba(43, 32, 20, 0.07);
+}
+
+.meeting-scheduler-toolbar-left,
+.meeting-scheduler-toolbar-right {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.meeting-scheduler-toolbar-center {
+  text-align: center;
+}
+
+.meeting-scheduler-toolbar-center h2,
+.meeting-scheduler-card-header h2 {
+  margin: 0;
+  color: #3b2512;
+  font-size: 1.22rem;
+}
+
+.meeting-scheduler-toolbar-center p,
+.meeting-scheduler-kicker {
+  margin: 0;
+  color: #8a6a00;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.meeting-scheduler-toolbar-btn {
+  border: 1px solid #d8c8aa;
+  background: #fff;
+  color: #3b2512;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.meeting-scheduler-toolbar-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.meeting-scheduler-toolbar-btn.is-primary {
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  border-color: transparent;
+  color: #1f2937;
+}
+
+.meeting-scheduler-view-subtitle {
+  margin: 0.2rem 0 0;
+  color: #6a4b31;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.meeting-scheduler-dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(340px, 0.9fr);
+  gap: 1rem;
+}
+
+.meeting-scheduler-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #dccf9d;
+  border-radius: 12px;
+  padding: 1.1rem;
+  box-shadow: 0 10px 24px rgba(37, 27, 18, 0.08);
+}
+
+.meeting-scheduler-calendar-card {
+  min-width: 0;
+}
+
+.meeting-scheduler-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.meeting-scheduler-card-header.compact {
+  margin-bottom: 0.15rem;
+}
+
+.meeting-scheduler-stats {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.meeting-scheduler-stats span {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: #fff8dc;
+  border: 1px solid #eadf9a;
+  color: #674a32;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.meeting-scheduler-legend {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.meeting-scheduler-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: #fffaf1;
+  border: 1px solid #eadf9a;
+  color: #5d4229;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.is-meeting,
+.meeting-scheduler-day-event.is-person {
+  background: #d39e4d;
+}
+
+.legend-dot.is-online,
+.meeting-scheduler-day-event.is-online {
+  background: #2f7fca;
+}
+
+.legend-dot.is-person {
+  background: #d39e4d;
+}
+
+.legend-dot.is-today {
+  background: #8a6a00;
+}
+
+.meeting-scheduler-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.meeting-scheduler-weekdays span {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #8a6a00;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.meeting-scheduler-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.meeting-scheduler-calendar-grid .meeting-scheduler-day-cell {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
+
+.meeting-scheduler-day-cell {
+  min-height: 120px;
+  border-radius: 10px;
+  border: 1px solid #eadf9a;
+  background: linear-gradient(180deg, #fff 0%, #fff9ea 100%);
+  padding: 0.55rem;
+  overflow: hidden;
+}
+
+.meeting-scheduler-day-cell.is-outside {
+  opacity: 0.52;
+}
+
+.meeting-scheduler-day-cell.is-today {
+  border-color: #e0b300;
+  box-shadow: inset 0 0 0 1px rgba(224, 179, 0, 0.25);
+}
+
+.meeting-scheduler-day-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.meeting-scheduler-day-number {
+  font-weight: 800;
+  color: #3b2512;
+}
+
+.meeting-scheduler-day-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #ffd700;
+  color: #1f2937;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meeting-scheduler-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.meeting-scheduler-week-view {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.meeting-scheduler-week-day {
+  border: 1px solid #eadf9a;
+  background: linear-gradient(180deg, #fff 0%, #fff9ea 100%);
+  border-radius: 10px;
+  padding: 0.7rem 0.55rem;
+  min-height: 240px;
+  text-align: left;
+}
+
+.meeting-scheduler-week-day.is-today {
+  border-color: #e0b300;
+  box-shadow: inset 0 0 0 1px rgba(224, 179, 0, 0.25);
+}
+
+.meeting-scheduler-week-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  color: #3b2512;
+  font-weight: 800;
+}
+
+.meeting-scheduler-week-day-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.meeting-scheduler-empty-slot {
+  color: #8a6a00;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.meeting-scheduler-day-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.meeting-scheduler-day-view-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: #fff8dc;
+  border: 1px solid #eadf9a;
+}
+
+.meeting-scheduler-day-view-head h3 {
+  margin: 0;
+  color: #3b2512;
+  font-size: 1.1rem;
+}
+
+.meeting-scheduler-day-view-head span {
+  color: #8a6a00;
+  font-weight: 700;
+}
+
+.meeting-scheduler-day-view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meeting-scheduler-day-empty {
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px dashed #eadf9a;
+  background: #fffdf3;
+  color: #76553a;
+  font-weight: 600;
+}
+
+.meeting-scheduler-day-detail-card {
+  border: 1px solid #d8c8aa;
+  border-radius: 10px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, #fff 0%, #fffaf1 100%);
+}
+
+.meeting-scheduler-day-event {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.78rem;
+}
+
+.meeting-scheduler-day-event strong {
+  font-size: 0.76rem;
+}
+
+.meeting-scheduler-day-event span {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.meeting-scheduler-more {
+  font-size: 0.75rem;
+  color: #8a6a00;
+  font-weight: 700;
+}
+
+.meeting-scheduler-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.meeting-scheduler-summary-card .meeting-scheduler-category-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.meeting-scheduler-category-item {
+  border-radius: 10px;
+  border: 1px solid #eadf9a;
+  background: #fffaf1;
+  padding: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.meeting-scheduler-category-item span {
+  color: #7f5539;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.meeting-scheduler-category-item strong {
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.meeting-scheduler-form-card,
+.meeting-scheduler-admin-card,
+.meeting-scheduler-upcoming-card {
+  gap: 0.65rem;
+}
+
+.meeting-scheduler-card label {
+  font-weight: 700;
+  color: #5d4229;
+  font-size: 0.93rem;
+}
+
+.meeting-scheduler-card input,
+.meeting-scheduler-card select,
+.meeting-scheduler-card textarea {
+  width: 100%;
+  border: 1px solid #d8c8aa;
+  border-radius: 10px;
+  padding: 0.62rem 0.75rem;
+  min-height: 44px;
+  font-size: 0.94rem;
+  color: #382313;
+  background: #fff;
+}
+
+.meeting-scheduler-card textarea {
+  min-height: 120px;
+}
+
+.meeting-scheduler-card input:focus,
+.meeting-scheduler-card select:focus,
+.meeting-scheduler-card textarea:focus {
+  outline: none;
+  border-color: #e0b300;
+  box-shadow: 0 0 0 3px rgba(224, 179, 0, 0.14);
+}
+
+.meeting-scheduler-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.meeting-scheduler-card button[type="submit"] {
+  margin-top: 0.3rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.78rem 0.95rem;
+  font-weight: 800;
+  color: #1f2937;
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.meeting-scheduler-card button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(113, 77, 42, 0.22);
+}
+
+.meeting-scheduler-note {
+  margin: 0;
+  color: #76553a;
+  font-size: 0.87rem;
+}
+
+.meeting-scheduler-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.meeting-scheduler-item {
+  border: 1px solid #d8c8aa;
+  border-radius: 10px;
+  padding: 0.78rem;
+  background: linear-gradient(180deg, #fff 0%, #fffaf1 100%);
+}
+
+.meeting-scheduler-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.meeting-scheduler-item h3 {
+  margin: 0;
+  color: #442d1a;
+  font-size: 1rem;
+}
+
+.meeting-scheduler-item p {
+  margin: 0.35rem 0 0;
+  color: #6a4b31;
+  font-size: 0.89rem;
+  overflow-wrap: anywhere;
+}
+
+.meeting-scheduler-status {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.meeting-scheduler-status-confirmed {
+  background: #fff2b3;
+  color: #8a6a00;
+}
+
+.meeting-scheduler-error,
+.meeting-scheduler-success {
+  margin: 0.1rem 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.meeting-scheduler-error {
+  color: #a12e2e;
+}
+
+.meeting-scheduler-success {
+  color: #1f7634;
+}
+
+@media (max-width: 1180px) {
+  .meeting-scheduler-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-scheduler-list {
+    max-height: unset;
+  }
+}
+
+@media (max-width: 992px) {
+  .meeting-scheduler-hero,
+  .meeting-scheduler-toolbar-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meeting-scheduler-toolbar-center {
+    text-align: left;
+  }
+}
+
+@media (max-width: 768px) {
+  .meeting-scheduler-page {
+    padding: 1rem 0.8rem 1.4rem;
+  }
+
+  .meeting-scheduler-hero,
+  .meeting-scheduler-toolbar-card,
+  .meeting-scheduler-card {
+    border-radius: 10px;
+    padding: 0.95rem;
+  }
+
+  .meeting-scheduler-calendar-grid,
+  .meeting-scheduler-weekdays {
+    gap: 0.3rem;
+  }
+
+  .meeting-scheduler-day-cell {
+    min-height: 102px;
+    padding: 0.45rem;
+  }
+
+  .meeting-scheduler-row,
+  .meeting-scheduler-summary-card .meeting-scheduler-category-list {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-scheduler-week-view {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-scheduler-toolbar-left,
+  .meeting-scheduler-toolbar-right,
+  .meeting-scheduler-meta {
+    width: 100%;
+  }
+
+  .meeting-scheduler-toolbar-left,
+  .meeting-scheduler-toolbar-right {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .meeting-scheduler-toolbar-left .meeting-scheduler-toolbar-btn,
+  .meeting-scheduler-toolbar-right .meeting-scheduler-toolbar-btn {
+    width: 100%;
+  }
+
+  .meeting-scheduler-item-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 576px) {
+  .meeting-scheduler-page {
+    padding: 0.72rem 0.55rem 1rem;
+  }
+
+  .meeting-scheduler-hero,
+  .meeting-scheduler-toolbar-card,
+  .meeting-scheduler-card {
+    padding: 0.75rem;
+  }
+
+  .meeting-scheduler-hero h1 {
+    font-size: 1.22rem;
+  }
+
+  .meeting-scheduler-toolbar-center h2,
+  .meeting-scheduler-card-header h2,
+  .meeting-scheduler-item h3,
+  .meeting-scheduler-day-view-head h3 {
+    font-size: 0.98rem;
+  }
+
+  .meeting-scheduler-role,
+  .meeting-scheduler-toolbar-center p,
+  .meeting-scheduler-kicker,
+  .meeting-scheduler-note {
+    font-size: 0.7rem;
+  }
+
+  .meeting-scheduler-legend span,
+  .meeting-scheduler-stats span,
+  .meeting-scheduler-status,
+  .meeting-scheduler-item p,
+  .meeting-scheduler-day-event,
+  .meeting-scheduler-empty-slot,
+  .meeting-scheduler-view-subtitle,
+  .meeting-scheduler-meta span {
+    font-size: 0.74rem;
+  }
+
+  .meeting-scheduler-day-cell {
+    min-height: 100px;
+  }
+
+  .meeting-scheduler-list {
+    max-height: 320px;
+  }
+
+  .meeting-scheduler-calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .meeting-scheduler-weekdays {
+    display: none;
+  }
+
+  .meeting-scheduler-day-cell {
+    min-height: 110px;
+  }
+
+  .meeting-scheduler-day-view-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .meeting-scheduler-toolbar-left,
+  .meeting-scheduler-toolbar-right,
+  .meeting-scheduler-summary-card .meeting-scheduler-category-list {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-scheduler-week-view,
+  .meeting-scheduler-calendar-grid {
+    gap: 0.24rem;
+  }
+
+  .meeting-scheduler-day-cell {
+    min-height: 92px;
+    padding: 0.38rem;
+  }
+
+  .meeting-scheduler-day-count {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.66rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .meeting-scheduler-page {
+    padding: 0.52rem 0.4rem 0.75rem;
+  }
+
+  .meeting-scheduler-hero,
+  .meeting-scheduler-toolbar-card,
+  .meeting-scheduler-card,
+  .meeting-scheduler-item,
+  .meeting-scheduler-day-detail-card,
+  .meeting-scheduler-day-view-head {
+    padding: 0.58rem;
+    border-radius: 8px;
+  }
+
+  .meeting-scheduler-hero h1,
+  .meeting-scheduler-toolbar-center h2,
+  .meeting-scheduler-card-header h2,
+  .meeting-scheduler-item h3,
+  .meeting-scheduler-day-view-head h3 {
+    font-size: 0.86rem;
+  }
+
+  .meeting-scheduler-role,
+  .meeting-scheduler-toolbar-center p,
+  .meeting-scheduler-kicker,
+  .meeting-scheduler-note,
+  .meeting-scheduler-legend span,
+  .meeting-scheduler-stats span,
+  .meeting-scheduler-status,
+  .meeting-scheduler-item p,
+  .meeting-scheduler-day-event,
+  .meeting-scheduler-empty-slot,
+  .meeting-scheduler-view-subtitle,
+  .meeting-scheduler-meta span,
+  .meeting-scheduler-day-number,
+  .meeting-scheduler-week-day-head {
+    font-size: 0.68rem;
+  }
+
+  .meeting-scheduler-card input,
+  .meeting-scheduler-card select,
+  .meeting-scheduler-card textarea,
+  .meeting-scheduler-toolbar-btn,
+  .meeting-scheduler-card button[type="submit"] {
+    font-size: 0.72rem;
+  }
+
+  .meeting-scheduler-day-cell {
+    min-height: 84px;
+    padding: 0.3rem;
+  }
+
+  .meeting-scheduler-day-count {
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.62rem;
+  }
+
+  .meeting-scheduler-list {
+    max-height: 280px;
+  }
+}

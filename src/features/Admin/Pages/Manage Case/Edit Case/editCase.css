@@ -1,7 +1,245 @@
+:root {
+  --edit-case-primary: #2f7fca;
+  --edit-case-border: #d6dce7;
+  --edit-case-bg: #f3f5f9;
+  --edit-case-title: #28384f;
+  --edit-case-subtitle: #738198;
+  --edit-case-shadow: 0 10px 24px rgba(36, 46, 66, 0.09);
+}
+
 .admin-edit-case-page {
   width: min(96vw, 1700px);
   margin: 0 auto;
   padding: clamp(1rem, 2vw, 2rem);
+}
+
+.admin-edit-case-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 1.25rem;
+}
+
+.admin-edit-case-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.35rem;
+  border: 1px solid var(--edit-case-border);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: var(--edit-case-shadow);
+}
+
+.admin-edit-case-kicker {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.admin-edit-case-header h3,
+.admin-edit-case-panel h4,
+.admin-edit-case-payments h5 {
+  margin: 0;
+}
+
+.admin-edit-case-action-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-edit-case-action-btn,
+.admin-edit-case-action-group .btn {
+  min-width: 140px;
+  font-weight: 600;
+}
+
+.admin-edit-case-content {
+  display: block;
+}
+
+.admin-edit-case-panel {
+  padding: 1.4rem;
+  border: 1px solid var(--edit-case-border);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: var(--edit-case-shadow);
+}
+
+.admin-edit-case-panel > h4,
+.admin-edit-case-payments > h5 {
+  margin-bottom: 1rem;
+}
+
+.admin-edit-case-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.admin-edit-case-edit-note {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.admin-edit-case-status-pill {
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.admin-edit-case-status-pill.is-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-edit-case-status-pill.is-archived {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-edit-case-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.admin-edit-case-meta-row span {
+  background: #f1f5f9;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.admin-edit-case-progress-wrap {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  background: var(--edit-case-bg);
+  border: 1px solid var(--edit-case-border);
+}
+
+.admin-edit-case-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+  margin: 0;
+}
+
+.admin-edit-case-details-grid > div {
+  padding: 0.9rem 1rem;
+  border-radius: 6px;
+  background: var(--edit-case-bg);
+  border: 1px solid var(--edit-case-border);
+}
+
+.admin-edit-case-details-grid dt {
+  margin-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-edit-case-details-grid dd {
+  margin: 0;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.admin-edit-case-details-full {
+  grid-column: 1 / -1;
+}
+
+.admin-edit-case-payments {
+  margin-top: 1rem;
+}
+
+.admin-edit-case-payment-grid {
+  margin-top: 0.75rem;
+}
+
+.admin-edit-case-form {
+  margin-top: 0.25rem;
+}
+
+.admin-edit-case-form-section-title {
+  margin: 0.6rem 0 0.75rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.admin-edit-case-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-edit-case-form .form-control,
+.admin-edit-case-form .form-select {
+  border-radius: 6px;
+  border: 1px solid var(--edit-case-border);
+}
+
+.admin-edit-case-form .form-control:focus,
+.admin-edit-case-form .form-select:focus {
+  border-color: var(--edit-case-primary);
+  box-shadow: 0 0 0 0.2rem rgba(47, 127, 202, 0.15);
+}
+
+.admin-edit-case-form-full {
+  grid-column: 1 / -1;
+}
+
+.admin-edit-case-confirm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-edit-case-confirm-caption {
+  color: #334155;
+  margin-bottom: 0.85rem;
+}
+
+.admin-edit-case-confirm-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 6px;
+  background: var(--edit-case-bg);
+  border: 1px solid var(--edit-case-border);
+}
+
+.admin-edit-case-confirm-arrow {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.admin-edit-case-confirm-label {
+  min-width: 185px;
+}
+
+.admin-edit-case-confirm-value {
+  color: #334155;
+}
+
+.admin-edit-case-confirm-value.is-new {
+  color: #0f766e;
+  font-weight: 600;
 }
 
 .admin-edit-case-alert-wrap {
@@ -18,7 +256,7 @@
 }
 
 .admin-edit-case-action-btn {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .admin-edit-case-empty-text {
@@ -35,6 +273,27 @@
 @media (max-width: 768px) {
   .admin-edit-case-page {
     padding: 0.9rem;
+  }
+
+  .admin-edit-case-header,
+  .admin-edit-case-panel-heading,
+  .admin-edit-case-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-edit-case-meta-row span {
+    width: fit-content;
+  }
+
+  .admin-edit-case-confirm-label {
+    min-width: 100%;
+  }
+
+  .admin-edit-case-details-grid,
+  .admin-edit-case-form-grid,
+  .admin-edit-case-payment-inputs {
+    grid-template-columns: 1fr;
   }
 }
 

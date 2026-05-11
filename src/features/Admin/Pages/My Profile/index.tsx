@@ -52,6 +52,8 @@ const AdminProfile: React.FC = () => {
     );
   }
 
+  const adminStatus = admin.status || "Active";
+
   return (
     <>
       <NavBarAdmin />
@@ -64,6 +66,12 @@ const AdminProfile: React.FC = () => {
           />
           <h1 className="admin-profile-title">Welcome {admin.name}</h1>
           <p className="admin-profile-email">{admin.email}</p>
+          <div className="admin-profile-meta">
+            <span className="admin-profile-meta-item">Firm ID: {admin.firmID || "-"}</span>
+            <span className={`admin-profile-status ${String(adminStatus).toLowerCase() === "inactive" ? "is-inactive" : "is-active"}`}>
+              {adminStatus}
+            </span>
+          </div>
         </div>
 
         <div className="admin-profile-content">

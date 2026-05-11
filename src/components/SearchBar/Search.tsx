@@ -27,7 +27,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit} className="aslaw-search-bar">
       <InputGroup>
         <SearchInput
           value={value}

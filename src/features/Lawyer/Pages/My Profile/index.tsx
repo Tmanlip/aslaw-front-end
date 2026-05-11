@@ -43,6 +43,8 @@ const LawyerProfile: React.FC = () => {
     );
   }
 
+  const lawyerStatus = data.lawyer.status || "Active";
+
   return (
     <>
       <NavBarLawyer />
@@ -55,6 +57,12 @@ const LawyerProfile: React.FC = () => {
           />
           <h1 className="lawyer-profile-title">Welcome {data.lawyer.name}</h1>
           <p className="lawyer-profile-email">{data.lawyer.email}</p>
+          <div className="lawyer-profile-meta">
+            <span className="lawyer-profile-meta-item">Firm ID: {data.lawyer.firmID || "-"}</span>
+            <span className={`lawyer-profile-status ${String(lawyerStatus).toLowerCase() === "inactive" ? "is-inactive" : "is-active"}`}>
+              {lawyerStatus}
+            </span>
+          </div>
         </div>
 
         <div className="lawyer-profile-content">

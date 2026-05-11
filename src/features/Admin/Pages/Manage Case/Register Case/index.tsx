@@ -1,17 +1,8 @@
 import React from "react";
-import { Container } from "@mui/material";
-import NavBarAdmin from "../../../../../shared/Navbar/NavBar Admin/new";
-import CaseForm from "./components/CaseForm";
+import RegisterCase from "../../Manage User/Register/Register Case";
 
 const RegisterCasePage: React.FC = () => {
-  return (
-    <>
-      <NavBarAdmin />
-      <Container sx={{ marginTop: 5 }}>
-        <CaseForm />
-      </Container>
-    </>
-  );
+  return <RegisterCase />;
 };
 
 export default RegisterCasePage;

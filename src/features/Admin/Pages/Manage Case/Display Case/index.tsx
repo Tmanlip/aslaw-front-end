@@ -12,7 +12,11 @@ const DisplayCase: React.FC = () => {
 
       {/* Main content */}
       <div className="admin-display-case-page">
-        <h2>Cases List</h2>
+        <div className="admin-case-page-head">
+          <p className="admin-case-page-kicker">ADMIN</p>
+          <h2>Cases List</h2>
+          <p className="admin-case-page-subtitle">Track case assignments, ownership, and matter lifecycle.</p>
+        </div>
         <div className="admin-display-case-table-wrap">
           <CaseTable />
         </div>

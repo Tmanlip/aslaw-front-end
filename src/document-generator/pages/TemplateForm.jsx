@@ -1,0 +1,1505 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { templates } from "../data/templates";
+import { deterministicTemplateBuilders } from "../components/templates/builders";
+import { renderGeneratedPreview } from "../components/templates/previews/renderGeneratedPreview";
+import TemplateEditorCard from "../components/templates/ui/TemplateEditorCard";
+import TemplatePreviewCard from "../components/templates/ui/TemplatePreviewCard";
+
+import jsPDF from "jspdf";
+import { Document, Packer, Paragraph } from "docx";
+import { saveAs } from "file-saver";
+
+const MAIN_API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+const BACKEND_BASE_URL = `${MAIN_API_URL}/document-generator`;
+
+const templateDocxEndpointById = {
+  "formal-letter": {
+    endpoint: `${BACKEND_BASE_URL}/generate-lod-docx`,
+    fallbackFilename: "LOD_Template.docx",
+    errorText: "Failed to export LOD DOCX. Make sure backend is running.",
+  },
+  "writ-of-summons": {
+    endpoint: `${BACKEND_BASE_URL}/generate-writ-docx`,
+    fallbackFilename: "Writ_of_Summons_Template.docx",
+    errorText: "Failed to export Writ DOCX. Make sure backend is running.",
+  },
+  invoice: {
+    endpoint: `${BACKEND_BASE_URL}/generate-invoice-docx`,
+    fallbackFilename: "Invoice_Template.docx",
+    errorText: "Failed to export Invoice DOCX. Make sure backend is running.",
+  },
+};
+
+const templatePdfEndpointById = {
+  "formal-letter": {
+    endpoint: `${BACKEND_BASE_URL}/generate-lod-pdf`,
+    fallbackFilename: "LOD_Template_work.pdf",
+    errorText: "Failed to export LOD PDF. Make sure backend is running and LibreOffice is installed.",
+  },
+  invoice: {
+    endpoint: `${BACKEND_BASE_URL}/generate-invoice-pdf`,
+    fallbackFilename: "Invoice_Template.pdf",
+    errorText: "Failed to export Invoice PDF. Make sure backend is running.",
+  },
+};
+
+const getFileNameFromContentDisposition = (headerValue, fallbackName) => {
+  if (!headerValue) {
+    return fallbackName;
+  }
+
+  const utf8Match = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      // Fall through to plain filename.
+    }
+  }
+
+  const plainMatch = headerValue.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || fallbackName;
+};
+
+const INVOICE_NUMBER_CONFLICT_MESSAGE =
+  "Unable to generate a unique invoice number right now. Please try again.";
+
+const resolveResponseErrorMessage = async (response, fallbackMessage) => {
+  if (response.status === 409) {
+    return INVOICE_NUMBER_CONFLICT_MESSAGE;
+  }
+
+  try {
+    const payload = await response.json();
+    if (payload?.message) {
+      return payload.message;
+    }
+    if (payload?.error) {
+      return payload.error;
+    }
+  } catch {
+    // ignore non-json responses
+  }
+
+  return fallbackMessage;
+};
+
+const parsePrefillData = (rawValue) => {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return null;
+  }
+};
+
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
+
+const readPath = (obj, path) => {
+  if (!obj || !path) return undefined;
+  const segments = String(path).split(".");
+  let current = obj;
+
+  for (const segment of segments) {
+    if (current == null || typeof current !== "object" || !hasOwn(current, segment)) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+
+  return current;
+};
+
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null && value !== "");
+
+const resolveFirstPositiveInteger = (...values) => {
+  for (const value of values) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue) && numericValue > 0) {
+      return Math.trunc(numericValue);
+    }
+  }
+
+  return 0;
+};
+
+const toPositiveNumber = (value) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : null;
+};
+
+const toNonNegativeAmount = (value) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : null;
+};
+
+const parseRangeAmount = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const matches = value.match(/\d+(?:\.\d+)?/g);
+  if (!matches || matches.length === 0) {
+    return null;
+  }
+
+  const numbers = matches
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item) && item >= 0);
+
+  if (numbers.length === 0) {
+    return null;
+  }
+
+  if (numbers.length === 1) {
+    return numbers[0];
+  }
+
+  return (numbers[0] + numbers[numbers.length - 1]) / 2;
+};
+
+const resolveItemAmount = (item) => {
+  if (!item || typeof item !== "object") {
+    return 0;
+  }
+
+  const directAmount = toNonNegativeAmount(
+    item.selectedFee ?? item.selected_fee ?? item.estimatedFee ?? item.estimated_fee ?? item.fee
+  );
+  if (directAmount !== null) {
+    return directAmount;
+  }
+
+  const fromRange = parseRangeAmount(item.estimationFeesRange ?? item.estimation_fees_range);
+  return fromRange ?? 0;
+};
+
+const normalizeCaseTypeFeeJsonCandidate = (candidate) => {
+  if (!candidate) {
+    return null;
+  }
+
+  if (typeof candidate === "string") {
+    try {
+      const parsed = JSON.parse(candidate);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return typeof candidate === "object" ? candidate : null;
+};
+
+const resolveCaseTypeFeeJson = (prefillData, currentCase) => {
+  const candidates = [
+    prefillData?.case_type_fee_json,
+    prefillData?.caseTypeFeeJson,
+    prefillData?.case_data?.case_type_fee_json,
+    prefillData?.case_data?.caseTypeFeeJson,
+    currentCase?.case_type_fee_json,
+    currentCase?.caseTypeFeeJson,
+    null,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeCaseTypeFeeJsonCandidate(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
+};
+
+const getStageFeeItems = (caseTypeFeeJson, stage) => {
+  const value = caseTypeFeeJson?.[stage];
+  return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
+};
+
+const getStageTypeOfWorkOptions = (caseTypeFeeJson, stage) => {
+  const seen = new Set();
+  return getStageFeeItems(caseTypeFeeJson, stage)
+    .map((item) => String(item.typeOfWork || item.type_of_work || "").trim())
+    .filter((typeOfWork) => {
+      if (!typeOfWork) {
+        return false;
+      }
+      const normalized = typeOfWork.toLowerCase();
+      if (seen.has(normalized)) {
+        return false;
+      }
+      seen.add(normalized);
+      return true;
+    });
+};
+
+const computeExpectedForTypeOfWork = (caseTypeFeeJson, stage, typeOfWork) => {
+  const normalizedTypeOfWork = String(typeOfWork || "").trim().toLowerCase();
+  if (!normalizedTypeOfWork) {
+    return null;
+  }
+
+  const items = getStageFeeItems(caseTypeFeeJson, stage).filter(
+    (item) =>
+      String(item.typeOfWork || item.type_of_work || "").trim().toLowerCase() ===
+      normalizedTypeOfWork
+  );
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return items.reduce((total, item) => total + resolveItemAmount(item), 0);
+};
+
+const computeStageTotalExpected = (caseTypeFeeJson, stage) => {
+  const items = getStageFeeItems(caseTypeFeeJson, stage);
+  if (items.length === 0) {
+    return 0;
+  }
+
+  return items.reduce((total, item) => total + resolveItemAmount(item), 0);
+};
+
+const resolveInvoiceStage = (value) => {
+  const stage = String(value || "initial").toLowerCase();
+  return ["initial", "first", "second", "third", "final"].includes(stage) ? stage : "initial";
+};
+
+const resolveInvoicePhaseSnapshot = ({ stage, currentCase, prefillData }) => {
+  const resolvedStage = resolveInvoiceStage(stage);
+  const expectedPhases =
+    prefillData?.expected_payment_phases || prefillData?.case_data?.expected_payment_phases || currentCase?.expected_payment_phases || null;
+  const invoicePhases =
+    prefillData?.invoice_payment_phases || prefillData?.case_data?.invoice_payment_phases || currentCase?.invoice_payment_phases || null;
+
+  const invoiceStageSnapshot = invoicePhases?.[resolvedStage] || null;
+  const phaseExpected = toPositiveNumber(invoiceStageSnapshot?.expected);
+  const phasePaid = toPositiveNumber(invoiceStageSnapshot?.paid);
+  const phaseBalance = toPositiveNumber(invoiceStageSnapshot?.balance);
+  const expectedFallback = toPositiveNumber(expectedPhases?.[resolvedStage]);
+  const baseExpectedAmount = phaseExpected ?? expectedFallback ?? 0;
+  const paidAmount = phasePaid ?? 0;
+  const balanceAmount = phaseBalance ?? Math.max(baseExpectedAmount - paidAmount, 0);
+
+  // For new invoices, prefill expected_amount with the remaining amount due for that stage.
+  const expectedAmount = balanceAmount;
+
+  return {
+    stage: resolvedStage,
+    expectedAmount,
+    paidAmount,
+    balanceAmount,
+  };
+};
+
+const normalizeBlobFolderPath = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  return raw.endsWith("/") ? raw : `${raw}/`;
+};
+
+const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, currentCaseId }) => {
+  if (!fieldName) return undefined;
+
+  if (hasOwn(prefillData, fieldName)) {
+    return prefillData[fieldName];
+  }
+
+  const aliasByFieldName = {
+    recipientName: ["client_name", "ClientName", "case_data.clientName", "case_data.client_name", "case_data.clientName", "case_data.client_name"],
+    companyName: ["RecipientCompanyName", "case_data.clientFirmID", "case_data.client_firm_id", "case_data.clientId", "clientID"],
+    subject: ["case_title", "caseTitle", "case_data.title", "title"],
+    message: ["case_data.description", "description", "case_data.title", "case_title"],
+    senderName: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName", "preparedBy"],
+    senderTitle: ["YourSignerTitle"],
+    managerName: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName"],
+    reason: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
+    meetingTitle: ["case_data.title", "case_title", "title", "Reference"],
+    agenda: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
+    projectName: ["case_data.title", "case_title", "title", "Reference"],
+    progress: ["case_data.description", "description", "case_data.title", "case_title"],
+    reportTitle: ["case_data.title", "case_title", "title", "Reference"],
+    preparedBy: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName"],
+    objective: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
+    CaseNumber: ["case_id", "caseId", "case_data.caseId", "case_data.case_id"],
+    PlaintiffName: ["client_name", "ClientName", "case_data.clientName", "case_data.client_name"],
+    ClaimDescription: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
+    BreachDetails: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
+    LawFirmName: ["YourCompanyName", "LawyerName", "case_data.lawyerName", "lawyerName"],
+    LawyerName: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName"],
+    Reference: ["case_data.title", "case_title", "title"],
+    GoodsOrServices: ["case_data.description", "description", "case_data.title", "case_title"],
+    ClientName: ["client_name", "case_data.clientName", "case_data.client_name"],
+    case_id: ["case_id", "caseNumber", "caseId", "case_data.caseNumber", "case_data.caseId", "case_data.case_id"],
+    case_title: ["case_title", "caseTitle", "case_data.title", "title"],
+    clientID: ["clientID", "case_data.clientFirmID", "clientFirmID", "case_data.clientID", "case_data.clientId"],
+    lawyerID: ["lawyerID", "case_data.lawyerFirmID", "lawyerFirmID", "case_data.lawyerID", "case_data.lawyerId"],
+  };
+
+  const aliases = aliasByFieldName[fieldName] || [];
+  const fromAliases = firstDefined(...aliases.map((path) => readPath(prefillData, path)));
+  if (fromAliases !== undefined) {
+    return fromAliases;
+  }
+
+  const caseFallbackByFieldName = {
+    recipientName: () => currentCase?.clientName,
+    companyName: () => currentCase?.clientFirmID || currentCase?.clientId,
+    subject: () => currentCase?.title,
+    message: () => currentCase?.description || currentCase?.title,
+    senderName: () => currentCase?.lawyerName,
+    managerName: () => currentCase?.lawyerName,
+    reason: () => currentCase?.description || currentCase?.title,
+    meetingTitle: () => currentCase?.title,
+    agenda: () => currentCase?.description || currentCase?.title,
+    projectName: () => currentCase?.title,
+    progress: () => currentCase?.description || currentCase?.title,
+    reportTitle: () => currentCase?.title,
+    preparedBy: () => currentCase?.lawyerName,
+    objective: () => currentCase?.description || currentCase?.title,
+    CaseNumber: () => currentCase?.caseId || currentCaseId,
+    PlaintiffName: () => currentCase?.clientName,
+    ClaimDescription: () => currentCase?.description || currentCase?.title,
+    BreachDetails: () => currentCase?.description || currentCase?.title,
+    LawFirmName: () => currentCase?.lawyerName,
+    LawyerName: () => currentCase?.lawyerName,
+    Reference: () => currentCase?.title,
+    GoodsOrServices: () => currentCase?.description || currentCase?.title,
+    ClientName: () => currentCase?.clientName,
+    case_id: () => currentCase?.caseNumber || currentCase?.caseId || currentCaseId,
+    case_title: () => currentCase?.title,
+    clientID: () => currentCase?.clientFirmID || currentCase?.clientID || currentCase?.clientId,
+    lawyerID: () => currentCase?.lawyerFirmID || currentCase?.lawyerID || currentCase?.lawyerId,
+  };
+
+  const resolver = caseFallbackByFieldName[fieldName];
+  if (typeof resolver === "function") {
+    return resolver();
+  }
+
+  return undefined;
+};
+
+const emitCaseProgressUpdate = (caseId, caseProgress) => {
+  if (!window.parent || window.parent === window) {
+    return;
+  }
+
+  const parsedProgress = Number(caseProgress);
+  if (!Number.isFinite(parsedProgress)) {
+    return;
+  }
+
+  window.parent.postMessage(
+    {
+      type: "ASLAW_CASE_PROGRESS_UPDATED",
+      case_id: Number(caseId || 0),
+      case_progress: parsedProgress,
+    },
+    "*"
+  );
+};
+
+const TemplateForm = () => {
+  const { id } = useParams();
+  const template = templates.find((t) => t.id === id);
+
+  const [formData, setFormData] = useState({});
+  const [generatedContent, setGeneratedContent] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [syncStatusMessage, setSyncStatusMessage] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("english");
+  const [uploadingToCase, setUploadingToCase] = useState(false);
+  const [uploadStatusMessage, setUploadStatusMessage] = useState("");
+  const [prefillLoading, setPrefillLoading] = useState(true);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState("");
+  const [fetchedCaseTypeFeeJson, setFetchedCaseTypeFeeJson] = useState(null);
+
+  const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const prefillData = useMemo(() => parsePrefillData(searchParams.get("prefill")), [searchParams]);
+  const currentCaseId = Number(searchParams.get("case_id") || searchParams.get("caseId") || 0);
+  const queryCaseStatus = (searchParams.get("case_status") || "").toLowerCase();
+  const queryBlobFolderPath = searchParams.get("blob_folder_path") || "";
+  const queryAccessToken = searchParams.get("access_token") || "";
+  const returnToUrl = searchParams.get("return_to") || "";
+
+  const templateCategory = (() => {
+    const normalized = String(template?.category || "").toLowerCase();
+    if (normalized === "documents" || normalized === "reports" || normalized === "invoices") {
+      return normalized;
+    }
+    return "documents";
+  })();
+
+  const prefilledCase = useMemo(() => {
+    const fromPrefill = prefillData?.case_data;
+    if (fromPrefill && (fromPrefill.caseId || fromPrefill.case_id)) {
+      return fromPrefill;
+    }
+
+    if (!currentCaseId) {
+      return null;
+    }
+
+    return {
+      caseId: currentCaseId,
+      case_id: currentCaseId,
+      caseNumber: prefillData?.case_data?.caseNumber ?? prefillData?.caseNumber ?? "",
+      title: prefillData?.case_title || "",
+      status: queryCaseStatus || "",
+      blob_folder_path: queryBlobFolderPath || "",
+      clientId: prefillData?.case_data?.clientId ?? prefillData?.case_data?.clientID ?? prefillData?.clientID,
+      clientID: prefillData?.case_data?.clientID ?? prefillData?.case_data?.clientId ?? prefillData?.clientID,
+      lawyerId: prefillData?.case_data?.lawyerId ?? prefillData?.case_data?.lawyerID ?? prefillData?.lawyerID,
+      lawyerID: prefillData?.case_data?.lawyerID ?? prefillData?.case_data?.lawyerId ?? prefillData?.lawyerID,
+      case_type_fee_json:
+        prefillData?.case_type_fee_json ??
+        prefillData?.caseTypeFeeJson ??
+        prefillData?.case_data?.case_type_fee_json ??
+        prefillData?.case_data?.caseTypeFeeJson ??
+        null,
+      expected_payment_phases: prefillData?.expected_payment_phases || null,
+    };
+  }, [currentCaseId, prefillData, queryBlobFolderPath, queryCaseStatus]);
+
+  const currentCase = useMemo(() => {
+    const fallbackCase = prefilledCase;
+    if (!currentCaseId) return null;
+
+    try {
+      const rawUser = localStorage.getItem("user") || sessionStorage.getItem("user");
+      if (!rawUser) return fallbackCase;
+      const parsedUser = JSON.parse(rawUser);
+
+      const cases = Array.isArray(parsedUser?.cases) ? parsedUser.cases : [];
+      return cases.find((c) => Number(c.caseId) === Number(currentCaseId)) || fallbackCase;
+    } catch {
+      return fallbackCase;
+    }
+  }, [currentCaseId, prefilledCase]);
+
+  const prefilledCaseTypeFeeJson = useMemo(
+    () => resolveCaseTypeFeeJson(prefillData, currentCase),
+    [prefillData, currentCase]
+  );
+
+  const invoiceCaseTypeFeeJson = useMemo(
+    () => prefilledCaseTypeFeeJson || fetchedCaseTypeFeeJson,
+    [prefilledCaseTypeFeeJson, fetchedCaseTypeFeeJson]
+  );
+
+  useEffect(() => {
+    if (template?.id !== "invoice") {
+      return;
+    }
+
+    if (prefilledCaseTypeFeeJson) {
+      return;
+    }
+
+    const resolvedCaseId = resolveFirstPositiveInteger(
+      currentCaseId,
+      currentCase?.caseId,
+      prefillData?.case_data?.caseId,
+      prefillData?.case_data?.case_id,
+      prefillData?.caseId,
+      prefillData?.case_id,
+      formData.case_id
+    );
+
+    if (!Number.isFinite(resolvedCaseId) || resolvedCaseId <= 0) {
+      return;
+    }
+
+    const token = queryAccessToken || localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadCaseFeeJson = async () => {
+      try {
+        const response = await fetch(`${MAIN_API_URL}/cases/${resolvedCaseId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok || isCancelled) {
+          return;
+        }
+
+        const payload = await response.json();
+        const apiFeeJson = resolveCaseTypeFeeJson(payload, payload?.case);
+        if (!isCancelled && apiFeeJson) {
+          setFetchedCaseTypeFeeJson(apiFeeJson);
+        }
+      } catch {
+        // Keep form usable even if fallback fetch fails.
+      }
+    };
+
+    void loadCaseFeeJson();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    template?.id,
+    prefilledCaseTypeFeeJson,
+    currentCaseId,
+    currentCase,
+    prefillData,
+    formData.case_id,
+    queryAccessToken,
+  ]);
+
+  const resolvedTemplate = useMemo(() => {
+    if (!template || template.id !== "invoice") {
+      return template;
+    }
+
+    const stage = resolveInvoiceStage(formData.payment_stage);
+    const typeOfWorkOptions = getStageTypeOfWorkOptions(invoiceCaseTypeFeeJson, stage);
+
+    return {
+      ...template,
+      fields: template.fields.map((field) => {
+        if (field.name !== "type_of_work") {
+          return field;
+        }
+
+        return {
+          ...field,
+          required: false,
+          options: typeOfWorkOptions.map((item) => ({ value: item, label: item })),
+        };
+      }),
+    };
+  }, [template, formData.payment_stage, invoiceCaseTypeFeeJson]);
+
+  const isArchivedCase =
+    (queryCaseStatus || String(currentCase?.status || "").toLowerCase()) === "archived";
+  const canUploadToCase = !isArchivedCase;
+
+  const caseInfoSummary = useMemo(() => {
+    const resolvedCaseId = String(
+      firstDefined(
+        prefillData?.case_id,
+        prefillData?.caseId,
+        prefillData?.case_data?.case_id,
+        prefillData?.case_data?.caseId,
+        currentCase?.caseId,
+        currentCaseId || ""
+      ) || ""
+    );
+
+    const resolvedTitle = String(
+      firstDefined(
+        prefillData?.case_title,
+        prefillData?.caseTitle,
+        prefillData?.case_data?.title,
+        currentCase?.title,
+        ""
+      ) || ""
+    );
+
+    const resolvedStatus = String(
+      firstDefined(
+        prefillData?.case_status,
+        prefillData?.case_data?.status,
+        currentCase?.status,
+        ""
+      ) || ""
+    );
+
+    const resolvedClient = String(
+      firstDefined(
+        prefillData?.client_name,
+        prefillData?.ClientName,
+        prefillData?.recipientName,
+        prefillData?.RecipientName,
+        prefillData?.case_data?.clientName,
+        currentCase?.clientName,
+        ""
+      ) || ""
+    );
+
+    const resolvedLawyer = String(
+      firstDefined(
+        prefillData?.senderName,
+        prefillData?.LawyerName,
+        prefillData?.YourSignerName,
+        prefillData?.case_data?.lawyerName,
+        currentCase?.lawyerName,
+        ""
+      ) || ""
+    );
+
+    const resolvedDescription = String(
+      firstDefined(
+        prefillData?.message,
+        prefillData?.BackgroundFacts,
+        prefillData?.case_data?.description,
+        currentCase?.description,
+        ""
+      ) || ""
+    );
+
+    return {
+      caseId: resolvedCaseId,
+      title: resolvedTitle,
+      status: resolvedStatus,
+      clientName: resolvedClient,
+      lawyerName: resolvedLawyer,
+      description: resolvedDescription,
+    };
+  }, [prefillData, currentCase, currentCaseId]);
+
+  const resolvedBlobFolderPath = queryBlobFolderPath || currentCase?.blob_folder_path || "";
+
+  // Initialize form data with basic fields and case_id from URL
+  useEffect(() => {
+    if (!template) return;
+
+    setPrefillLoading(true);
+
+    const initialData = {};
+    template.fields.forEach((field) => {
+      const resolvedPrefillValue = resolveFieldPrefillValue({
+        fieldName: field.name,
+        prefillData,
+        currentCase,
+        currentCaseId,
+      });
+
+      if (field.type === "checkbox") {
+        initialData[field.name] = Boolean(resolvedPrefillValue ?? field.defaultValue);
+      } else if (field.type === "date") {
+        initialData[field.name] = resolvedPrefillValue || new Date().toISOString().slice(0, 10);
+      } else {
+        initialData[field.name] = resolvedPrefillValue ?? field.defaultValue ?? "";
+      }
+    });
+
+    setFormData(initialData);
+    setPrefillLoading(false);
+  }, [template, prefillData, currentCase, currentCaseId]);
+
+  useEffect(() => {
+    if (template?.id !== "invoice") {
+      return;
+    }
+
+    setFormData((prev) => {
+      const stageSnapshot = resolveInvoicePhaseSnapshot({
+        stage: prev.payment_stage,
+        currentCase,
+        prefillData,
+      });
+      const stage = stageSnapshot.stage;
+      const stageTypeOfWorkOptions = getStageTypeOfWorkOptions(invoiceCaseTypeFeeJson, stage);
+      const currentTypeOfWork = String(prev.type_of_work || "").trim();
+      const nextTypeOfWork =
+        currentTypeOfWork && stageTypeOfWorkOptions.includes(currentTypeOfWork)
+          ? currentTypeOfWork
+          : stageTypeOfWorkOptions[0] || "";
+      const typeOfWorkExpectedAmount = computeExpectedForTypeOfWork(
+        invoiceCaseTypeFeeJson,
+        stage,
+        nextTypeOfWork
+      );
+      const stageTotalExpected = computeStageTotalExpected(invoiceCaseTypeFeeJson, stage);
+      const stageRemainingAmount = Number(stageSnapshot.balanceAmount || 0);
+      const remainingRatio =
+        stageTotalExpected > 0
+          ? Math.max(Math.min(stageRemainingAmount / stageTotalExpected, 1), 0)
+          : 0;
+      const resolvedExpectedAmount =
+        typeOfWorkExpectedAmount !== null
+          ? Number((typeOfWorkExpectedAmount * remainingRatio).toFixed(2))
+          : stageSnapshot.expectedAmount;
+      const resolvedBalanceAmount = resolvedExpectedAmount;
+
+      const resolvedClientId = firstDefined(
+        prev.clientID,
+        prefillData?.case_data?.clientFirmID,
+        prefillData?.clientFirmID,
+        prefillData?.clientID,
+        prefillData?.case_data?.clientID,
+        prefillData?.case_data?.clientId,
+        currentCase?.clientFirmID,
+        currentCase?.clientID,
+        currentCase?.clientId,
+        ""
+      );
+
+      const resolvedLawyerId = firstDefined(
+        prev.lawyerID,
+        prefillData?.case_data?.lawyerFirmID,
+        prefillData?.lawyerFirmID,
+        prefillData?.lawyerID,
+        prefillData?.case_data?.lawyerID,
+        prefillData?.case_data?.lawyerId,
+        currentCase?.lawyerFirmID,
+        currentCase?.lawyerID,
+        currentCase?.lawyerId,
+        ""
+      );
+
+      const next = {
+        ...prev,
+        payment_stage: stage,
+        type_of_work: nextTypeOfWork,
+        clientID: resolvedClientId,
+        lawyerID: resolvedLawyerId,
+        expected_amount: String(resolvedExpectedAmount),
+        balance: String(resolvedBalanceAmount),
+        phase_balance_base: String(stageSnapshot.balanceAmount),
+        phase_balance: String(stageSnapshot.balanceAmount),
+        blob_path:
+          String(prev.blob_path || "").trim() ||
+          String(prefillData?.blob_path || "").trim() ||
+          `${normalizeBlobFolderPath(
+            firstDefined(
+              prefillData?.case_data?.blob_folder_path,
+              queryBlobFolderPath,
+              currentCase?.blob_folder_path,
+              ""
+            )
+          )}invoices/`,
+      };
+
+      const isChanged =
+        next.payment_stage !== prev.payment_stage ||
+        next.type_of_work !== prev.type_of_work ||
+        next.clientID !== prev.clientID ||
+        next.lawyerID !== prev.lawyerID ||
+        next.expected_amount !== prev.expected_amount ||
+        next.balance !== prev.balance ||
+        next.phase_balance_base !== prev.phase_balance_base ||
+        next.phase_balance !== prev.phase_balance ||
+        next.blob_path !== prev.blob_path;
+
+      return isChanged ? next : prev;
+    });
+  }, [
+    template?.id,
+    currentCase,
+    prefillData,
+    invoiceCaseTypeFeeJson,
+    formData.payment_stage,
+    formData.type_of_work,
+    queryBlobFolderPath,
+  ]);
+
+  useEffect(() => {
+    if (template?.id !== "invoice") {
+      return;
+    }
+
+    if (String(formData.invoice_number || "").trim() !== "") {
+      return;
+    }
+
+    const resolvedCaseId = resolveFirstPositiveInteger(
+      currentCaseId,
+      currentCase?.caseId,
+      prefillData?.case_data?.caseId,
+      prefillData?.case_data?.case_id,
+      prefillData?.caseId,
+      prefillData?.case_id,
+      formData.case_id
+    );
+
+    if (!Number.isFinite(resolvedCaseId) || resolvedCaseId <= 0) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const generateInvoiceNumber = async () => {
+      try {
+        const response = await fetch(`${MAIN_API_URL}/invoices/generate-number`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ case_id: resolvedCaseId }),
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = await response.json();
+        const nextInvoiceNumber = String(payload?.invoice_number || "").trim();
+        if (!nextInvoiceNumber || isCancelled) {
+          return;
+        }
+
+        setFormData((prev) => {
+          if (String(prev.invoice_number || "").trim() !== "") {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            invoice_number: nextInvoiceNumber,
+          };
+        });
+      } catch {
+        // Keep form usable even if the helper endpoint is unavailable.
+      }
+    };
+
+    void generateInvoiceNumber();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [template?.id, formData.invoice_number, formData.case_id, prefillData, currentCase, currentCaseId]);
+
+  useEffect(() => {
+    if (template?.id !== "invoice") {
+      return;
+    }
+
+    setFormData((prev) => {
+      const expectedAmount = Number(prev.expected_amount || 0);
+      const paidAmount = Number(prev.paid_amount || 0);
+      const phaseBalanceBase = Number(prev.phase_balance_base || 0);
+
+      const safeExpected = Number.isFinite(expectedAmount) ? expectedAmount : 0;
+      const safePaidRaw = Number.isFinite(paidAmount) ? paidAmount : 0;
+      const safePaid = Math.min(safePaidRaw, safeExpected);
+      const safePhaseBalance = Number.isFinite(phaseBalanceBase) ? phaseBalanceBase : 0;
+      const computedTypeOfWorkBalance = Math.max(safeExpected - safePaid, 0);
+      const computedPhaseBalance = Math.max(safePhaseBalance - safePaidRaw, 0);
+      const nextBalance = String(computedTypeOfWorkBalance);
+      const nextPhaseBalance = String(computedPhaseBalance);
+      const nextPaid = String(safePaid);
+
+      if (
+        String(prev.balance || "") === nextBalance &&
+        String(prev.phase_balance || "") === nextPhaseBalance &&
+        String(prev.paid_amount || "") === nextPaid
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        paid_amount: nextPaid,
+        balance: nextBalance,
+        phase_balance: nextPhaseBalance,
+      };
+    });
+  }, [template?.id, formData.expected_amount, formData.paid_amount, formData.phase_balance_base]);
+
+  useEffect(() => {
+    if (template?.id !== "invoice") {
+      return;
+    }
+
+    setFormData((prev) => {
+      const paidAmount = Number(prev.paid_amount || 0);
+      const taxAmount = Number(prev.tax || 0);
+      const discountAmount = Number(prev.discount || 0);
+
+      const safePaid = Number.isFinite(paidAmount) ? paidAmount : 0;
+      const safeTaxPercent = Number.isFinite(taxAmount) ? taxAmount : 0;
+      const safeDiscountPercent = Number.isFinite(discountAmount) ? discountAmount : 0;
+
+      const computedTotal =
+        safePaid +
+        (safePaid * safeTaxPercent) / 100 +
+        (safePaid * safeDiscountPercent) / 100;
+      const nextTotal = String(computedTotal);
+
+      if (String(prev.total_amount || "") === nextTotal) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        total_amount: nextTotal,
+      };
+    });
+  }, [template?.id, formData.paid_amount, formData.tax, formData.discount]);
+
+  if (!template) {
+    return (
+      <div className="p-8 text-center">
+        Template not found. <Link to={`/${searchParams.toString() ? `?${searchParams.toString()}` : ""}`} className="text-blue-600">Go Home</Link>
+      </div>
+    );
+  }
+
+  const handleChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+
+    let finalValue = type === "checkbox" ? checked : type === "file" ? files?.[0] || null : value;
+
+    if ((name === "tax" || name === "discount" || name === "paid_amount") && type === "number") {
+      const num = parseFloat(value);
+      if (!isNaN(num) && num < 0) finalValue = "0";
+
+      if (name === "paid_amount") {
+        const expected = Number(formData.expected_amount || 0);
+        if (!Number.isNaN(num) && Number.isFinite(expected) && expected >= 0 && num > expected) {
+          finalValue = String(expected);
+        }
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: finalValue,
+    }));
+  };
+
+  const syncTemplateWorkbook = async (endpointPath, payload) => {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}${endpointPath}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        // Optional sync: do not block user flow.
+        return false;
+      }
+
+      await response.json();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSyncStatusMessage("");
+    setUploadStatusMessage("");
+
+    try {
+      const deterministicBuilder = deterministicTemplateBuilders[template.id];
+      if (deterministicBuilder) {
+          const builtContent = deterministicBuilder(formData, selectedLanguage);
+          setGeneratedContent(builtContent);
+
+          if (template.id === "invoice") {
+            try {
+              const response = await fetch(`${BACKEND_BASE_URL}/generate-invoice-pdf`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ formData, language: selectedLanguage }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Invoice preview PDF generation failed");
+              }
+
+              const previewBlob = await response.blob();
+              setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
+            } catch {
+              try {
+                const previewPdf = buildPdfDocument(builtContent);
+                const previewBlob = previewPdf.output("blob");
+                setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
+              } catch {
+                setPdfPreviewUrl("");
+              }
+            }
+          } else {
+            try {
+              const previewPdf = buildPdfDocument(builtContent);
+              const previewBlob = previewPdf.output("blob");
+              setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
+            } catch {
+              setPdfPreviewUrl("");
+            }
+          }
+
+          setShowPreview(true);
+
+        const silentDataSyncEndpointByTemplateId = {
+          "writ-of-summons": "/generate-writ-data-xlsx",
+        };
+
+        const syncEndpoint = silentDataSyncEndpointByTemplateId[template.id];
+        if (syncEndpoint) {
+          void syncTemplateWorkbook(syncEndpoint, { formData }).then((syncSuccess) => {
+            if (!syncSuccess) {
+              setSyncStatusMessage(
+                "Workbook sync is unavailable right now. Continue using preview/export as usual."
+              );
+            }
+          });
+        }
+
+        return;
+      }
+
+      const languageInstruction =
+        selectedLanguage === "malay"
+          ? "Write the output in formal Malay (Bahasa Melayu) with professional grammar and vocabulary."
+          : "Write the output in formal English with professional grammar and vocabulary.";
+
+      const prompt = `${template.generate(
+        formData
+      )}\n\n${languageInstruction}\nMaintain a professional and formal tone throughout.`;
+
+      const res = await fetch(`${BACKEND_BASE_URL}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, language: selectedLanguage }),
+      });
+
+      if (!res.ok) {
+        let backendError = "AI generation failed";
+        try {
+          const errorPayload = await res.json();
+          if (errorPayload?.error) {
+            backendError = errorPayload.error;
+          }
+        } catch {
+          // fallback message
+        }
+
+        throw new Error(backendError);
+      }
+
+      const data = await res.json();
+      const aiContent = data.output;
+      setGeneratedContent(aiContent);
+      try {
+        const previewPdf = buildPdfDocument(aiContent);
+        const previewBlob = previewPdf.output("blob");
+        setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
+      } catch {
+        setPdfPreviewUrl("");
+      }
+      setShowPreview(true);
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || "Failed to generate content. Make sure backend & Ollama are running.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const buildPdfDocument = (content = generatedContent) => {
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+    pdf.setFont("times", "normal");
+    pdf.setFontSize(12);
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 15;
+    const lineHeight = 6;
+    const maxLineWidth = pageWidth - margin * 2;
+    const maxY = pageHeight - margin;
+
+    const paragraphs = content.split("\n");
+    let cursorY = margin;
+
+    paragraphs.forEach((paragraph, paragraphIndex) => {
+      const lines = paragraph.trim().length > 0 ? pdf.splitTextToSize(paragraph, maxLineWidth) : [""];
+
+      lines.forEach((line) => {
+        if (cursorY > maxY) {
+          pdf.addPage();
+          cursorY = margin;
+        }
+
+        pdf.text(line, margin, cursorY);
+        cursorY += lineHeight;
+      });
+
+      if (paragraphIndex < paragraphs.length - 1) {
+        if (cursorY > maxY) {
+          pdf.addPage();
+          cursorY = margin;
+        } else {
+          cursorY += lineHeight;
+        }
+      }
+    });
+
+    return pdf;
+  };
+
+  const handleExportPDF = () => {
+    const templatePdfConfig = templatePdfEndpointById[template.id];
+
+    if (templatePdfConfig) {
+      (async () => {
+        try {
+          const response = await fetch(templatePdfConfig.endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ formData, language: selectedLanguage }),
+          });
+
+          if (!response.ok) {
+            const responseMessage = await resolveResponseErrorMessage(
+              response,
+              "Failed to generate template PDF"
+            );
+            throw new Error(responseMessage);
+          }
+
+          const blob = await response.blob();
+          const contentDisposition = response.headers.get("Content-Disposition");
+          const fileName = getFileNameFromContentDisposition(
+            contentDisposition,
+            templatePdfConfig.fallbackFilename,
+          );
+          saveAs(blob, fileName);
+        } catch (err) {
+          console.error(err);
+          if (err?.message === INVOICE_NUMBER_CONFLICT_MESSAGE) {
+            setError(INVOICE_NUMBER_CONFLICT_MESSAGE);
+          } else {
+            setError(templatePdfConfig.errorText);
+          }
+        }
+      })();
+
+      return;
+    }
+
+    const pdf = buildPdfDocument();
+    pdf.save(`${template.id}.pdf`);
+  };
+
+  const handleUploadPdfToCase = async () => {
+    if (!currentCaseId) {
+      setUploadStatusMessage("This upload is available when opened from Update Case.");
+      return;
+    }
+
+    if (isArchivedCase) {
+      setUploadStatusMessage("This case is archived. Upload is locked.");
+      return;
+    }
+
+    if (!generatedContent.trim()) {
+      setUploadStatusMessage("Generate a document first before uploading.");
+      return;
+    }
+
+    const token = queryAccessToken || localStorage.getItem("token") || sessionStorage.getItem("token");
+
+    if (!token) {
+      setUploadStatusMessage("Authentication token is missing. Reopen from Update Case and try again.");
+      return;
+    }
+
+    if (!resolvedBlobFolderPath) {
+      setUploadStatusMessage("Case folder path is missing. Please refresh Update Case and try again.");
+      return;
+    }
+
+    setUploadingToCase(true);
+    setUploadStatusMessage("Uploading PDF to case...");
+
+    try {
+      let file;
+
+      if (template.id === "formal-letter") {
+        const lodPdfConfig = templatePdfEndpointById["formal-letter"];
+        const pdfResponse = await fetch(lodPdfConfig.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ formData, language: selectedLanguage }),
+        });
+
+        if (!pdfResponse.ok) {
+          throw new Error("Failed to generate LOD PDF for upload.");
+        }
+
+        const pdfBlob = await pdfResponse.blob();
+        const contentDisposition = pdfResponse.headers.get("Content-Disposition");
+        const pdfFileName = getFileNameFromContentDisposition(
+          contentDisposition,
+          lodPdfConfig.fallbackFilename,
+        );
+        file = new File(
+          [pdfBlob],
+          pdfFileName,
+          {
+            type: pdfBlob.type || "application/pdf",
+          },
+        );
+      } else {
+        const pdf = buildPdfDocument();
+        const pdfBlob = pdf.output("blob");
+        const safeTemplateId = String(template.id || "generated-document").replace(/[^a-zA-Z0-9-_]/g, "-");
+        const fileName = `${safeTemplateId}-${Date.now()}.pdf`;
+        file = new File([pdfBlob], fileName, { type: "application/pdf" });
+      }
+
+      const form = new FormData();
+      form.append("file", file);
+      form.append("case_id", String(currentCaseId));
+      form.append("folder_path", `${resolvedBlobFolderPath}${templateCategory}/`);
+      form.append("category", templateCategory);
+
+      if (templateCategory === "invoices") {
+        const invoiceStage = resolveInvoiceStage(formData.payment_stage);
+        form.append("invoice_stage", invoiceStage);
+
+        const appendIfPresent = (key, value) => {
+          if (value === undefined || value === null) {
+            return;
+          }
+
+          const normalized = String(value).trim();
+          if (normalized === "") {
+            return;
+          }
+
+          form.append(key, normalized);
+        };
+
+        appendIfPresent("invoice_number", formData.invoice_number);
+        appendIfPresent("issue_date", formData.issue_date);
+        appendIfPresent("due_date", formData.due_date);
+        appendIfPresent("client_name", formData.client_name || caseInfoSummary?.clientName);
+        appendIfPresent("case_title", formData.case_title || caseInfoSummary?.title);
+        appendIfPresent("expected_amount", formData.expected_amount);
+        appendIfPresent("paid_amount", formData.paid_amount);
+        appendIfPresent("tax", formData.tax);
+        appendIfPresent("discount", formData.discount);
+        appendIfPresent("total_amount", formData.total_amount);
+        appendIfPresent("balance", formData.balance);
+        appendIfPresent("clientID", formData.clientID);
+        appendIfPresent("lawyerID", formData.lawyerID);
+        appendIfPresent("payment_stage", formData.payment_stage);
+        appendIfPresent("blob_path", formData.blob_path);
+      }
+
+      const res = await fetch(`${MAIN_API_URL}/encrypted-documents/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        credentials: "include",
+        body: form,
+      });
+
+      if (res.redirected && res.url.includes("localhost:5173")) {
+        throw new Error("Upload request was redirected. Please log in again and reopen from Update Case.");
+      }
+
+      if (!res.ok) {
+        let message = "Failed to upload PDF to case.";
+        try {
+          const payload = await res.json();
+          if (payload?.message) {
+            message = payload.message;
+          }
+        } catch {
+          // ignore non-json error body
+        }
+        throw new Error(message);
+      }
+
+      let uploadPayload = null;
+      try {
+        uploadPayload = await res.json();
+      } catch {
+        uploadPayload = null;
+      }
+
+      if (templateCategory === "invoices") {
+        const currentStage = resolveInvoiceStage(formData.payment_stage);
+        const refreshedInvoicePhases = uploadPayload?.case_financials?.invoice_payment_phases || null;
+        const refreshedBalancePhases = uploadPayload?.case_financials?.balance_payment_phases || null;
+        const refreshedStage = refreshedInvoicePhases?.[currentStage] || null;
+        const refreshedBalance =
+          toPositiveNumber(refreshedStage?.balance) ??
+          toPositiveNumber(refreshedBalancePhases?.[currentStage]);
+
+        if (refreshedBalance !== null) {
+          setFormData((prev) => ({
+            ...prev,
+            expected_amount: String(refreshedBalance),
+            balance: String(refreshedBalance),
+            paid_amount: "",
+          }));
+        }
+      }
+
+      emitCaseProgressUpdate(currentCaseId, uploadPayload?.case_progress);
+
+      setUploadStatusMessage(`Uploaded to ${templateCategory} successfully.`);
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "ASLAW_DOCUMENT_UPLOADED",
+            case_id: currentCaseId,
+            category: templateCategory,
+          },
+          "*"
+        );
+      }
+
+      if (returnToUrl && (!window.parent || window.parent === window)) {
+        window.location.href = returnToUrl;
+        return;
+      }
+
+      if (!window.parent || window.parent === window) {
+        window.location.reload();
+      }
+    } catch (err) {
+      const message = err?.message || "Failed to upload PDF to case.";
+      if (message === "Failed to fetch") {
+        setUploadStatusMessage(
+          "Unable to reach API. Check that backend is running and CORS allows this origin."
+        );
+      } else {
+        setUploadStatusMessage(message);
+      }
+    } finally {
+      setUploadingToCase(false);
+    }
+  };
+
+  const handleExportDOCX = async () => {
+    const templateDocxConfig = templateDocxEndpointById[template.id];
+    if (templateDocxConfig) {
+      try {
+        const response = await fetch(templateDocxConfig.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ formData, language: selectedLanguage }),
+        });
+
+        if (!response.ok) {
+          const responseMessage = await resolveResponseErrorMessage(
+            response,
+            "Failed to generate template DOCX"
+          );
+          throw new Error(responseMessage);
+        }
+
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get("Content-Disposition");
+        const fileName = getFileNameFromContentDisposition(
+          contentDisposition,
+          templateDocxConfig.fallbackFilename,
+        );
+
+        saveAs(blob, fileName);
+      } catch (err) {
+        console.error(err);
+        if (err?.message === INVOICE_NUMBER_CONFLICT_MESSAGE) {
+          setError(INVOICE_NUMBER_CONFLICT_MESSAGE);
+        } else {
+          setError(templateDocxConfig.errorText);
+        }
+      }
+
+      return;
+    }
+
+    const doc = new Document({
+      sections: [
+        {
+          children: generatedContent.split("\n").map((line) => new Paragraph(line)),
+        },
+      ],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `${template.id}.docx`);
+  };
+
+  if (showPreview) {
+    return (
+      <TemplatePreviewCard
+        copied={copied}
+          onBackToEdit={() => {
+            if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+            setPdfPreviewUrl("");
+            setShowPreview(false);
+          }}
+        onCopy={handleCopy}
+        onExportPDF={handleExportPDF}
+        onExportDOCX={handleExportDOCX}
+        uploadToCaseLabel={`Upload to Case (${templateCategory})`}
+        uploadToCaseDisabled={uploadingToCase || !canUploadToCase}
+        uploadToCaseLoading={uploadingToCase}
+        uploadStatusMessage={uploadStatusMessage}
+        syncStatusMessage={syncStatusMessage}
+        onUploadToCasePdf={canUploadToCase ? handleUploadPdfToCase : undefined}
+          pdfPreviewUrl={pdfPreviewUrl}
+      >
+        {renderGeneratedPreview(template.id, generatedContent)}
+      </TemplatePreviewCard>
+    );
+  }
+
+  if (prefillLoading) {
+    return (
+      <div className="dg-page">
+        <div className="dg-container" style={{ maxWidth: 900 }}>
+          <div className="dg-shell">
+            <div className="dg-prefill-loading">
+              <div className="dg-prefill-spinner" aria-hidden="true" />
+              <p>Prefilling document data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <TemplateEditorCard
+      template={resolvedTemplate || template}
+      formData={formData}
+      caseInfoSummary={caseInfoSummary}
+      selectedLanguage={selectedLanguage}
+      loading={loading}
+      error={error}
+      onChange={handleChange}
+      onLanguageChange={setSelectedLanguage}
+      onSubmit={handleSubmit}
+    />
+  );
+};
+
+export default TemplateForm;

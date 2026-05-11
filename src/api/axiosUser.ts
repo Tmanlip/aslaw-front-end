@@ -6,9 +6,24 @@ const axiosUser = axios.create({
   withCredentials: true, // ✅ important
 });
 
+const resolveToken = (): string | null => {
+  const memoryToken = AuthMemory.getToken();
+  if (memoryToken) {
+    return memoryToken;
+  }
+
+  const localToken = localStorage.getItem("token");
+  if (localToken) {
+    return localToken;
+  }
+
+  const sessionToken = sessionStorage.getItem("token");
+  return sessionToken || null;
+};
+
 // 🔥 Attach Bearer token automatically
 axiosUser.interceptors.request.use((config) => {
-  const token = AuthMemory.getToken();
+  const token = resolveToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

@@ -16,11 +16,15 @@ type Message = {
   text: string;
   category?: string;
   createdAt?: string;
+  timedOut?: boolean;
+  retryQuestion?: string;
 };
 
 type InternalChatbotProps = {
   userTypeLabel?: string;
 };
+
+const ROUTED_CATEGORIES = new Set(["civil", "corporate", "criminal", "general"]);
 
 const InternalChatbot: React.FC<InternalChatbotProps> = ({ userTypeLabel = "Internal User" }) => {
   const { role, user } = useAuth();
@@ -116,11 +120,54 @@ const InternalChatbot: React.FC<InternalChatbotProps> = ({ userTypeLabel = "Inte
     setError("");
 
     try {
-      const response = await askChatbot(question, currentFirmID || undefined);
-      setMessages((prev) => [...prev, { role: "bot", text: response.answer, category: response.category }]);
-      await loadHistory();
+      const categoryHint = [...messages]
+        .reverse()
+        .find((msg) => msg.role === "bot" && msg.category && ROUTED_CATEGORIES.has(msg.category))?.category;
+      const response = await askChatbot(question, currentFirmID || undefined, categoryHint);
+      if (response.degraded) {
+        setMessages((prev) => [...prev, { role: "bot", text: response.answer, category: response.category, timedOut: true, retryQuestion: question }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "bot", text: response.answer, category: response.category }]);
+        await loadHistory();
+      }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Server connection error.";
+      const rawMsg = err instanceof Error ? err.message : "";
+      const msg =
+        rawMsg.toLowerCase().includes("failed to fetch") || rawMsg.toLowerCase().includes("networkerror")
+          ? "Unable to reach the server. Please ensure the backend is running and try again."
+          : rawMsg || "Server connection error.";
+      setMessages((prev) => [...prev, { role: "bot", text: msg, category: "error" }]);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetry = async (question: string) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const categoryHint = [...messages]
+        .reverse()
+        .find((msg) => msg.role === "bot" && msg.category && ROUTED_CATEGORIES.has(msg.category) && !msg.timedOut)?.category;
+      const response = await askChatbot(question, currentFirmID || undefined, categoryHint);
+      const replacement: Message = response.degraded
+        ? { role: "bot", text: response.answer, category: response.category, timedOut: true, retryQuestion: question }
+        : { role: "bot", text: response.answer, category: response.category };
+      setMessages((prev) => {
+        const copy = [...prev];
+        const idx = copy.map((m) => m.timedOut).lastIndexOf(true);
+        if (idx !== -1) copy[idx] = replacement;
+        else copy.push(replacement);
+        return copy;
+      });
+      if (!response.degraded) await loadHistory();
+    } catch (err) {
+      const rawMsg = err instanceof Error ? err.message : "";
+      const msg =
+        rawMsg.toLowerCase().includes("failed to fetch") || rawMsg.toLowerCase().includes("networkerror")
+          ? "Unable to reach the server. Please ensure the backend is running and try again."
+          : rawMsg || "Server connection error.";
       setMessages((prev) => [...prev, { role: "bot", text: msg, category: "error" }]);
       setError(msg);
     } finally {
@@ -182,7 +229,28 @@ const InternalChatbot: React.FC<InternalChatbotProps> = ({ userTypeLabel = "Inte
                         Category: {msg.category}
                       </Typography>
                     )}
-                    <Typography variant="body2">{msg.text}</Typography>
+                    {msg.timedOut ? (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5, color: "#b45309" }}>
+                          ⏱ Response timed out
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1, color: "#78716c", fontSize: 12 }}>
+                          The model took too long. Here's a quick summary in the meantime:
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1.25, whiteSpace: "pre-wrap" }}>{msg.text}</Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          disabled={loading}
+                          onClick={() => msg.retryQuestion && handleRetry(msg.retryQuestion)}
+                          sx={{ fontSize: 12, textTransform: "none", borderColor: "#b45309", color: "#b45309", "&:hover": { borderColor: "#92400e", color: "#92400e" } }}
+                        >
+                          {loading ? "Generating…" : "Continue generating"}
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2">{msg.text}</Typography>
+                    )}
                   </Box>
                 </Box>
               ))}

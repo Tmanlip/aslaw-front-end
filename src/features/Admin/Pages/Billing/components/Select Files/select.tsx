@@ -12,6 +12,7 @@ const SelectToggleButton: React.FC<SelectToggleButtonProps> = ({
 }) => {
   return (
     <button
+      type="button"
       style={{
         padding: "0.5rem 1rem",
         background: colors.red1,

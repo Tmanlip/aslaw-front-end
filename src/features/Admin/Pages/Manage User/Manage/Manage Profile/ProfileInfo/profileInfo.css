@@ -1,28 +1,217 @@
 .admin-manage-profile-info-shell {
-  margin-top: 1rem;
+  --profile-card-bg: #ffffff;
+  --profile-border: #d6dce7;
+  --profile-title: #28384f;
+  --profile-subtitle: #738198;
+  --profile-accent: #2f7fca;
+  --profile-shadow: 0 10px 24px rgba(36, 46, 66, 0.09);
+
+  margin-top: 0;
   text-align: left;
-  border: 1px solid #dce3eb;
-  border-radius: 14px;
-  padding: clamp(0.85rem, 1.4vw, 1.5rem);
-  background: linear-gradient(180deg, #f9fbfd, #f4f8fc);
+  border: 1px solid var(--profile-border);
+  border-radius: 10px;
+  padding: clamp(0.95rem, 1.6vw, 1.35rem);
+  background: var(--profile-card-bg);
+  box-shadow: var(--profile-shadow);
+}
+
+.admin-profile-page-card {
+  border: 1px solid #e5ebf3;
+  border-radius: 10px;
+  background: #fbfdff;
+  padding: 0.9rem;
+}
+
+.admin-profile-page-header {
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.admin-profile-page-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #2a3d57;
+  font-weight: 700;
+}
+
+.admin-profile-page-subtitle {
+  margin: 0.3rem 0 0;
+  font-size: 0.88rem;
+  color: #74839a;
+}
+
+.admin-profile-field-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-profile-field-item {
+  border: 1px solid #d6dce7;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.7rem 0.8rem;
+}
+
+.admin-profile-field-item.is-full {
+  grid-column: 1 / -1;
+}
+
+.admin-profile-field-label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #667a96;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.admin-profile-field-value {
+  margin: 0.25rem 0 0;
+  color: #2f4159;
+  font-size: 0.93rem;
+}
+
+.admin-profile-actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.admin-profile-actions .btn {
+  min-width: 150px;
+  font-weight: 700;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-profile-status-chip {
+  border-radius: 6px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-profile-status-chip.is-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-profile-status-chip.is-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-profile-status-chip.is-archived {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .admin-manage-profile-pagination {
   justify-content: center;
   margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.admin-manage-profile-pagination .page-link {
+  border-radius: 6px;
+  border: 1px solid #d6dce7;
+  color: #2f4159;
+  font-weight: 700;
+}
+
+.admin-manage-profile-pagination .page-item.active .page-link {
+  background-color: #2f7fca;
+  border-color: #2f7fca;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {
   .admin-manage-profile-info-shell {
     margin-top: 0.6rem;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 0.75rem;
+  }
+
+  .admin-profile-field-list {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (min-width: 1800px) {
   .admin-manage-profile-info-shell {
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 1.6rem;
+  }
+}
+
+.admin-profile-edit-modal .modal-content {
+  border-radius: 12px;
+  border: 1px solid #d6dce7;
+}
+
+.admin-profile-edit-modal .modal-header {
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.admin-profile-edit-modal-body {
+  background: #fbfdff;
+}
+
+.admin-profile-edit-field .form-label {
+  font-weight: 700;
+  color: #33475f;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-profile-edit-field .form-control,
+.admin-profile-edit-field .form-select {
+  border-radius: 6px;
+  border: 1px solid #d5dde8;
+}
+
+.admin-profile-edit-field .form-control:focus,
+.admin-profile-edit-field .form-select:focus {
+  border-color: #2f7fca;
+  box-shadow: 0 0 0 0.2rem rgba(47, 127, 202, 0.15);
+}
+
+.admin-profile-edit-modal-footer {
+  border-top: 1px solid #e5ebf3;
+}
+
+.admin-profile-confirm-table th {
+  width: 190px;
+  background: #eef4fb;
+}
+
+.admin-profile-confirm-table td,
+.admin-profile-confirm-table th {
+  border-color: #d6dce7;
+}
+
+@media (max-width: 768px) {
+  .admin-manage-profile-info-shell {
+    margin-top: 0.6rem;
+    border-radius: 10px;
+    padding: 0.85rem;
+  }
+
+  .admin-profile-field-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1800px) {
+  .admin-manage-profile-info-shell {
+    border-radius: 10px;
+    padding: 1.35rem;
   }
 }

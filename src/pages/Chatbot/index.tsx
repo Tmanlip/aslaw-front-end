@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, CircularProgress, IconButton, Paper, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, IconButton, Paper, Stack, TextField, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { colors } from "../../constant/color";
 import CustomButton from "../../components/Button/button";
@@ -13,7 +13,20 @@ type Message = {
   role: "user" | "bot";
   text: string;
   category?: string;
+  handoff?: boolean;
+  timedOut?: boolean;
+  retryQuestion?: string;
 };
+
+const CONTACT_MARKER = /booking contact name|phone:|whatsapp:|email:/i;
+const ROUTED_CATEGORIES = new Set(["civil", "corporate", "criminal", "general"]);
+
+function formatContactLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
 
 const PublicChatbotPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,20 +54,66 @@ const PublicChatbotPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await askChatbot(question);
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", text: response.answer, category: response.category }
-      ]);
+      const categoryHint = [...messages]
+        .reverse()
+        .find((msg) => msg.role === "bot" && msg.category && ROUTED_CATEGORIES.has(msg.category))?.category;
+      const response = await askChatbot(question, undefined, categoryHint);
+      if (response.degraded) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "bot", text: response.answer, category: response.category, timedOut: true, retryQuestion: question }
+        ]);
+      } else {
+        const isHandoff = CONTACT_MARKER.test(response.answer);
+        setMessages((prev) => [
+          ...prev,
+          { role: "bot", text: response.answer, category: response.category, handoff: isHandoff }
+        ]);
+      }
     } catch (error) {
+      const rawMsg = error instanceof Error ? error.message : "";
+      const friendlyMsg =
+        rawMsg.toLowerCase().includes("failed to fetch") || rawMsg.toLowerCase().includes("networkerror")
+          ? "Unable to reach the server. Please ensure the backend is running and try again."
+          : rawMsg || "Server connection error.";
       setMessages((prev) => [
         ...prev,
         {
           role: "bot",
-          text: error instanceof Error ? error.message : "Server connection error.",
+          text: friendlyMsg,
           category: "error"
         }
       ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetry = async (question: string) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const categoryHint = [...messages]
+        .reverse()
+        .find((msg) => msg.role === "bot" && msg.category && ROUTED_CATEGORIES.has(msg.category) && !msg.timedOut)?.category;
+      const response = await askChatbot(question, undefined, categoryHint);
+      const replacement: Message = response.degraded
+        ? { role: "bot", text: response.answer, category: response.category, timedOut: true, retryQuestion: question }
+        : { role: "bot", text: response.answer, category: response.category, handoff: CONTACT_MARKER.test(response.answer) };
+      setMessages((prev) => {
+        const copy = [...prev];
+        const idx = copy.map((m) => m.timedOut).lastIndexOf(true);
+        if (idx !== -1) copy[idx] = replacement;
+        else copy.push(replacement);
+        return copy;
+      });
+    } catch (error) {
+      const rawMsg = error instanceof Error ? error.message : "";
+      const friendlyMsg =
+        rawMsg.toLowerCase().includes("failed to fetch") || rawMsg.toLowerCase().includes("networkerror")
+          ? "Unable to reach the server. Please ensure the backend is running and try again."
+          : rawMsg || "Server connection error.";
+      setMessages((prev) => [...prev, { role: "bot", text: friendlyMsg, category: "error" }]);
     } finally {
       setLoading(false);
     }
@@ -113,17 +172,84 @@ const PublicChatbotPage: React.FC = () => {
                       py: 1.2,
                       borderRadius: 2,
                       maxWidth: "78%",
-                      bgcolor: msg.role === "user" ? "#8B7500" : "#f7f4e8",
+                      bgcolor: msg.role === "user"
+                        ? "#8B7500"
+                        : msg.timedOut
+                          ? "#fff7ed"
+                          : msg.handoff
+                            ? "#fff8e6"
+                            : "#f7f4e8",
                       color: msg.role === "user" ? "white" : "#1f2937",
+                      border: msg.timedOut ? "1px solid #fb923c" : msg.handoff ? "1px solid #d4a017" : "1px solid transparent",
                       whiteSpace: "pre-wrap"
                     }}
                   >
                     {msg.category && msg.role === "bot" && (
-                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#8B7500", mb: 0.4 }}>
-                        Category: {msg.category}
-                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ mb: 0.75, flexWrap: "wrap" }}>
+                        <Chip
+                          label={`Category: ${msg.category}`}
+                          size="small"
+                          sx={{ fontWeight: 700, bgcolor: "rgba(139, 117, 0, 0.12)", color: "#7a6000" }}
+                        />
+                        {msg.handoff && (
+                          <Chip
+                            label="Lawyer contact shared"
+                            size="small"
+                            sx={{ fontWeight: 700, bgcolor: "rgba(212, 160, 23, 0.16)", color: "#7a4b00" }}
+                          />
+                        )}
+                      </Stack>
                     )}
-                    <Typography variant="body2">{msg.text}</Typography>
+                    {msg.timedOut ? (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5, color: "#b45309" }}>
+                          ⏱ Response timed out
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1, color: "#78716c", fontSize: 12 }}>
+                          The model took too long. Here's a quick summary in the meantime:
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1.25, whiteSpace: "pre-wrap" }}>{msg.text}</Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          disabled={loading}
+                          onClick={() => msg.retryQuestion && handleRetry(msg.retryQuestion)}
+                          sx={{ fontSize: 12, textTransform: "none", borderColor: "#b45309", color: "#b45309", "&:hover": { borderColor: "#92400e", color: "#92400e" } }}
+                        >
+                          {loading ? "Generating…" : "Continue generating"}
+                        </Button>
+                      </Box>
+                    ) : msg.handoff ? (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.75, color: "#7a4b00" }}>
+                          The chatbot has reached the lawyer handoff point.
+                        </Typography>
+                        <Box
+                          sx={{
+                            borderRadius: 2,
+                            p: 1.25,
+                            background: "linear-gradient(135deg, rgba(255, 248, 230, 0.95) 0%, rgba(255, 239, 196, 0.95) 100%)",
+                            border: "1px solid rgba(212, 160, 23, 0.45)",
+                          }}
+                        >
+                          {formatContactLines(msg.text).map((line, lineIndex) => (
+                            <Typography
+                              key={lineIndex}
+                              variant="body2"
+                              sx={{
+                                fontWeight: lineIndex === 0 ? 700 : 500,
+                                color: lineIndex === 0 ? "#6b4d00" : "#4b5563",
+                                mb: lineIndex < formatContactLines(msg.text).length - 1 ? 0.5 : 0,
+                              }}
+                            >
+                              {line}
+                            </Typography>
+                          ))}
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2">{msg.text}</Typography>
+                    )}
                   </Box>
                 </Box>
               ))}

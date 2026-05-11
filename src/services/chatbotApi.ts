@@ -1,3 +1,5 @@
+import AuthMemory from "../data/authMemory";
+
 type AskResponse = {
   answer: string;
   category: string;
@@ -5,6 +7,7 @@ type AskResponse = {
   chatId?: string;
   saved?: boolean;
   saveError?: string;
+  degraded?: boolean;
 };
 
 type ChatRecord = {
@@ -21,7 +24,25 @@ type ChatsResponse = {
   chats: ChatRecord[];
 };
 
-const CHATBOT_API_URL = process.env.REACT_APP_CHATBOT_URL || "http://localhost:3001";
+const CHATBOT_API_URL = (process.env.REACT_APP_API_URL || "http://localhost:8000/api").replace(/\/+$/, "");
+
+function buildHeaders(resolvedFirmID?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  const token = AuthMemory.getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (resolvedFirmID) {
+    headers["X-User-FirmID"] = resolvedFirmID;
+  }
+
+  return headers;
+}
 
 function resolveStoredFirmID(): string | undefined {
   try {
@@ -42,16 +63,17 @@ function resolveStoredFirmID(): string | undefined {
   }
 }
 
-export async function askChatbot(question: string, firmID?: string): Promise<AskResponse> {
+export async function askChatbot(question: string, firmID?: string, category?: string): Promise<AskResponse> {
   const resolvedFirmID = firmID || resolveStoredFirmID();
 
   const res = await fetch(`${CHATBOT_API_URL}/ask`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(resolvedFirmID ? { "X-User-FirmID": resolvedFirmID } : {})
-    },
-    body: JSON.stringify({ question, ...(resolvedFirmID ? { firmID: resolvedFirmID } : {}) })
+    headers: buildHeaders(resolvedFirmID),
+    body: JSON.stringify({
+      question,
+      ...(resolvedFirmID ? { firmID: resolvedFirmID } : {}),
+      ...(category ? { category } : {}),
+    })
   });
 
   if (!res.ok) {
@@ -70,9 +92,7 @@ export async function fetchChats(limit = 100, firmID?: string): Promise<ChatsRes
   }
 
   const res = await fetch(`${CHATBOT_API_URL}/chats?${params.toString()}`, {
-    headers: {
-      ...(resolvedFirmID ? { "X-User-FirmID": resolvedFirmID } : {})
-    }
+    headers: buildHeaders(resolvedFirmID)
   });
 
   if (!res.ok) {

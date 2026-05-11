@@ -132,6 +132,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
       fullData && (fullData.lawyer = updatedLawyer);
 
       setShowEditModal(false);
+      alert("Profile updated successfully!");
     } catch (error: any) {
       console.error(error);
       alert(error.response?.data?.message || "Failed to update lawyer information");

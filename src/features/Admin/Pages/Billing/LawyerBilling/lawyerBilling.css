@@ -1,41 +1,166 @@
 .admin-lawyer-billing-page {
+  --lawyer-billing-bg: #f3f5f9;
+  --lawyer-billing-card: #ffffff;
+  --lawyer-billing-border: #d6dce7;
+  --lawyer-billing-title: #28384f;
+  --lawyer-billing-subtitle: #738198;
+  --lawyer-billing-accent: #2f7fca;
+
   width: min(96vw, 1700px);
   margin: 0 auto;
-  padding: clamp(1rem, 2vw, 2rem);
+  padding: clamp(1.15rem, 2vw, 2rem);
+  background: linear-gradient(180deg, #f8fafd 0%, var(--lawyer-billing-bg) 58%);
+  border-radius: 14px;
+  margin-top: clamp(0.75rem, 1.4vw, 1.25rem);
 }
 
-.admin-lawyer-billing-header-row {
+.admin-lawyer-billing-header {
+  margin-bottom: 1rem;
+}
+
+.admin-lawyer-billing-header h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  font-weight: 700;
+  color: var(--lawyer-billing-title);
+}
+
+.admin-lawyer-billing-header p {
+  margin: 0.45rem 0 0;
+  color: var(--lawyer-billing-subtitle);
+  font-size: 0.96rem;
+}
+
+.admin-lawyer-billing-card {
+  background: var(--lawyer-billing-card);
+  border: 1px solid var(--lawyer-billing-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(36, 46, 66, 0.08);
+  padding: clamp(1rem, 2vw, 1.6rem);
+}
+
+.admin-lawyer-billing-card-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 0 0 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.admin-lawyer-billing-card-header-row h2 {
+  margin: 0;
+  color: #2a3d57;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.admin-lawyer-billing-card-header-row p {
+  margin: 0.35rem 0 0;
+  color: #74839a;
+  font-size: 0.9rem;
 }
 
 .admin-lawyer-billing-manage-btn {
-  font-weight: 500;
+  font-weight: 700;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  min-width: 160px;
+}
+
+.admin-lawyer-billing-card-body {
+  background: #fbfdff;
+  border: 1px solid #e7edf5;
   border-radius: 8px;
+  padding: clamp(0.85rem, 1.4vw, 1.15rem);
 }
 
 .admin-lawyer-case-card {
   padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  border: 1px solid #dce4ef;
+  border-radius: 8px;
   margin-bottom: 1rem;
   cursor: pointer;
   background: #ffffff;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.admin-lawyer-case-card:hover {
+  transform: translateY(-1px);
+  border-color: #c6d9ee;
+  box-shadow: 0 10px 18px rgba(34, 65, 100, 0.1);
+}
+
+.admin-lawyer-case-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.admin-lawyer-case-top-row h5 {
+  margin: 0;
+  color: #2f4159;
+  font-weight: 700;
+}
+
+.admin-lawyer-case-client {
+  margin: 0.75rem 0 0;
+  color: #4a5f7a;
+  overflow-wrap: anywhere;
 }
 
 .admin-lawyer-status-active {
-  color: green;
+  color: #1d7d4f;
+  background: #e8f7ef;
+  border: 1px solid #bde5cc;
+  border-radius: 999px;
+  padding: 0.22rem 0.65rem;
+  font-weight: 700;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .admin-lawyer-status-inactive {
-  color: red;
+  color: #ad3535;
+  background: #feeeee;
+  border: 1px solid #f4caca;
+  border-radius: 999px;
+  padding: 0.22rem 0.65rem;
+  font-weight: 700;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .admin-lawyer-case-progress-wrap {
   margin-top: 1rem;
+}
+
+.admin-lawyer-case-progress-wrap .progress-bar {
+  color: #000 !important;
+}
+
+.admin-lawyer-empty-state {
+  border: 1px dashed #ced7e3;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 1rem;
+  text-align: center;
+}
+
+.admin-lawyer-empty-state h3 {
+  margin: 0;
+  color: #33475f;
+  font-size: 1rem;
+}
+
+.admin-lawyer-empty-state p {
+  margin: 0.45rem 0 0;
+  color: #74839a;
 }
 
 @media (max-width: 768px) {
@@ -43,7 +168,7 @@
     padding: 0.9rem;
   }
 
-  .admin-lawyer-billing-header-row {
+  .admin-lawyer-billing-card-header-row {
     flex-direction: column;
     align-items: stretch;
     margin-bottom: 1rem;
@@ -55,6 +180,15 @@
 
   .admin-lawyer-case-card {
     padding: 0.85rem;
+  }
+
+  .admin-lawyer-case-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-lawyer-billing-card-body {
+    padding: 0.75rem;
   }
 }
 

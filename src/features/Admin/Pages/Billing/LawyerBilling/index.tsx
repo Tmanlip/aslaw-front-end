@@ -47,46 +47,60 @@ const LawyerBilling: React.FC = () => {
       <NavBarAdmin />
 
       <div className="admin-lawyer-billing-page">
-        <div className="admin-lawyer-billing-header-row">
-          <h2>Lawyer Cases</h2>
-          {role === "admin" && (
-            <Button
-              variant="primary"
-              className="admin-lawyer-billing-manage-btn"
-              onClick={handleManageUsers}
-            >
-              Manage Users
-            </Button>
-          )}
+        <div className="admin-lawyer-billing-header">
+          <h1>Lawyer Billing</h1>
+          <p>Review assigned cases and open billing details for payment progress updates.</p>
         </div>
 
-        <div>
-          {cases.length === 0 ? (
-            <p>No cases assigned to this lawyer.</p>
-          ) : (
-            cases.map((c: Case) => (
-              <div
-                key={c.caseId}
-                className="admin-lawyer-case-card"
-                onClick={() => handleCaseClick(c)}
-              >
-                <h5>{c.title}</h5>
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span className={c.status === "Active" ? "admin-lawyer-status-active" : "admin-lawyer-status-inactive"}>
-                    {c.status}
-                  </span>
-                </p>
-                <p>
-                  <strong>Client:</strong> {c.clientName}
-                </p>
+        <div className="admin-lawyer-billing-card">
+          <div className="admin-lawyer-billing-card-header-row">
+            <div>
+              <h2>Case List</h2>
+              <p>Select a case card to open the case management.</p>
+            </div>
 
-                <div className="admin-lawyer-case-progress-wrap">
-                  <CaseProgress caseItem={c} />
-                </div>
+            {role === "admin" && (
+              <Button
+                variant="primary"
+                className="admin-lawyer-billing-manage-btn"
+                onClick={handleManageUsers}
+              >
+                Edit Lawyer Information
+              </Button>
+            )}
+          </div>
+
+          <div className="admin-lawyer-billing-card-body">
+            {cases.length === 0 ? (
+              <div className="admin-lawyer-empty-state">
+                <h3>No Assigned Cases</h3>
+                <p>No cases assigned to this lawyer yet.</p>
               </div>
-            ))
-          )}
+            ) : (
+              cases.map((c: Case) => (
+                <div
+                  key={c.caseId}
+                  className="admin-lawyer-case-card"
+                  onClick={() => handleCaseClick(c)}
+                >
+                  <div className="admin-lawyer-case-top-row">
+                    <h5>{c.title}</h5>
+                    <span className={c.status === "Active" ? "admin-lawyer-status-active" : "admin-lawyer-status-inactive"}>
+                      {c.status}
+                    </span>
+                  </div>
+
+                  <p className="admin-lawyer-case-client">
+                    <strong>Client:</strong> {c.clientName}
+                  </p>
+
+                  <div className="admin-lawyer-case-progress-wrap">
+                    <CaseProgress caseItem={c} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </>

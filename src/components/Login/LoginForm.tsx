@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
+import Spinner from "react-bootstrap/Spinner";
+import Modal from "react-bootstrap/Modal";
 import { colors } from "../../constant/color";
 import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
@@ -25,9 +27,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     "success"
   );
   const [showForgotPasswordPage, setForgotPasswordPage] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLockedModal, setShowLockedModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
@@ -42,7 +47,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        const error: any = new Error(data.message || "Login failed");
+        error.status = response.status;
+        error.code = data.code;
+        error.resetRequired = Boolean(data.reset_required);
+        throw error;
       }
 
       console.log("LOGIN SUCCESS:", data);
@@ -79,6 +88,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         name: data.name || data.username,
       };
 
+      // Check if user account is archived
+      if (user.status && String(user.status).toLowerCase() === 'archived') {
+        AuthMemory.setAuth(token, user, rememberMe);
+        login(normalizedRole, user, rememberMe);
+        
+        setAlertVariant("danger");
+        setAlertMessage("Your account has been deactivated. You can only log out. Please contact the administrator if you believe this is a mistake.");
+        
+        // Don't redirect - let user stay on login page where they can logout
+        onLoginSuccess?.(normalizedRole, "Account archived");
+        return;
+      }
+
       AuthMemory.setAuth(token, user, rememberMe);
 
       // Update your global auth context
@@ -92,10 +114,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       console.error("LOGIN ERROR:", error.message);
       setAlertVariant("danger");
       setAlertMessage(error.message);
+
+      if (
+        error.status === 423 ||
+        error.code === "ACCOUNT_LOCKED" ||
+        error.resetRequired
+      ) {
+        setShowLockedModal(true);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (showForgotPasswordPage) return <EmailConfirm />;
+  if (showForgotPasswordPage) return <EmailConfirm initialEmail={email} />;
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -117,6 +149,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={isSubmitting}
           required
         />
       </Form.Group>
@@ -129,6 +162,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           placeholder="Enter your password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={isSubmitting}
           required
         />
       </Form.Group>
@@ -141,10 +175,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           label="Remember me"
           checked={rememberMe}
           onChange={(e) => setRememberMe(e.target.checked)}
+          disabled={isSubmitting}
         />
         <button
           type="button"
           onClick={() => setForgotPasswordPage(true)}
+          disabled={isSubmitting}
           style={{
             fontSize: "14px",
             color: colors.gold6 || "#3b82f6",
@@ -164,10 +200,53 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       <Button
         type="submit"
         variant="outline-warning"
+        disabled={isSubmitting}
         style={{ width: "100%", fontWeight: 600 }}
       >
-        Sign In
+        {isSubmitting ? (
+          <>
+            <Spinner
+              as="span"
+              animation="border"
+              size="sm"
+              role="status"
+              aria-hidden="true"
+              className="me-2"
+            />
+            Signing in...
+          </>
+        ) : (
+          "Sign In"
+        )}
       </Button>
+
+      <Modal
+        show={showLockedModal}
+        onHide={() => setShowLockedModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Account Locked</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Your account has been locked after 3 failed login attempts. Please
+          reset your password to regain access.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLockedModal(false)}>
+            Close
+          </Button>
+          <Button
+            variant="warning"
+            onClick={() => {
+              setShowLockedModal(false);
+              setForgotPasswordPage(true);
+            }}
+          >
+            Reset Password
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Form>
   );
 };

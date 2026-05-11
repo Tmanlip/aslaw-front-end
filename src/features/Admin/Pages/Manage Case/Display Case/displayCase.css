@@ -4,13 +4,447 @@
   padding: clamp(1rem, 2vw, 2rem);
 }
 
+.admin-case-page-head {
+  background: #ffffff;
+  border: 1px solid #dfe6ef;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.9rem;
+}
+
+.admin-case-page-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-size: 0.74rem;
+  color: #7f5d00;
+  font-weight: 700;
+}
+
+.admin-case-page-head h2 {
+  margin: 0.35rem 0 0.25rem;
+  color: #0f172a;
+}
+
+.admin-case-page-subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
 .admin-display-case-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-case-table-shell {
+  border: 1px solid #dfe6ef !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06) !important;
+}
+
+.admin-case-table-shell .MuiTableContainer-root {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-case-table-shell table {
+  min-width: 1100px;
+}
+
+.admin-case-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-cases-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.admin-cases-metrics-cluster {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.admin-case-analytics-card--total {
+  grid-column: 1 / -1;
+}
+
+.admin-case-analytics-card--compact {
+  padding: 0.62rem;
+}
+
+.admin-case-analytics-card--compact strong {
+  font-size: 1.16rem;
+}
+
+.admin-cases-distribution-panel {
+  margin: 0;
+}
+
+.admin-case-analytics-card {
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.7rem;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.admin-case-analytics-card h4 {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #334155;
+}
+
+.admin-case-analytics-card strong {
+  display: block;
+  margin-top: 0.22rem;
+  font-size: 1.42rem;
+  color: #0f172a;
+}
+
+.admin-case-analytics-card span {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.admin-case-analytics-panel {
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.72rem;
+  margin-bottom: 0.65rem;
+}
+
+.admin-case-analytics-panel h4 {
+  margin: 0 0 0.55rem;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.admin-case-donut-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.admin-case-donut-legend {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin-case-donut-legend div {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-case-donut-legend span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.admin-case-donut-legend p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.admin-case-donut-legend strong {
+  font-size: 0.82rem;
+  color: #0f172a;
+}
+
+.admin-case-bar-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.admin-case-bar-row span,
+.admin-case-bar-row strong {
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.admin-case-bar-track {
+  height: 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.admin-case-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+}
+
+.admin-case-ops-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.admin-case-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.8rem;
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+}
+
+.admin-case-toolbar p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.admin-case-register-btn {
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+  background: linear-gradient(135deg, #ffd700, #e0b300) !important;
+}
+
+.admin-case-register-btn:hover,
+.admin-case-register-btn:focus {
+  box-shadow: 0 8px 18px rgba(224, 179, 0, 0.35) !important;
+}
+
+.admin-case-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin-case-log-list li {
+  border: 1px solid #e7edf4;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.admin-case-log-list strong {
+  color: #0f172a;
+  font-size: 0.8rem;
+}
+
+.admin-case-log-list p {
+  margin: 0.1rem 0 0;
+  color: #64748b;
+  font-size: 0.75rem;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.admin-case-log-list span {
+  color: #64748b;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.admin-case-log-empty {
+  color: #64748b;
+  font-size: 0.82rem;
+  background: #fff !important;
+}
+
+.admin-case-alert-code {
+  color: #b42318 !important;
+}
+
+.admin-case-table-head-cell {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #e7edf4 !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-case-status-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.admin-case-status-pill.active {
+  background: #e8f8ef;
+  color: #0f7a36;
+}
+
+.admin-case-status-pill.inactive {
+  background: #fff1f2;
+  color: #b42318;
+}
+
+.admin-case-status-pill.archived {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.admin-case-action-btn {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+.admin-case-action-cell {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.admin-case-modal .modal-dialog {
+  max-width: min(92vw, 620px);
+}
+
+.admin-case-modal .modal-body p {
+  overflow-wrap: anywhere;
+}
+
+.admin-case-primary-action {
+  background: linear-gradient(135deg, #ffd700, #e0b300) !important;
+  border: none !important;
+  color: #1f2937 !important;
+}
+
+.admin-case-secondary-action {
+  border: 1px solid #dfe6ef !important;
+  background: #fff !important;
+  color: #334155 !important;
 }
 
 @media (max-width: 768px) {
   .admin-display-case-page {
     padding: 0.9rem;
+  }
+
+  .admin-case-page-head {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .admin-case-page-head h2 {
+    font-size: 1.2rem;
+  }
+
+  .admin-cases-top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-cases-metrics-cluster {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-case-analytics-card--total {
+    grid-column: auto;
+  }
+
+  .admin-case-ops-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-case-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-case-bar-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .admin-case-action-cell {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-case-action-cell .btn {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .admin-case-log-list li {
+    align-items: flex-start;
+  }
+
+  .admin-case-log-list span {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-display-case-page {
+    padding: 0.65rem;
+  }
+
+  .admin-cases-top-grid,
+  .admin-case-ops-grid {
+    gap: 0.5rem;
+  }
+
+  .admin-case-analytics-card,
+  .admin-case-analytics-panel {
+    padding: 0.58rem;
+    border-radius: 10px;
+  }
+
+  .admin-case-analytics-card strong {
+    font-size: 1.1rem;
+  }
+
+  .admin-case-analytics-card span,
+  .admin-case-toolbar p,
+  .admin-case-log-list p,
+  .admin-case-log-list span {
+    font-size: 0.72rem;
+  }
+
+  .admin-case-register-btn {
+    width: 100%;
+  }
+
+  .admin-case-table-shell table {
+    min-width: 860px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .admin-cases-top-grid {
+    grid-template-columns: 1fr;
   }
 }
 

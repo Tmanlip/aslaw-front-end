@@ -10,11 +10,13 @@ const Spinner: React.FC<SpinnerProps> = ({
   color = "#2563eb",
 }) => {
   const spinnerStyle: React.CSSProperties = {
+    display: "inline-block",
     width: size,
     height: size,
     border: `${size / 8}px solid #e5e7eb`,
     borderTop: `${size / 8}px solid ${color}`,
     borderRadius: "50%",
+    flexShrink: 0,
     animation: "spin 0.8s linear infinite",
   };
 

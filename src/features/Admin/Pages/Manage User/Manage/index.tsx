@@ -12,7 +12,11 @@ const ManageUser: React.FC = () => {
 
       {/* Main content */}
       <div className="admin-manage-user-page">
-        <h2>User List</h2>
+        <div className="admin-list-page-head">
+          <p className="admin-list-page-kicker">ADMIN</p>
+          <h2>User List</h2>
+          <p className="admin-list-page-subtitle">Manage platform users, access status, and profile operations.</p>
+        </div>
         <div className="admin-manage-user-table-wrap">
           <UserTable />
         </div>

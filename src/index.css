@@ -5,6 +5,11 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+html {
+  font-size: clamp(14px, 0.15vw + 13px, 16px);
 }
 
 code {
@@ -18,6 +23,612 @@ html, body, #root {
   padding: 0;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.table-responsive,
+.aslaw-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+}
+
+.table th,
+.table td {
+  word-break: break-word;
+  white-space: normal;
+}
+
+:root {
+  --aslaw-brand-gold: #ffd700;
+  --aslaw-brand-gold-strong: #e0b300;
+  --aslaw-brand-cream: #fff8dc;
+  --aslaw-ink: #1f2937;
+  --aslaw-ink-muted: #6b7280;
+  --aslaw-soft-bg: #f8fafc;
+  --aslaw-card-bg: #ffffff;
+  --aslaw-border: #e5e7eb;
+  --aslaw-shadow: 0 12px 24px rgba(17, 24, 39, 0.08);
+}
+
+.aslaw-metis-navbar {
+  background: linear-gradient(135deg, var(--aslaw-brand-gold), var(--aslaw-brand-gold-strong));
+  color: #fff;
+  padding: 0.45rem 1rem;
+  box-shadow: 0 8px 20px rgba(139, 117, 0, 0.28);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 1035;
+}
+
+.aslaw-metis-left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.aslaw-metis-left .navbar-brand {
+  min-width: 0;
+}
+
+.aslaw-metis-menu-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.16);
+  transition: all 180ms ease;
+}
+
+.aslaw-metis-menu-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.aslaw-metis-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.aslaw-metis-search {
+  min-width: 260px;
+  flex: 1 1 260px;
+}
+
+.aslaw-metis-search .form-control {
+  border-radius: 12px 0 0 12px;
+  border: 1px solid rgba(31, 41, 55, 0.18);
+}
+
+.aslaw-metis-search .btn {
+  border-radius: 0 12px 12px 0;
+}
+
+.aslaw-metis-logout {
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(31, 41, 55, 0.22);
+  white-space: nowrap;
+}
+
+.aslaw-metis-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: 0.75rem;
+}
+
+.aslaw-metis-notification-btn {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(31, 41, 55, 0.22);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 180ms ease;
+}
+
+.aslaw-metis-notification-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(31, 41, 55, 0.3);
+}
+
+.aslaw-metis-notification-wrap {
+  position: relative;
+}
+
+.aslaw-metis-notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.aslaw-metis-notification-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(360px, 92vw);
+  max-height: 380px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18);
+  z-index: 1080;
+}
+
+.aslaw-metis-notification-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.8);
+  background: #f8fafc;
+}
+
+.aslaw-metis-notification-head h6 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.aslaw-metis-notification-head button {
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.aslaw-metis-notification-state,
+.aslaw-metis-notification-empty,
+.aslaw-metis-notification-error {
+  padding: 0.9rem;
+  margin: 0;
+  color: #475569;
+  font-size: 0.88rem;
+}
+
+.aslaw-metis-notification-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aslaw-metis-notification-error {
+  color: #b91c1c;
+}
+
+.aslaw-metis-notification-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.aslaw-metis-notification-list li + li {
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.aslaw-metis-notification-item {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+}
+
+.aslaw-metis-notification-item:hover {
+  background: #f8fafc;
+}
+
+.aslaw-metis-notification-item strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.88rem;
+}
+
+.aslaw-metis-notification-item p {
+  margin: 0.25rem 0;
+  color: #334155;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aslaw-metis-notification-item small {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.aslaw-metis-sidebar .offcanvas-header {
+  background: linear-gradient(135deg, var(--aslaw-brand-gold), var(--aslaw-brand-gold-strong));
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.aslaw-metis-sidebar .offcanvas-body {
+  background: var(--aslaw-soft-bg);
+  color: var(--aslaw-ink);
+  padding: 1rem;
+}
+
+.aslaw-metis-sidebar .aslaw-sidebar-search {
+  background: var(--aslaw-card-bg);
+  border: 1px solid var(--aslaw-border);
+  border-radius: 12px;
+  padding: 0.65rem;
+  box-shadow: var(--aslaw-shadow);
+}
+
+.aslaw-search-bar {
+  width: 100%;
+}
+
+.aslaw-search-bar .input-group {
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.aslaw-search-bar .form-control {
+  min-width: 0;
+}
+
+.aslaw-search-bar .btn {
+  white-space: nowrap;
+}
+
+.aslaw-metis-search-with-results {
+  position: relative;
+}
+
+.aslaw-navbar-search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(760px, 92vw);
+  max-height: 70vh;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid var(--aslaw-border);
+  border-radius: 12px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
+  z-index: 1085;
+  padding: 0.75rem;
+}
+
+.aslaw-navbar-search-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #475569;
+}
+
+.aslaw-navbar-search-error {
+  margin: 0;
+  color: #b42318;
+}
+
+.aslaw-navbar-search-summary {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.aslaw-navbar-search-summary span {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.aslaw-navbar-search-section {
+  border: 1px solid #e4e9ef;
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.aslaw-navbar-search-section + .aslaw-navbar-search-section {
+  margin-top: 0.55rem;
+}
+
+.aslaw-navbar-search-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.aslaw-navbar-search-section-head h6 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.aslaw-navbar-search-section-head button {
+  border: 0;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.aslaw-navbar-search-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.aslaw-navbar-search-section li {
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem;
+  background: #f8fafc;
+}
+
+.aslaw-navbar-search-section li + li {
+  margin-top: 0.35rem;
+}
+
+.aslaw-navbar-search-section li strong {
+  display: block;
+  color: #0f172a;
+}
+
+.aslaw-navbar-search-section li p {
+  margin: 0.15rem 0 0;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.aslaw-navbar-search-item-btn {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  color: inherit;
+}
+
+.aslaw-navbar-search-item-btn:hover strong,
+.aslaw-navbar-search-item-btn:focus-visible strong {
+  color: #1d4ed8;
+}
+
+.aslaw-navbar-search-section li.empty {
+  color: #64748b;
+  text-align: center;
+}
+
+.aslaw-metis-sidebar .aslaw-sidebar-search .form-control,
+.aslaw-metis-sidebar .aslaw-sidebar-search .btn {
+  border-radius: 10px;
+}
+
+.aslaw-metis-sidebar .aslaw-sidebar-link {
+  display: block;
+  color: var(--aslaw-ink);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  margin-bottom: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: transparent;
+  transition: all 180ms ease;
+}
+
+.aslaw-metis-sidebar .aslaw-sidebar-link:hover {
+  color: var(--aslaw-ink);
+  background: #fff;
+  border-color: var(--aslaw-border);
+  transform: translateX(2px);
+}
+
+.aslaw-metis-sidebar .aslaw-sidebar-link.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--aslaw-brand-gold), var(--aslaw-brand-gold-strong));
+  border-color: transparent;
+}
+
+@media (max-width: 991.98px) {
+  .aslaw-metis-left {
+    width: 100%;
+  }
+
+  .aslaw-metis-search {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .aslaw-navbar-search-results {
+    width: 100%;
+    left: 0;
+    right: 0;
+    max-height: 60vh;
+  }
+
+  .aslaw-metis-navbar .container-fluid {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .aslaw-metis-right {
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .aslaw-metis-navbar .container-fluid {
+    align-items: flex-start;
+  }
+
+  .aslaw-metis-left {
+    flex-wrap: wrap;
+  }
+
+  .aslaw-metis-left .aslaw-metis-search {
+    flex-basis: 100%;
+    margin-left: 0 !important;
+    margin-top: 0.55rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .aslaw-metis-left {
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+
+  .aslaw-metis-right {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+
+  .aslaw-metis-notification-panel {
+    width: min(94vw, 360px);
+  }
+
+  .aslaw-metis-logout {
+    padding: 0.42rem 0.7rem;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .aslaw-metis-navbar {
+    padding: 0.4rem 0.65rem;
+  }
+
+  .aslaw-metis-logo-wrap {
+    padding: 0.2rem 0.4rem;
+  }
+
+  .aslaw-metis-menu-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .aslaw-metis-logout {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .aslaw-metis-notification-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .aslaw-search-bar .input-group {
+    flex-direction: column;
+  }
+
+  .aslaw-search-bar .form-control,
+  .aslaw-search-bar .btn {
+    width: 100%;
+    border-radius: 12px !important;
+  }
+
+  .aslaw-search-bar .form-control {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .aslaw-search-bar .btn {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .aslaw-metis-navbar {
+    padding: 0.3rem 0.45rem;
+  }
+
+  .aslaw-metis-left {
+    gap: 0.45rem;
+  }
+
+  .aslaw-metis-logo-wrap {
+    max-width: 56vw;
+    overflow: hidden;
+  }
+
+  .aslaw-metis-menu-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .aslaw-metis-notification-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .aslaw-metis-logout {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.78rem;
+  }
+
+  .aslaw-metis-notification-panel,
+  .aslaw-navbar-search-results {
+    width: 96vw;
+    max-height: 56vh;
+    right: -4px;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+  }
+}
+
 .homepage-container {
   min-height: 100vh;
   width: 100%;
@@ -26,4 +637,207 @@ html, body, #root {
   justify-content: center;
   background-color: var(--bg-color);
   text-align: center;
+}
+
+/* ==================== METIS PAGINATION THEME ==================== */
+.pagination {
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pagination .page-link {
+  border: 1px solid #dfe6ef;
+  color: #334155;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  margin: 0 2px;
+}
+
+.pagination .page-link:hover:not(.disabled) {
+  background: #f8fafc;
+  border-color: #ffd700;
+  color: #ffd700;
+}
+
+.pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  border-color: transparent;
+  color: #1f2937;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.pagination .page-link.disabled {
+  background: #f8fafc;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ==================== METIS MODAL THEME ==================== */
+.modal-content {
+  border: 1px solid #dfe6ef;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15) !important;
+  background: #fff;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  border: none;
+  border-bottom: 1px solid #e0b300;
+  border-radius: 14px 14px 0 0;
+  padding: 1rem 1.5rem;
+}
+
+.modal-header .modal-title {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.modal-header .btn-close {
+  filter: invert(1);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.modal-header .btn-close:hover {
+  opacity: 1;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  color: #334155;
+}
+
+.modal-footer {
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  border-radius: 0 0 14px 14px;
+  padding: 1rem 1.5rem;
+  gap: 0.75rem;
+}
+
+.modal-footer .btn-secondary {
+  border: 1px solid #dfe6ef;
+  color: #475569;
+  background: #fff;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #bca64f;
+  color: #1f2937;
+}
+
+.modal-footer .btn-primary {
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  border: none;
+  color: #1f2937;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.modal-footer .btn-primary:hover {
+  box-shadow: 0 8px 16px rgba(255, 215, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ==================== METIS TABLE THEME ==================== */
+.table {
+  margin-bottom: 0;
+  color: #334155;
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  color: #1f2937;
+  border: none;
+  font-weight: 600;
+  padding: 1rem;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.table tbody td {
+  padding: 1rem;
+  vertical-align: middle;
+  color: #475569;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background: #fff;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+  background: #f8fafc;
+}
+
+/* ==================== METIS FORM ELEMENTS ==================== */
+.form-control,
+.form-select {
+  border: 1px solid #dfe6ef;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.95rem;
+  color: #334155;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+  outline: none;
+}
+
+.form-label {
+  color: #334155;
+  font-weight: 500;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+}
+
+/* ==================== METIS BUTTONS ==================== */
+.btn-primary {
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+  border: none;
+  color: #1f2937;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 16px rgba(255, 215, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  border: 1px solid #dfe6ef;
+  color: #475569;
+  background: #fff;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #ffd700;
+  color: #1f2937;
 }

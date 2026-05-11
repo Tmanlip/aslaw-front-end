@@ -2,16 +2,16 @@ import React from "react";
 import { Case } from "../../../../../../data/userInfo";
 import CaseFolderSection from "../../../../../Lawyer/Pages/Update Case/components/Tabs/CaseSelectionFolder";
 
-interface ChequesSectionProps {
+interface InvoicesSectionProps {
   selectedCase: Case;
 }
 
-const ChequesSection: React.FC<ChequesSectionProps> = ({ selectedCase }) => {
+const InvoicesSection: React.FC<InvoicesSectionProps> = ({ selectedCase }) => {
   return (
     <CaseFolderSection
       selectedCase={selectedCase}
-      folderName="cheques"
-      title="Cheques"
+      folderName="invoices"
+      title="Invoices"
       allowUpload={false}
       allowDelete={false}
       sectionOptions={["initial", "first", "second", "third", "final"]}
@@ -19,4 +19,4 @@ const ChequesSection: React.FC<ChequesSectionProps> = ({ selectedCase }) => {
   );
 };
 
-export default ChequesSection;
+export default InvoicesSection;
