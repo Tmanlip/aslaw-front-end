@@ -9,7 +9,14 @@ import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
 import AuthMemory from "../../data/authMemory";
 
-const API_URL = (process.env.REACT_APP_API_URL || "/api").replace(/\/+$/, "");
+const resolvedApiUrl =
+  process.env.REACT_APP_API_URL ||
+  (process.env.REACT_APP_BASE_URL
+    ? `${process.env.REACT_APP_BASE_URL.replace(/\/+$/, "")}/api`
+    : "") ||
+  "/api";
+
+const API_URL = resolvedApiUrl.replace(/\/+$/, "");
 
 type LoginFormProps = {
   onLoginSuccess?: (
