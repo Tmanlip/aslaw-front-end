@@ -53,6 +53,7 @@ type ActivityItem = {
 export default function CaseTable() {
   const navigate = useNavigate();
   const { role } = useAuth();
+  const isJuniorAdmin = role === "junioradmin";
 
   const [cases, setCases] = React.useState<CaseRecord[]>([]);
   const [logs, setLogs] = React.useState<InteractionLog[]>([]);
@@ -404,6 +405,7 @@ export default function CaseTable() {
       </section>
 
       <section className="admin-case-ops-grid">
+        {!isJuniorAdmin && (
         <article className="admin-case-analytics-panel">
           <h4>System Activity</h4>
           <ul className="admin-case-log-list">
@@ -422,7 +424,9 @@ export default function CaseTable() {
             )}
           </ul>
         </article>
+        )}
 
+        {!isJuniorAdmin && (
         <article className="admin-case-analytics-panel">
           <h4>Alerts</h4>
           <ul className="admin-case-log-list">
@@ -441,11 +445,12 @@ export default function CaseTable() {
             )}
           </ul>
         </article>
+        )}
       </section>
 
       <section className="admin-case-toolbar">
         <p>Showing {cases.length} case records</p>
-        {role === "admin" && (
+        {(role === "admin" || role === "junioradmin") && (
           <Button className="admin-case-register-btn" onClick={handleRegisterCase}>
             + Register New Case
           </Button>

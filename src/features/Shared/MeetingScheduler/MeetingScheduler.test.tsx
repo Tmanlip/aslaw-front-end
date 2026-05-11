@@ -32,7 +32,7 @@ jest.mock("../../../hooks/lawyerApi", () => ({
   fetchLawyerFullData: jest.fn(),
 }));
 
-const MeetingScheduler = require("./MeetingScheduler").default as React.ComponentType<{ role: "admin" | "client" | "lawyer" }>;
+const MeetingScheduler = require("./MeetingScheduler").default as React.ComponentType<{ role: "admin" | "junioradmin" | "client" | "lawyer" }>;
 
 const mockedAuthMemory = AuthMemory as jest.Mocked<typeof AuthMemory>;
 

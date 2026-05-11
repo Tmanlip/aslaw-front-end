@@ -25,7 +25,7 @@ interface User {
   firmID: string;
   name: string;
   email: string;
-  role: "admin" | "client" | "lawyer";
+  role: "admin" | "junioradmin" | "client" | "lawyer";
   status: "Active" | "Inactive" | "Archived";
   caseId?: number | null;
 }
@@ -69,7 +69,7 @@ export default function UserTable() {
   const [showOffcanvas, setShowOffcanvas] = React.useState(false);
   const [selectedCase, setSelectedCase] = React.useState<CaseRecord | null>(null);
 
-  const [roleFilter, setRoleFilter] = React.useState<"all" | "admin" | "client" | "lawyer">("all");
+  const [roleFilter, setRoleFilter] = React.useState<"all" | "admin" | "junioradmin" | "client" | "lawyer">("all");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "active" | "inactive" | "archived">("all");
 
   React.useEffect(() => {
@@ -189,11 +189,13 @@ export default function UserTable() {
   const activeUsers = users.filter((item) => String(item.status || "").toLowerCase() === "active").length;
   const inactiveUsers = users.filter((item) => String(item.status || "").toLowerCase() !== "active").length;
   const adminUsers = users.filter((item) => item.role === "admin").length;
+  const juniorAdminUsers = users.filter((item) => item.role === "junioradmin").length;
   const clientUsers = users.filter((item) => item.role === "client").length;
   const lawyerUsers = users.filter((item) => item.role === "lawyer").length;
 
   const roleDonutData = [
     { name: "Admins", value: adminUsers, color: "#0ea5e9" },
+    { name: "Junior Admins", value: juniorAdminUsers, color: "#f59e0b" },
     { name: "Clients", value: clientUsers, color: "#ffd700" },
     { name: "Lawyers", value: lawyerUsers, color: "#34d399" },
   ];
@@ -414,6 +416,7 @@ export default function UserTable() {
       </section>
 
       <section className="admin-users-activity-grid">
+        {role !== "junioradmin" && (
         <article className="admin-table-analytics-panel">
           <h4>Recent Activity</h4>
           <ul className="admin-table-log-list">
@@ -432,7 +435,9 @@ export default function UserTable() {
             )}
           </ul>
         </article>
+        )}
 
+        {role !== "junioradmin" && (
         <article className="admin-table-analytics-panel">
           <h4>System Activities</h4>
           <ul className="admin-table-log-list">
@@ -451,6 +456,7 @@ export default function UserTable() {
             )}
           </ul>
         </article>
+        )}
       </section>
 
       <section className="admin-table-filter-bar">
@@ -459,10 +465,11 @@ export default function UserTable() {
           <select
             id="admin-user-role-filter"
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "client" | "lawyer")}
+            onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "junioradmin" | "client" | "lawyer")}
           >
             <option value="all">All Roles</option>
             <option value="admin">Admin</option>
+            <option value="junioradmin">Junior Admin</option>
             <option value="client">Client</option>
             <option value="lawyer">Lawyer</option>
           </select>
@@ -484,7 +491,7 @@ export default function UserTable() {
 
         <p className="admin-table-filter-result">Showing {filteredUsers.length} of {users.length} users</p>
 
-        {role === "admin" && (
+        {(role === "admin" || role === "junioradmin") && (
           <Button className="admin-register-btn" onClick={handleRegisterUser}>
             + Register New User
           </Button>

@@ -108,7 +108,7 @@ export interface User {
   firmID: string;
   name: string;
   email: string;
-  role: "admin" | "client" | "lawyer";
+  role: "admin" | "junioradmin" | "client" | "lawyer";
   status: "Active" | "Inactive" | "Archived";
   caseId?: number | null;
 }

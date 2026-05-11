@@ -35,13 +35,15 @@ const HomePage: React.FC = () => {
 
   // ✅ handle login success and redirect with message
 const handleLoginSuccess = (
-  role: "admin" | "client" | "lawyer",
+  role: "admin" | "junioradmin" | "client" | "lawyer",
   message: string
 ) => {
+  const dashboardPath = role === "junioradmin" ? "/admin/dashboard" : `/${role}/dashboard`;
+
   // The 'login' function was called inside LoginForm. 
   // We wait one "tick" to ensure RenderRouter sees the new role.
   setTimeout(() => {
-    navigate(`/${role}/dashboard`, { 
+    navigate(dashboardPath, { 
         state: { successMessage: message },
         replace: true // Use replace so the user can't "back button" into the login 
     });

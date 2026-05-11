@@ -9,9 +9,11 @@ import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
 import AuthMemory from "../../data/authMemory";
 
+const API_URL = (process.env.REACT_APP_API_URL || "/api").replace(/\/+$/, "");
+
 type LoginFormProps = {
   onLoginSuccess?: (
-    role: "admin" | "client" | "lawyer",
+    role: "admin" | "junioradmin" | "client" | "lawyer",
     message: string
   ) => void;
 };
@@ -35,7 +37,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
+      const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,7 +46,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         body: JSON.stringify({ email, password, remember: rememberMe }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: any = {};
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          data = { message: responseText };
+        }
+      }
 
       if (!response.ok) {
         const error: any = new Error(data.message || "Login failed");
@@ -58,10 +69,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
       const normalizedRole = String(data.role || "").toLowerCase() as
         | "admin"
+        | "junioradmin"
         | "client"
         | "lawyer";
 
-      if (!["admin", "client", "lawyer"].includes(normalizedRole)) {
+      if (!["admin", "junioradmin", "client", "lawyer"].includes(normalizedRole)) {
         throw new Error("Invalid user role returned from server");
       }
 

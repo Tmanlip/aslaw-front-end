@@ -13,7 +13,7 @@ export interface User {
   gender?: string;
   maritalStatus?: string;
   status?: string;
-  role?: "admin" | "client" | "lawyer";
+  role?: "admin" | "junioradmin" | "client" | "lawyer";
   created_at?: string;
 }
 

@@ -7,7 +7,7 @@ import React, {
   ReactNode,
 } from "react";
 
-type Role = "admin" | "client" | "lawyer" | null;
+type Role = "admin" | "junioradmin" | "client" | "lawyer" | null;
 const USER_KEY = "user";
 const ROLE_KEY = "role";
 const STORAGE_MODE_KEY = "auth_storage_mode";
@@ -77,7 +77,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Fallback: recover role from saved user payload if role key is missing.
     if (!savedRole && parsedUser?.role) {
       const possibleRole = String(parsedUser.role).toLowerCase();
-      if (possibleRole === "admin" || possibleRole === "client" || possibleRole === "lawyer") {
+      if (
+        possibleRole === "admin" ||
+        possibleRole === "junioradmin" ||
+        possibleRole === "client" ||
+        possibleRole === "lawyer"
+      ) {
         const validRole = possibleRole as Exclude<Role, null>;
         setRole(validRole);
         storage.setItem(ROLE_KEY, validRole);

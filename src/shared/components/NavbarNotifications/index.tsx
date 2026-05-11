@@ -5,7 +5,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { getEcho } from "../../../lib/echo";
 
 type NavbarNotificationsProps = {
-  scopeKey: "admin" | "client" | "lawyer";
+  scopeKey: "admin" | "junioradmin" | "client" | "lawyer";
   targetPath: string;
 };
 

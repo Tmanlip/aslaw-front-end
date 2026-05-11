@@ -5,6 +5,7 @@ import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import Alert from "react-bootstrap/Alert";
 import AuthMemory from "../../../../data/authMemory";
 import axiosUser from "../../../../api/axiosUser";
+import { useAuth } from "../../../../context/AuthContext";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import "./dashboard.css";
 
@@ -28,6 +29,8 @@ const AdminDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const successMessage = location.state?.successMessage || null;
+  const { role } = useAuth();
+  const isJuniorAdmin = role === "junioradmin";
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
   const [user] = useState(AuthMemory.getUser());
@@ -38,7 +41,7 @@ const AdminDashboard: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!AuthMemory.isLoggedIn() || user?.role !== "admin") {
+    if (!AuthMemory.isLoggedIn() || !(user?.role === "admin" || user?.role === "junioradmin")) {
       navigate("/login"); // redirect if not logged in or wrong role
     }
   }, [navigate, user]);
@@ -314,26 +317,28 @@ const AdminDashboard: React.FC = () => {
             )}
           </article>
 
-          <article className="admin-dashboard-panel">
-            <h2>Recent Case Activity</h2>
-            {loadingAnalytics ? (
-              <p className="admin-dashboard-empty">Loading activity...</p>
-            ) : recentCases.length === 0 ? (
-              <p className="admin-dashboard-empty">No recent case activity available.</p>
-            ) : (
-              <ul className="admin-dashboard-activity-list">
-                {recentCases.map((item, index) => (
-                  <li key={`${item.id || item.caseId || index}`}>
-                    <div>
-                      <strong>{item.title || item.caseName || `Case #${item.caseId || item.id || "-"}`}</strong>
-                      <p>{item.caseType || "General"}</p>
-                    </div>
-                    <span>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
+          {!isJuniorAdmin && (
+            <article className="admin-dashboard-panel">
+              <h2>Recent Case Activity</h2>
+              {loadingAnalytics ? (
+                <p className="admin-dashboard-empty">Loading activity...</p>
+              ) : recentCases.length === 0 ? (
+                <p className="admin-dashboard-empty">No recent case activity available.</p>
+              ) : (
+                <ul className="admin-dashboard-activity-list">
+                  {recentCases.map((item, index) => (
+                    <li key={`${item.id || item.caseId || index}`}>
+                      <div>
+                        <strong>{item.title || item.caseName || `Case #${item.caseId || item.id || "-"}`}</strong>
+                        <p>{item.caseType || "General"}</p>
+                      </div>
+                      <span>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          )}
         </section>
       </div>
     </>

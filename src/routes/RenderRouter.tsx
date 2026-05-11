@@ -12,6 +12,7 @@ export default function RenderRouter() {
   const { role, user, loading, isArchived, isInactive } = useAuth();
   const effectiveRole = (role || String(user?.role || "").toLowerCase() || null) as
     | "admin"
+    | "junioradmin"
     | "client"
     | "lawyer"
     | null;

@@ -33,6 +33,7 @@ const InternalChatbot: React.FC<InternalChatbotProps> = ({ userTypeLabel = "Inte
   const successMessage = location.state?.successMessage || null;
   const effectiveRole = ((role || String(user?.role || "").toLowerCase()) as
     | "admin"
+    | "junioradmin"
     | "client"
     | "lawyer"
     | "") || "";
@@ -176,7 +177,7 @@ const InternalChatbot: React.FC<InternalChatbotProps> = ({ userTypeLabel = "Inte
   };
 
   const renderNavbar = () => {
-    if (effectiveRole === "admin") return <NavBarAdmin />;
+    if (effectiveRole === "admin" || effectiveRole === "junioradmin") return <NavBarAdmin />;
     if (effectiveRole === "client") return <NavBarClient />;
     if (effectiveRole === "lawyer") return <NavBarLawyer />;
     return null;

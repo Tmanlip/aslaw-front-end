@@ -6,7 +6,7 @@ import { fetchLawyerFullData } from "../../../hooks/lawyerApi";
 import { BackendMeeting, createMeeting, fetchMeetingCases, fetchMeetings, MeetingCaseSummary } from "../../../hooks/meetingApi";
 import "./meetingScheduler.css";
 
-type UserRole = "admin" | "client" | "lawyer";
+type UserRole = "admin" | "junioradmin" | "client" | "lawyer";
 type MeetingMethod = "Online" | "In Person";
 type CalendarViewMode = "month" | "week" | "day";
 
@@ -48,7 +48,7 @@ const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
   const currentUser = AuthMemory.getUser();
-  const userName = currentUser?.name || (role === "lawyer" ? "Lawyer" : role === "admin" ? "Admin" : "Client");
+  const userName = currentUser?.name || (role === "lawyer" ? "Lawyer" : role === "admin" || role === "junioradmin" ? "Admin" : "Client");
   const counterpartLabel = role === "lawyer" ? "Client" : role === "client" ? "Lawyer" : "Client Case";
 
   const [counterpartName, setCounterpartName] = useState("");
@@ -299,7 +299,7 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
             return null;
           }
 
-          const dedupeKey = role === "admin" ? `case-${caseId}` : trimmedName.toLowerCase();
+          const dedupeKey = role === "admin" || role === "junioradmin" ? `case-${caseId}` : trimmedName.toLowerCase();
 
           if (seen.has(dedupeKey)) {
             return null;
@@ -312,13 +312,13 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
           return {
             value: `${caseId}:${trimmedName}`,
             label:
-              role === "admin"
+              role === "admin" || role === "junioradmin"
                 ? `${trimmedName} -> ${lawyerName || "Lawyer"} - Case #${caseId}`
                 : `${trimmedName} - Case #${caseId}`,
             caseId,
             caseTitle,
             counterpartName:
-              role === "admin"
+              role === "admin" || role === "junioradmin"
                 ? `${trimmedName} (Lawyer: ${lawyerName || "Lawyer"})`
                 : trimmedName,
           };
@@ -329,7 +329,7 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
     const loadCounterparts = async () => {
       setCounterpartLoading(true);
 
-      if (role === "admin") {
+      if (role === "admin" || role === "junioradmin") {
         try {
           const cases = await fetchMeetingCases();
 
@@ -444,7 +444,7 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
       });
 
       await loadMeetings();
-      setSuccessMessage(role === "admin" ? "Meeting scheduled successfully." : "Meeting request submitted successfully.");
+      setSuccessMessage(role === "admin" || role === "junioradmin" ? "Meeting scheduled successfully." : "Meeting request submitted successfully.");
       clearForm();
     } catch (error) {
       console.error("Failed to create meeting:", error);
@@ -466,7 +466,7 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
           <span>Logged in as: {userName}</span>
           <span>Current view: {monthTitle}</span>
           <span>
-            Booking with: {role === "admin" ? "Client case (auto-invites assigned lawyer)" : counterpartLabel}
+            Booking with: {role === "admin" || role === "junioradmin" ? "Client case (auto-invites assigned lawyer)" : counterpartLabel}
           </span>
         </div>
       </section>
@@ -718,11 +718,11 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
             <div className="meeting-scheduler-card-header compact">
               <div>
                 <p className="meeting-scheduler-kicker">Add Event</p>
-                <h2>{role === "admin" ? "Schedule Case Meeting" : "New Meeting Request"}</h2>
+                <h2>{role === "admin" || role === "junioradmin" ? "Schedule Case Meeting" : "New Meeting Request"}</h2>
               </div>
             </div>
 
-            <label htmlFor="counterpartName">{role === "admin" ? "Client Case" : `${counterpartLabel} Name`}</label>
+            <label htmlFor="counterpartName">{role === "admin" || role === "junioradmin" ? "Client Case" : `${counterpartLabel} Name`}</label>
             <select
               id="counterpartName"
               value={counterpartName}
@@ -733,7 +733,7 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
               <option value="">
                 {counterpartLoading
                   ? `Loading ${counterpartLabel.toLowerCase()} list...`
-                  : role === "admin"
+                  : role === "admin" || role === "junioradmin"
                     ? "Select a client case (lawyer auto-assigned by case)"
                     : `Select ${counterpartLabel.toLowerCase()} from your case list`}
               </option>
@@ -746,13 +746,13 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
 
             {!counterpartLoading && counterpartOptions.length === 0 && (
               <p className="meeting-scheduler-note">
-                {role === "admin"
+                {role === "admin" || role === "junioradmin"
                   ? "No case-linked client/lawyer pair found yet. Assign a case first, then schedule a meeting."
                   : `No linked ${counterpartLabel.toLowerCase()} found. You can only schedule with users connected to your case.`}
               </p>
             )}
 
-            {role === "admin" && (
+            {(role === "admin" || role === "junioradmin") && (
               <p className="meeting-scheduler-note">
                 Admin scheduling uses the selected case. The assigned lawyer and client for that case will be invited automatically.
               </p>
@@ -819,7 +819,7 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
               <p className="meeting-scheduler-success">{successMessage}</p>
             )}
 
-            <button type="submit">{role === "admin" ? "Schedule Meeting" : "Request Meeting"}</button>
+            <button type="submit">{role === "admin" || role === "junioradmin" ? "Schedule Meeting" : "Request Meeting"}</button>
           </form>
         </aside>
       </section>

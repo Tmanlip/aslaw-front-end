@@ -21,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     Boolean(path && path.startsWith(PATH.DOCUMENT_GENERATOR.DASHBOARD));
   const effectiveRole = ((role || String(user?.role || "").toLowerCase()) as
     | "admin"
+    | "junioradmin"
     | "client"
     | "lawyer"
     | "") || "";
@@ -65,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
 
   const sidebarRouteItems = Array.from(sidebarRouteMap.values());
   const chatbotPath =
-    effectiveRole === "admin"
+    effectiveRole === "admin" || effectiveRole === "junioradmin"
       ? PATH.ADMIN.CHATBOT
       : effectiveRole === "client"
       ? PATH.CLIENT.CHATBOT

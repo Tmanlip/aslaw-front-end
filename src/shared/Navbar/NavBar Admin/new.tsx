@@ -82,7 +82,7 @@ const NavBarAdmin: React.FC = () => {
   const [allLogs, setAllLogs] = useState<InteractionLog[]>([]);
   const [hasFetchedSearchData, setHasFetchedSearchData] = useState(false);
 
-  const { logout } = useAuth();
+  const { logout, role } = useAuth();
   const { setUserData } = useClientData();
   const navigate = useNavigate();
   const desktopSearchWrapRef = useRef<HTMLDivElement | null>(null);
@@ -115,11 +115,16 @@ const NavBarAdmin: React.FC = () => {
       setSearchDataError("");
 
       try {
-        const [usersRes, casesRes, logsRes] = await Promise.all([
+        const requests = [
           axiosUser.get(`${process.env.REACT_APP_API_URL}/users`),
           axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=120`),
-        ]);
+        ];
+
+        if (role === "admin") {
+          requests.push(axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=120`));
+        }
+
+        const [usersRes, casesRes, logsRes] = await Promise.all(requests);
 
         const usersData = Array.isArray(usersRes.data)
           ? usersRes.data
@@ -133,10 +138,12 @@ const NavBarAdmin: React.FC = () => {
           ? casesRes.data.data
           : [];
 
-        const logsData = Array.isArray(logsRes.data?.data)
-          ? logsRes.data.data
-          : Array.isArray(logsRes.data)
-          ? logsRes.data
+        const logsData = role === "admin"
+          ? Array.isArray((logsRes as any)?.data?.data)
+            ? (logsRes as any).data.data
+            : Array.isArray((logsRes as any)?.data)
+            ? (logsRes as any).data
+            : []
           : [];
 
         setAllUsers(usersData);
@@ -152,7 +159,7 @@ const NavBarAdmin: React.FC = () => {
     };
 
     void fetchSearchData();
-  }, [hasFetchedSearchData, queryNormalized]);
+  }, [hasFetchedSearchData, queryNormalized, role]);
 
   const matchedUsers = useMemo(() => {
     if (queryNormalized.length < 2) return [];
@@ -559,7 +566,7 @@ const NavBarAdmin: React.FC = () => {
 
           {/* Right-side Logout button */}
           <Nav className="aslaw-metis-right">
-            <NavbarNotifications scopeKey="admin" targetPath={PATH.ADMIN.SCHEDULE_MEETING} />
+            <NavbarNotifications scopeKey={role === "junioradmin" ? "junioradmin" : "admin"} targetPath={PATH.ADMIN.SCHEDULE_MEETING} />
             <CustomButton
               customColor="darkSilver"
               size="lg"
