@@ -10,12 +10,23 @@ import { useAuth } from "../../context/AuthContext";
 import AuthMemory from "../../data/authMemory";
 import PATH from "../../constant/paths";
 
+const normalizeEnvUrl = (value?: string): string => {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return "";
+
+  const normalized = trimmed.replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  return `https://${normalized}`;
+};
+
+const apiUrlFromEnv = normalizeEnvUrl(process.env.REACT_APP_API_URL);
+const baseUrlFromEnv = normalizeEnvUrl(process.env.REACT_APP_BASE_URL);
+
 const resolvedApiUrl =
-  process.env.REACT_APP_API_URL ||
-  (process.env.REACT_APP_BASE_URL
-    ? `${process.env.REACT_APP_BASE_URL.replace(/\/+$/, "")}/api`
-    : "") ||
-  "/api";
+  apiUrlFromEnv || (baseUrlFromEnv ? `${baseUrlFromEnv}/api` : "") || "/api";
 
 const API_URL = resolvedApiUrl.replace(/\/+$/, "");
 
