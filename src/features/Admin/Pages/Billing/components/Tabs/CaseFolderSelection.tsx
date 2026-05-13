@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { colors } from "../../../../../../constant/color";
 import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -249,6 +249,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
     return headers;
   }, [currentUser?.role, currentUser?.firmID, token]);
+
+  const selectedCaseRef = useRef(selectedCase);
+  useEffect(() => { selectedCaseRef.current = selectedCase; });
+
+  const onPhaseSnapshotChangeRef = useRef(onPhaseSnapshotChange);
+  useEffect(() => { onPhaseSnapshotChangeRef.current = onPhaseSnapshotChange; });
 
   const [files, setFiles] = useState<DisplayFile[]>([]);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
@@ -650,8 +656,9 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const fetchFiles = useCallback(async () => {
     setLoadingFiles(true);
 
+    const sc = selectedCaseRef.current;
     // First, refresh encrypted docs for the selected case from backend.
-    const selectedCaseId = Number(selectedCase?.caseId ?? selectedCase?.id);
+    const selectedCaseId = Number(sc?.caseId ?? sc?.id);
     if (Number.isFinite(selectedCaseId) && selectedCaseId > 0) {
       try {
         const casesResponse = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`, {
@@ -667,7 +674,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           setResolvedInvoicePaymentPhases(matchedCase.invoice_payment_phases);
         }
         if (matchedCase?.expected_payment_phases || matchedCase?.invoice_payment_phases) {
-          onPhaseSnapshotChange?.({
+          onPhaseSnapshotChangeRef.current?.({
             expected_payment_phases: matchedCase?.expected_payment_phases,
             invoice_payment_phases: matchedCase?.invoice_payment_phases,
           });
@@ -683,7 +690,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       }
     } else {
       // Fallback to locally available case data.
-      const encryptedFiles = buildEncryptedDisplayFiles(selectedCase?.encrypted_documents ?? []);
+      const encryptedFiles = buildEncryptedDisplayFiles(sc?.encrypted_documents ?? []);
       if (encryptedFiles.length > 0) {
         setFiles(encryptedFiles);
         setLoadingFiles(false);
@@ -691,13 +698,13 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       }
     }
 
-    if (!selectedCase?.blob_folder_path) {
+    if (!sc?.blob_folder_path) {
       setLoadingFiles(false);
       return;
     }
 
     try {
-      const folderPath = `${selectedCase.blob_folder_path}${folderName}/`;
+      const folderPath = `${sc.blob_folder_path}${folderName}/`;
       const response = await axiosUser.get(
         `${process.env.REACT_APP_API_URL}/files?folder=${encodeURIComponent(folderPath)}`,
         { headers: mutationHeaders }
@@ -731,11 +738,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     buildEncryptedDisplayFiles,
     folderName,
     mutationHeaders,
-    onPhaseSnapshotChange,
-    selectedCase?.blob_folder_path,
-    selectedCase?.caseId,
-    selectedCase?.id,
-    selectedCase?.encrypted_documents,
   ]);
 
   const submitUpload = async (finalFile: File) => {
@@ -783,7 +785,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   useEffect(() => {
     fetchFiles();
-  }, [fetchFiles]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCase?.caseId, selectedCase?.id, folderName, mutationHeaders]);
 
   useEffect(() => {
     setResolvedExpectedPaymentPhases(selectedCase?.expected_payment_phases);

@@ -4,6 +4,7 @@ import Pagination from "react-bootstrap/Pagination";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
 import { Form } from "react-bootstrap";
+import { useLocation } from "react-router-dom";
 
 import { Lawyer, Case, LawyerFullData } from "../../../../../data/userInfo";
 import EditLawyerModal from "./editProfile1";
@@ -50,12 +51,22 @@ const CaseSelector: React.FC<{ cases: Case[] }> = ({ cases }) => {
 };
 
 const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [lawyer, setLawyer] = useState<Lawyer>(fullData.lawyer);
   const [cases] = useState<Case[]>(fullData.cases || []);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const forceResetFromState = Boolean((location.state as any)?.forcePasswordReset);
+  const mustChangePassword = Boolean(AuthMemory.getUser()?.must_change_password);
+
+  React.useEffect(() => {
+    if (forceResetFromState || mustChangePassword) {
+      setShowResetModal(true);
+    }
+  }, [forceResetFromState, mustChangePassword]);
 
   const leftColumn = [
     { label: "Firm ID", value: lawyer.firmID },
@@ -196,6 +207,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ fullData }) => {
         show={showResetModal}
         email={lawyer.email}
         firmID={lawyer.firmID}
+        forceReloginAfterReset={mustChangePassword}
         onClose={() => setShowResetModal(false)}
       />
     </div>

@@ -15,6 +15,7 @@ const TemplatePreviewCard = ({
   uploadStatusMessage,
   syncStatusMessage,
   pdfPreviewUrl,
+  preferContentPreview,
   children,
 }) => {
   return (
@@ -84,7 +85,7 @@ const TemplatePreviewCard = ({
           )}
 
           <div className="dg-body" style={{ backgroundColor: "#fafdfb" }}>
-            {pdfPreviewUrl ? (
+            {pdfPreviewUrl && !preferContentPreview ? (
               <iframe
                 src={pdfPreviewUrl}
                 title="Document Preview"

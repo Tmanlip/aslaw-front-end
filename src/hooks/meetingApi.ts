@@ -1,5 +1,9 @@
 import { apiFetch } from "./api";
 
+const MEETING_CASES_CACHE_TTL_MS = 30000;
+let cachedMeetingCases: { data: MeetingCaseSummary[]; timestamp: number } | null = null;
+let inFlightMeetingCasesRequest: Promise<MeetingCaseSummary[]> | null = null;
+
 type MeetingParticipant = {
   id?: number;
   firmID?: string;
@@ -69,6 +73,26 @@ export const createMeeting = async (
 };
 
 export const fetchMeetingCases = async (): Promise<MeetingCaseSummary[]> => {
-  const response = await apiFetch("/cases", { method: "GET" });
-  return Array.isArray(response) ? (response as MeetingCaseSummary[]) : [];
+  const now = Date.now();
+
+  if (cachedMeetingCases && now - cachedMeetingCases.timestamp < MEETING_CASES_CACHE_TTL_MS) {
+    return cachedMeetingCases.data;
+  }
+
+  if (inFlightMeetingCasesRequest) {
+    return inFlightMeetingCasesRequest;
+  }
+
+  const request = apiFetch("/cases", { method: "GET" })
+    .then((response) => (Array.isArray(response) ? (response as MeetingCaseSummary[]) : []))
+    .then((data) => {
+      cachedMeetingCases = { data, timestamp: Date.now() };
+      return data;
+    })
+    .finally(() => {
+      inFlightMeetingCasesRequest = null;
+    });
+
+  inFlightMeetingCasesRequest = request;
+  return request;
 };

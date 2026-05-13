@@ -6,11 +6,16 @@ import Spinner from "react-bootstrap/Spinner";
 import Alert from "react-bootstrap/Alert";
 import axios from "axios";
 import axiosUser from "../../../api/axiosUser";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import AuthMemory from "../../../data/authMemory";
+import PATH from "../../../constant/paths";
 
 interface ResetPasswordModalProps {
   show: boolean;
   email: string;
   firmID: string;
+  forceReloginAfterReset?: boolean;
   onClose: () => void;
 }
 
@@ -18,8 +23,12 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   show,
   email,
   firmID,
+  forceReloginAfterReset = false,
   onClose,
 }) => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -128,6 +137,23 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       await axiosUser.put(`${process.env.REACT_APP_API_URL}/users/${firmID}`, {
         password,
       });
+
+      if (forceReloginAfterReset) {
+        try {
+          await axiosUser.post(`${process.env.REACT_APP_API_URL}/logout`);
+        } catch {
+          // Continue local logout even if API logout fails.
+        }
+
+        logout();
+        AuthMemory.clear();
+        setResetSuccess("Password reset successful. Please log in again.");
+        setTimeout(() => {
+          onClose();
+          navigate(PATH.AUTH.LOGIN, { replace: true });
+        }, 1500);
+        return;
+      }
 
       setResetSuccess("Password reset successful.");
       setTimeout(onClose, 1500);

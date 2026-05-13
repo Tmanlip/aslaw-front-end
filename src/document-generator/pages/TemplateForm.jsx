@@ -5,6 +5,10 @@ import { deterministicTemplateBuilders } from "../components/templates/builders"
 import { renderGeneratedPreview } from "../components/templates/previews/renderGeneratedPreview";
 import TemplateEditorCard from "../components/templates/ui/TemplateEditorCard";
 import TemplatePreviewCard from "../components/templates/ui/TemplatePreviewCard";
+import {
+  buildMalayDeterministicTranslationPrompt,
+  shouldRefineDeterministicTranslation,
+} from "../utils/translation";
 
 import jsPDF from "jspdf";
 import { Document, Packer, Paragraph } from "docx";
@@ -23,11 +27,6 @@ const templateDocxEndpointById = {
     endpoint: `${BACKEND_BASE_URL}/generate-writ-docx`,
     fallbackFilename: "Writ_of_Summons_Template.docx",
     errorText: "Failed to export Writ DOCX. Make sure backend is running.",
-  },
-  invoice: {
-    endpoint: `${BACKEND_BASE_URL}/generate-invoice-docx`,
-    fallbackFilename: "Invoice_Template.docx",
-    errorText: "Failed to export Invoice DOCX. Make sure backend is running.",
   },
 };
 
@@ -1002,12 +1001,51 @@ const TemplateForm = () => {
     setUploadStatusMessage("");
 
     try {
+      const updatePreviewFromContent = (content) => {
+        setGeneratedContent(content);
+        try {
+          const previewPdf = buildPdfDocument(content);
+          const previewBlob = previewPdf.output("blob");
+          setPdfPreviewUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return URL.createObjectURL(previewBlob);
+          });
+        } catch {
+          setPdfPreviewUrl("");
+        }
+      };
+
       const deterministicBuilder = deterministicTemplateBuilders[template.id];
       if (deterministicBuilder) {
-          const builtContent = deterministicBuilder(formData, selectedLanguage);
-          setGeneratedContent(builtContent);
+        const builtContent = deterministicBuilder(formData, selectedLanguage);
+        updatePreviewFromContent(builtContent);
 
-          if (template.id === "invoice") {
+        setShowPreview(true);
+
+        if (shouldRefineDeterministicTranslation(template.id, selectedLanguage)) {
+          try {
+            const translationPrompt = buildMalayDeterministicTranslationPrompt(builtContent);
+            const translationResponse = await fetch(`${BACKEND_BASE_URL}/generate`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ prompt: translationPrompt, language: "malay" }),
+            });
+
+            if (translationResponse.ok) {
+              const translationPayload = await translationResponse.json();
+              const translatedContent = String(translationPayload?.output || "").trim();
+              if (translatedContent) {
+                updatePreviewFromContent(translatedContent);
+              }
+            }
+          } catch {
+            // Keep the deterministic Malay-labelled version if translation is unavailable.
+          }
+        }
+
+        // For invoice, upgrade preview using backend-rendered PDF when available.
+        if (template.id === "invoice") {
+          void (async () => {
             try {
               const response = await fetch(`${BACKEND_BASE_URL}/generate-invoice-pdf`, {
                 method: "POST",
@@ -1016,31 +1054,19 @@ const TemplateForm = () => {
               });
 
               if (!response.ok) {
-                throw new Error("Invoice preview PDF generation failed");
+                return;
               }
 
               const previewBlob = await response.blob();
-              setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
+              setPdfPreviewUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return URL.createObjectURL(previewBlob);
+              });
             } catch {
-              try {
-                const previewPdf = buildPdfDocument(builtContent);
-                const previewBlob = previewPdf.output("blob");
-                setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
-              } catch {
-                setPdfPreviewUrl("");
-              }
+              // Keep local preview if backend preview generation is unavailable.
             }
-          } else {
-            try {
-              const previewPdf = buildPdfDocument(builtContent);
-              const previewBlob = previewPdf.output("blob");
-              setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
-            } catch {
-              setPdfPreviewUrl("");
-            }
-          }
-
-          setShowPreview(true);
+          })();
+        }
 
         const silentDataSyncEndpointByTemplateId = {
           "writ-of-summons": "/generate-writ-data-xlsx",
@@ -1091,14 +1117,7 @@ const TemplateForm = () => {
 
       const data = await res.json();
       const aiContent = data.output;
-      setGeneratedContent(aiContent);
-      try {
-        const previewPdf = buildPdfDocument(aiContent);
-        const previewBlob = previewPdf.output("blob");
-        setPdfPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(previewBlob); });
-      } catch {
-        setPdfPreviewUrl("");
-      }
+      updatePreviewFromContent(aiContent);
       setShowPreview(true);
     } catch (err) {
       console.error(err);
@@ -1370,6 +1389,7 @@ const TemplateForm = () => {
             type: "ASLAW_DOCUMENT_UPLOADED",
             case_id: currentCaseId,
             category: templateCategory,
+            case_progress: uploadPayload?.case_progress,
           },
           "*"
         );
@@ -1398,6 +1418,44 @@ const TemplateForm = () => {
   };
 
   const handleExportDOCX = async () => {
+    if (template.id === "invoice") {
+      const invoicePdfConfig = templatePdfEndpointById.invoice;
+
+      try {
+        const response = await fetch(invoicePdfConfig.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ formData, language: selectedLanguage }),
+        });
+
+        if (!response.ok) {
+          const responseMessage = await resolveResponseErrorMessage(
+            response,
+            "Failed to generate invoice PDF"
+          );
+          throw new Error(responseMessage);
+        }
+
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get("Content-Disposition");
+        const fileName = getFileNameFromContentDisposition(
+          contentDisposition,
+          invoicePdfConfig.fallbackFilename,
+        );
+
+        saveAs(blob, fileName);
+      } catch (err) {
+        console.error(err);
+        if (err?.message === INVOICE_NUMBER_CONFLICT_MESSAGE) {
+          setError(INVOICE_NUMBER_CONFLICT_MESSAGE);
+        } else {
+          setError(invoicePdfConfig.errorText);
+        }
+      }
+
+      return;
+    }
+
     const templateDocxConfig = templateDocxEndpointById[template.id];
     if (templateDocxConfig) {
       try {
@@ -1465,7 +1523,8 @@ const TemplateForm = () => {
         uploadStatusMessage={uploadStatusMessage}
         syncStatusMessage={syncStatusMessage}
         onUploadToCasePdf={canUploadToCase ? handleUploadPdfToCase : undefined}
-          pdfPreviewUrl={pdfPreviewUrl}
+        pdfPreviewUrl={pdfPreviewUrl}
+        preferContentPreview={template.id === "invoice"}
       >
         {renderGeneratedPreview(template.id, generatedContent)}
       </TemplatePreviewCard>

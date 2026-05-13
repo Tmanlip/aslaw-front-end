@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
+import { useLocation } from "react-router-dom";
 
 import { Lawyer } from "../../../../../data/userInfo";
 import EditAdminModal from "./editProfile1";
@@ -15,9 +16,18 @@ interface ProfileInfoProps {
 }
 
 const ProfileInfo: React.FC<ProfileInfoProps> = ({ admin, onAdminUpdated }) => {
+  const location = useLocation();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const forceResetFromState = Boolean((location.state as any)?.forcePasswordReset);
+  const mustChangePassword = Boolean(AuthMemory.getUser()?.must_change_password);
+
+  React.useEffect(() => {
+    if (forceResetFromState || mustChangePassword) {
+      setShowResetModal(true);
+    }
+  }, [forceResetFromState, mustChangePassword]);
 
   const leftColumn = [
     { label: "Firm ID", value: admin.firmID },
@@ -140,6 +150,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ admin, onAdminUpdated }) => {
         show={showResetModal}
         email={admin.email}
         firmID={admin.firmID}
+        forceReloginAfterReset={mustChangePassword}
         onClose={() => setShowResetModal(false)}
       />
     </div>

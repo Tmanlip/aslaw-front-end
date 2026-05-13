@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
@@ -8,6 +8,7 @@ import { colors } from "../../constant/color";
 import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
 import AuthMemory from "../../data/authMemory";
+import PATH from "../../constant/paths";
 
 const resolvedApiUrl =
   process.env.REACT_APP_API_URL ||
@@ -21,7 +22,11 @@ const API_URL = resolvedApiUrl.replace(/\/+$/, "");
 type LoginFormProps = {
   onLoginSuccess?: (
     role: "admin" | "junioradmin" | "client" | "lawyer",
-    message: string
+    message: string,
+    options?: {
+      redirectTo?: string;
+      forcePasswordReset?: boolean;
+    }
   ) => void;
 };
 
@@ -32,12 +37,44 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [alertVariant, setAlertVariant] = useState<"success" | "danger">(
+  const [alertVariant, setAlertVariant] = useState<"success" | "danger" | "warning">(
     "success"
   );
   const [showForgotPasswordPage, setForgotPasswordPage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLockedModal, setShowLockedModal] = useState(false);
+
+  useEffect(() => {
+    const pingBackend = async () => {
+      const pingUrl = `${API_URL}/ping`;
+      try {
+        const response = await fetch(pingUrl, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const responseText = await response.text();
+
+        console.log("[API PING] URL:", pingUrl);
+        console.log("[API PING] Status:", response.status);
+
+        if (!response.ok) {
+          console.error("[API PING] Failed response body:", responseText);
+          return;
+        }
+
+        try {
+          const data = responseText ? JSON.parse(responseText) : {};
+          console.log("[API PING] Success:", data);
+        } catch {
+          console.log("[API PING] Success (non-JSON body):", responseText);
+        }
+      } catch (error) {
+        console.error("[API PING] Request failed:", error);
+      }
+    };
+
+    void pingBackend();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +117,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         | "client"
         | "lawyer";
 
+      const resolveMyProfilePath = (
+        role: "admin" | "junioradmin" | "client" | "lawyer"
+      ): string => {
+        if (role === "admin" || role === "junioradmin") {
+          return PATH.ADMIN.MY_PROFILE;
+        }
+
+        if (role === "client") {
+          return PATH.CLIENT.MY_PROFILE;
+        }
+
+        return PATH.LAWYER.MY_PROFILE;
+      };
+
       if (!["admin", "junioradmin", "client", "lawyer"].includes(normalizedRole)) {
         throw new Error("Invalid user role returned from server");
       }
@@ -107,6 +158,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         name: data.name || data.username,
       };
 
+      const mustChangePassword = Boolean(
+        data.must_change_password ?? user?.must_change_password
+      );
+
+      if (mustChangePassword) {
+        user.must_change_password = true;
+      }
+
       // Check if user account is archived
       if (user.status && String(user.status).toLowerCase() === 'archived') {
         AuthMemory.setAuth(token, user, rememberMe);
@@ -124,6 +183,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
       // Update your global auth context
       login(normalizedRole, user, rememberMe);
+
+      if (mustChangePassword) {
+        const promptMessage =
+          "First login detected. Please reset your password on My Profile, then log in again.";
+
+        setAlertVariant("warning");
+        setAlertMessage(promptMessage);
+
+        onLoginSuccess?.(normalizedRole, promptMessage, {
+          redirectTo: resolveMyProfilePath(normalizedRole),
+          forcePasswordReset: true,
+        });
+        return;
+      }
+
       onLoginSuccess?.(normalizedRole, data.message);
 
       // Optional: redirect or show success message

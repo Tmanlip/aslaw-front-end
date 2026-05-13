@@ -77,7 +77,7 @@ const RegisterUser: React.FC = () => {
   // Page 2 state
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "lawyer" | "client" | "">("");
+  const [role, setRole] = useState<"admin" | "junioradmin" | "lawyer" | "client" | "">("");
   const [picture, setPicture] = useState<File | null>(null);
 
   // Created user

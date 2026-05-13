@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Pagination from "react-bootstrap/Pagination";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
+import { useLocation } from "react-router-dom";
 
 import AuthMemory from "../../../../../data/authMemory";
 import { Client, Case } from "../../../../../data/userInfo";
@@ -11,6 +12,7 @@ import ClientResetPasswordModal from "../ResetPassword/component"; // Import the
 import "./profileInfo.css";
 
 const ProfileInfo: React.FC = () => {
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [showClientModal, setShowClientModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -20,6 +22,8 @@ const ProfileInfo: React.FC = () => {
 
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
+  const forceResetFromState = Boolean((location.state as any)?.forcePasswordReset);
+  const mustChangePassword = Boolean(AuthMemory.getUser()?.must_change_password);
 
   // Fetch client info (simulate async)
   useEffect(() => {
@@ -31,6 +35,12 @@ const ProfileInfo: React.FC = () => {
       setFetching(false);
     }, 500);
   }, []);
+
+  useEffect(() => {
+    if (client && (forceResetFromState || mustChangePassword)) {
+      setShowResetModal(true);
+    }
+  }, [client, forceResetFromState, mustChangePassword]);
 
   if (fetching) {
     return (
@@ -214,6 +224,7 @@ const ProfileInfo: React.FC = () => {
         show={showResetModal}
         email={client.email}
         firmID={client.firmID}
+        forceReloginAfterReset={mustChangePassword}
         onClose={() => setShowResetModal(false)}
       />
     </div>

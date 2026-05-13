@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -47,6 +47,9 @@ const UpdateCase: React.FC = () => {
   const [activeFileSection, setActiveFileSection] = useState<"recent" | "pending" | "documents" | "reports" | "invoices">(
     requestedActiveFileSection || "recent"
   );
+  const isRefreshingCaseRef = useRef(false);
+  const lastProgressEventRef = useRef<{ key: string; at: number } | null>(null);
+  const lastUploadEventRef = useRef<{ key: string; at: number } | null>(null);
 
   const documentGeneratorUrl = `${window.location.origin}/document-generator`;
 
@@ -209,6 +212,8 @@ const UpdateCase: React.FC = () => {
     const firmID = AuthMemory.getUser()?.firmID;
 
     if (firmID) {
+      // Always fetch the latest snapshot when opening Update Case.
+      invalidateLawyerCache(firmID);
       fetchLawyerFullData(firmID)
         .then((res) => {
           setData(res);
@@ -262,22 +267,31 @@ const UpdateCase: React.FC = () => {
   }, [selectedCase]);
 
   const refreshCaseData = useCallback(async () => {
+    if (isRefreshingCaseRef.current) {
+      return;
+    }
+
     const firmID = AuthMemory.getUser()?.firmID;
     if (firmID) {
       try {
+        isRefreshingCaseRef.current = true;
         invalidateLawyerCache(firmID);
         const freshData = await fetchLawyerFullData(firmID);
         setData(freshData);
         AuthMemory.setLawyerFullData?.(freshData);
 
         if (selectedCase && freshData.cases?.length) {
-          const updatedCase = freshData.cases.find((c) => c.caseId === selectedCase.caseId);
+          const updatedCase = freshData.cases.find(
+            (c) => Number(c.caseId) === Number(selectedCase.caseId)
+          );
           if (updatedCase) {
             setSelectedCase(updatedCase);
           }
         }
       } catch (err) {
         console.error("Failed to refresh case data after file change:", err);
+      } finally {
+        isRefreshingCaseRef.current = false;
       }
     }
   }, [selectedCase]);
@@ -366,6 +380,20 @@ const UpdateCase: React.FC = () => {
         const nextProgress = Number(payload.case_progress);
 
         if (Number.isFinite(targetCaseId) && targetCaseId > 0 && Number.isFinite(nextProgress)) {
+          const progressKey = `${targetCaseId}:${nextProgress}`;
+          const now = Date.now();
+          const previousProgressEvent = lastProgressEventRef.current;
+
+          if (
+            previousProgressEvent &&
+            previousProgressEvent.key === progressKey &&
+            now - previousProgressEvent.at < 3000
+          ) {
+            return;
+          }
+
+          lastProgressEventRef.current = { key: progressKey, at: now };
+
           setSelectedCase((prev) => {
             if (!prev || Number(prev.caseId) !== targetCaseId) return prev;
             return { ...prev, progress: nextProgress };
@@ -387,11 +415,45 @@ const UpdateCase: React.FC = () => {
 
       if (payload.type !== "ASLAW_DOCUMENT_UPLOADED") return;
 
+      const uploadCaseId = Number(payload.case_id || 0);
+      const uploadKey = `${uploadCaseId}:${String(payload.category || "")}:${String(payload.case_progress ?? "")}`;
+      const now = Date.now();
+      const previousUploadEvent = lastUploadEventRef.current;
+
+      if (
+        previousUploadEvent &&
+        previousUploadEvent.key === uploadKey &&
+        now - previousUploadEvent.at < 6000
+      ) {
+        return;
+      }
+
+      lastUploadEventRef.current = { key: uploadKey, at: now };
+
       setIsDocGeneratorOpen(false);
+
+      // Keep the user on the same page and refresh data in-place.
       void handleCaseChangeSuccess();
-      window.setTimeout(() => {
-        window.location.reload();
-      }, 120);
+
+      // If generator already has the latest progress, apply it immediately.
+      const targetCaseId = Number(payload.case_id || 0);
+      const nextProgress = Number(payload.case_progress);
+      if (Number.isFinite(targetCaseId) && targetCaseId > 0 && Number.isFinite(nextProgress)) {
+        setSelectedCase((prev) => {
+          if (!prev || Number(prev.caseId) !== targetCaseId) return prev;
+          return { ...prev, progress: nextProgress };
+        });
+
+        setData((prev) => {
+          if (!prev?.cases) return prev;
+          return {
+            ...prev,
+            cases: prev.cases.map((item) =>
+              Number(item.caseId) === targetCaseId ? { ...item, progress: nextProgress } : item
+            ),
+          };
+        });
+      }
     };
 
     window.addEventListener("message", handleGeneratorMessage);

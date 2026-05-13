@@ -28,6 +28,10 @@ type NotificationsResponse = {
   unread_count?: number;
 };
 
+const MIN_FETCH_GAP_MS = 4000;
+let globalNotificationsInFlight = false;
+let globalLastNotificationsFetchAt = 0;
+
 const formatDateTime = (input?: string): string => {
   if (!input) return "Unknown date";
   const date = new Date(input);
@@ -80,21 +84,9 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
   }, []);
 
   useEffect(() => {
-    void loadNotifications();
-
-    const intervalId = window.setInterval(() => {
-      void loadNotifications();
-    }, 15000);
-
-    const handleWindowFocus = () => {
-      void loadNotifications();
-    };
-
-    window.addEventListener("focus", handleWindowFocus);
-
+    void loadNotifications({ force: true });
     return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener("focus", handleWindowFocus);
+      // Polling is intentionally disabled to avoid request storms.
     };
   }, []);
 
@@ -108,7 +100,7 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
     try {
       channel = getEcho().private(`App.Models.User.${userId}`);
       channel.listen(".UserNotificationCreated", () => {
-        void loadNotifications();
+        void loadNotifications({ force: true });
       });
     } catch (err) {
       console.warn("Reverb WebSocket subscription failed, falling back to polling", err);
@@ -124,7 +116,18 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = async ({ force = false }: { force?: boolean } = {}) => {
+    if (globalNotificationsInFlight) {
+      return;
+    }
+
+    const now = Date.now();
+    if (!force && now - globalLastNotificationsFetchAt < MIN_FETCH_GAP_MS) {
+      return;
+    }
+
+    globalNotificationsInFlight = true;
+    globalLastNotificationsFetchAt = now;
     setIsLoading(true);
     setError("");
 
@@ -146,6 +149,7 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
       setError("Unable to load notifications.");
       setUnreadCountFromApi(0);
     } finally {
+      globalNotificationsInFlight = false;
       setIsLoading(false);
     }
   };
@@ -172,7 +176,7 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
       const now = Date.now();
       setLastSeenAt(now);
       localStorage.setItem(lastSeenStorageKey, String(now));
-      void loadNotifications();
+      void loadNotifications({ force: true });
       void markAllAsRead();
     }
   };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import AuthMemory from "../../../../data/authMemory";
 import TemplateFields from "./TemplateFields";
 import "../../../styles/documentGenerator.css";
 
@@ -18,6 +19,9 @@ const TemplateEditorCard = ({
 }) => {
   const location = useLocation();
   const currentSearch = location.search || "";
+  const currentUserRole = String(AuthMemory.getUser()?.role || "").toLowerCase();
+  const hideBiLanguage =
+    currentUserRole === "admin" || currentUserRole === "junioradmin" || currentUserRole === "lawyer";
   const [showCaseInfo, setShowCaseInfo] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -113,13 +117,15 @@ const TemplateEditorCard = ({
                 >
                   English
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onLanguageChange("bi")}
-                  className={selectedLanguage === "bi" ? "dg-active" : ""}
-                >
-                  BI (English)
-                </button>
+                {!hideBiLanguage && (
+                  <button
+                    type="button"
+                    onClick={() => onLanguageChange("bi")}
+                    className={selectedLanguage === "bi" ? "dg-active" : ""}
+                  >
+                    BI (English)
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onLanguageChange("malay")}
