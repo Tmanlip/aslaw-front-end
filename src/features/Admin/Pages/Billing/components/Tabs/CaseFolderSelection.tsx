@@ -61,7 +61,11 @@ type DisplayFile = {
   id?: string;
   fileName: string;
   encrypted: boolean;
+  category?: string;
+  modifiedAt?: string;
 };
+
+type FileSortMode = "modified_desc" | "modified_asc" | "name_asc" | "name_desc";
 
 type CaseApiItem = {
   id?: number;
@@ -287,6 +291,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [pendingInvoiceUploadFile, setPendingInvoiceUploadFile] = useState<File | null>(null);
   const [resolvedExpectedPaymentPhases, setResolvedExpectedPaymentPhases] = useState<CaseInfo["expected_payment_phases"]>(selectedCase?.expected_payment_phases);
   const [resolvedInvoicePaymentPhases, setResolvedInvoicePaymentPhases] = useState<CaseInfo["invoice_payment_phases"]>(selectedCase?.invoice_payment_phases);
+  const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
 
   const alertVariant = useMemo(() => {
     if (!successMessage) {
@@ -642,6 +647,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           id: item.document_id,
           fileName: item.file_name,
           encrypted: true,
+          category: item.category,
+          modifiedAt: (item as any).updated_at || item.created_at,
         }));
     },
     [folderName]
@@ -651,6 +658,47 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     () => files.filter((file) => selectedFiles.includes(file.fileName)),
     [files, selectedFiles]
   );
+
+  const sortedFiles = useMemo(() => {
+    const toMillis = (value?: string) => {
+      if (!value) return 0;
+      const millis = new Date(value).getTime();
+      return Number.isFinite(millis) ? millis : 0;
+    };
+
+    return [...files].sort((a, b) => {
+      const aName = String(a.fileName || "").toLowerCase();
+      const bName = String(b.fileName || "").toLowerCase();
+      const aModified = toMillis(a.modifiedAt);
+      const bModified = toMillis(b.modifiedAt);
+
+      switch (fileSortMode) {
+        case "modified_asc":
+          return aModified - bModified || aName.localeCompare(bName);
+        case "name_asc":
+          return aName.localeCompare(bName) || bModified - aModified;
+        case "name_desc":
+          return bName.localeCompare(aName) || bModified - aModified;
+        case "modified_desc":
+        default:
+          return bModified - aModified || aName.localeCompare(bName);
+      }
+    });
+  }, [fileSortMode, files]);
+
+  const sortLabel = useMemo(() => {
+    switch (fileSortMode) {
+      case "modified_asc":
+        return "Oldest Modified";
+      case "name_asc":
+        return "Name A-Z";
+      case "name_desc":
+        return "Name Z-A";
+      case "modified_desc":
+      default:
+        return "Latest Modified";
+    }
+  }, [fileSortMode]);
 
   /* ================= FETCH FILES ================= */
   const fetchFiles = useCallback(async () => {
@@ -726,6 +774,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         .map((fileName: string) => ({
           fileName,
           encrypted: false,
+          category: folderName,
+          modifiedAt: undefined,
         }));
 
       setFiles(legacyFiles);
@@ -1006,16 +1056,26 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           </button>
 
           {!isInvoiceFolder && (
-            <>
-              <button
-                type="button"
-                className="admin-billing-file-btn admin-billing-file-btn-download"
-                onClick={toggleSelectionMode}
-              >
-                Select
-              </button>
-            </>
+            <button
+              type="button"
+              className="admin-billing-file-btn admin-billing-file-btn-download"
+              onClick={toggleSelectionMode}
+            >
+              Select
+            </button>
           )}
+
+          <Dropdown>
+            <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id={`${folderName}-sort-dropdown-admin`}>
+              Sort: {sortLabel}
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item onClick={() => setFileSortMode("modified_desc")}>Latest Modified</Dropdown.Item>
+              <Dropdown.Item onClick={() => setFileSortMode("modified_asc")}>Oldest Modified</Dropdown.Item>
+              <Dropdown.Item onClick={() => setFileSortMode("name_asc")}>Name A-Z</Dropdown.Item>
+              <Dropdown.Item onClick={() => setFileSortMode("name_desc")}>Name Z-A</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
       </div>
 
@@ -1105,8 +1165,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
       {!loadingFiles && (
         <ul className="admin-billing-file-list">
-          {files.length === 0 && <p className="admin-billing-empty-list">No files found</p>}
-          {files.map((file, idx) => (
+          {sortedFiles.length === 0 && <p className="admin-billing-empty-list">No files found</p>}
+          {sortedFiles.map((file, idx) => (
           <li key={file.id || idx} className="admin-billing-file-row">
             <div className="admin-billing-file-main">
               <strong className="admin-billing-file-name">{file.fileName}</strong>

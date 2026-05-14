@@ -1,10 +1,11 @@
 import axios from "axios";
 import AuthMemory from "../data/authMemory"; // wherever you store token
+import { resolveApiBaseUrl, rewriteApiUrlForSwa } from "./resolveApiBaseUrl";
 
 const inFlightGetRequests = new Map<string, Promise<any>>();
 
 const axiosUser = axios.create({
-  baseURL: process.env.REACT_APP_BASE_URL,
+  baseURL: resolveApiBaseUrl(),
   withCredentials: true, // ✅ important
 });
 
@@ -41,6 +42,10 @@ axiosUser.interceptors.request.use((config) => {
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (typeof config.url === "string") {
+    config.url = rewriteApiUrlForSwa(config.url);
   }
 
   return config;

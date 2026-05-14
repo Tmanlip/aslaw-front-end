@@ -410,12 +410,12 @@ const NavBarAdmin: React.FC = () => {
               </div>
               <ul>
                 {matchedUsers.slice(0, 3).map((user) => (
-                  <li key={user.id}>
-                    <button type="button" className="aslaw-navbar-search-item-btn" onClick={() => void openManageProfileFromUser(user)}>
-                      <strong>{user.name || "-"}</strong>
-                      <p>{user.email || "-"}</p>
-                    </button>
-                  </li>
+                    <li key={user.id}>
+                      <button type="button" className="aslaw-navbar-search-item-btn" onClick={() => void openManageProfileFromUser(user)}>
+                        <strong>{user.name || "-"}</strong>
+                        <p>{user.email || "-"}</p>
+                      </button>
+                    </li>
                 ))}
                 {matchedUsers.length === 0 && <li className="empty">No user matches.</li>}
               </ul>
@@ -428,12 +428,12 @@ const NavBarAdmin: React.FC = () => {
               </div>
               <ul>
                 {matchedCases.slice(0, 3).map((item) => (
-                  <li key={item.id}>
-                    <button type="button" className="aslaw-navbar-search-item-btn" onClick={() => openBillingFromCase(item)}>
-                      <strong>{item.caseName || item.caseNumber || `CASE-${item.id}`}</strong>
-                      <p>{item.clientName || "-"} vs {item.lawyerName || "-"}</p>
-                    </button>
-                  </li>
+                    <li key={item.id}>
+                      <button type="button" className="aslaw-navbar-search-item-btn" onClick={() => openBillingFromCase(item)}>
+                        <strong>{item.caseName || item.caseNumber || `CASE-${item.id}`}</strong>
+                        <p>{item.clientName || "-"} vs {item.lawyerName || "-"}</p>
+                      </button>
+                    </li>
                 ))}
                 {matchedCases.length === 0 && <li className="empty">No case matches.</li>}
               </ul>
@@ -446,19 +446,19 @@ const NavBarAdmin: React.FC = () => {
               </div>
               <ul>
                 {matchedDocuments.slice(0, 3).map((documentMatch, index) => (
-                  <li key={`${documentMatch.documentId || documentMatch.fileName}-${index}`}>
-                    <button
-                      type="button"
-                      className="aslaw-navbar-search-item-btn"
-                      onClick={() => openBillingFromDocument(documentMatch)}
-                    >
-                      <strong>{documentMatch.fileName || "Unnamed document"}</strong>
-                      <p>
-                        {(documentMatch.caseItem.caseName || documentMatch.caseItem.caseNumber || `CASE-${documentMatch.caseItem.id}`)}
-                        {` • ${documentMatch.category}`}
-                      </p>
-                    </button>
-                  </li>
+                    <li key={`${documentMatch.documentId || documentMatch.fileName}-${index}`}>
+                      <button
+                        type="button"
+                        className="aslaw-navbar-search-item-btn"
+                        onClick={() => navigate(PATH.ADMIN.BILLING)}
+                      >
+                        <strong>{documentMatch.fileName || "Unnamed document"}</strong>
+                        <p>
+                          {(documentMatch.caseItem.caseName || documentMatch.caseItem.caseNumber || `CASE-${documentMatch.caseItem.id}`)}
+                          {` • ${documentMatch.category}`}
+                        </p>
+                      </button>
+                    </li>
                 ))}
                 {matchedDocuments.length === 0 && <li className="empty">No document matches.</li>}
               </ul>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Dropdown from "react-bootstrap/Dropdown";
 import Alert from "react-bootstrap/Alert";
@@ -11,6 +11,7 @@ import LoadingSpinner from "../../../components/ui/Spinner";
 import "../../../features/Admin/Pages/Billing/billing.css";
 
 type ActiveFileSection = "recent" | "pending" | "documents" | "reports" | "invoices";
+type FileSortMode = "modified_desc" | "modified_asc" | "name_asc" | "name_desc" | "category_asc";
 
 interface CaseFileTabsProps {
   selectedCase: Case;
@@ -43,6 +44,13 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewMessageVariant, setReviewMessageVariant] = useState<"success" | "danger">("success");
+  const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
+
+  const toMillis = (value?: string | null) => {
+    if (!value) return 0;
+    const millis = new Date(value).getTime();
+    return Number.isFinite(millis) ? millis : 0;
+  };
 
   const resolvedActiveKey = activeKey ?? internalActiveKey;
   const setResolvedActiveKey = (key: ActiveFileSection) => {
@@ -72,10 +80,53 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
   const showInvoiceActions = role === "admin" && !showInvoiceLockBanner;
   const canReviewPending = role === "admin" || role === "lawyer";
   const forceArchivedInvoiceView = showInvoiceLockBanner;
-  const displayedRecentFiles =
-    resolvedActiveKey === "pending"
-      ? recentFiles.filter((item) => String(item.status || "").toLowerCase() === "pending_approval")
-      : recentFiles;
+  const displayedRecentFiles = useMemo(() => {
+    const filtered =
+      resolvedActiveKey === "pending"
+        ? recentFiles.filter((item) => String(item.status || "").toLowerCase() === "pending_approval")
+        : [...recentFiles];
+
+    const sorted = [...filtered].sort((a, b) => {
+      const aName = String(a.file_name || "").toLowerCase();
+      const bName = String(b.file_name || "").toLowerCase();
+      const aCategory = String(a.category || "").toLowerCase();
+      const bCategory = String(b.category || "").toLowerCase();
+      const aModified = toMillis((a as any).updated_at || a.created_at);
+      const bModified = toMillis((b as any).updated_at || b.created_at);
+
+      switch (fileSortMode) {
+        case "modified_asc":
+          return aModified - bModified || aName.localeCompare(bName);
+        case "name_asc":
+          return aName.localeCompare(bName) || bModified - aModified;
+        case "name_desc":
+          return bName.localeCompare(aName) || bModified - aModified;
+        case "category_asc":
+          return aCategory.localeCompare(bCategory) || bModified - aModified;
+        case "modified_desc":
+        default:
+          return bModified - aModified || aName.localeCompare(bName);
+      }
+    });
+
+    return sorted;
+  }, [fileSortMode, recentFiles, resolvedActiveKey]);
+
+  const sortLabel = useMemo(() => {
+    switch (fileSortMode) {
+      case "modified_asc":
+        return "Oldest Modified";
+      case "name_asc":
+        return "Name A-Z";
+      case "name_desc":
+        return "Name Z-A";
+      case "category_asc":
+        return "Category";
+      case "modified_desc":
+      default:
+        return "Latest Modified";
+    }
+  }, [fileSortMode]);
 
   const reviewPendingFile = async (file: EncryptedDocumentItem, action: "approve" | "reject") => {
     const actionKey = getActionKey(action, file);
@@ -278,8 +329,24 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                     {showInvoiceActions && <Dropdown.Item onClick={() => setResolvedActiveKey("invoices")}>Select in Invoices</Dropdown.Item>}
                   </Dropdown.Menu>
                 </Dropdown>
+
               </div>
             )}
+
+            <div className="admin-billing-files-actions">
+              <Dropdown>
+                <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id="recent-sort-dropdown-shared">
+                  Sort: {sortLabel}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  <Dropdown.Item onClick={() => setFileSortMode("modified_desc")}>Latest Modified</Dropdown.Item>
+                  <Dropdown.Item onClick={() => setFileSortMode("modified_asc")}>Oldest Modified</Dropdown.Item>
+                  <Dropdown.Item onClick={() => setFileSortMode("name_asc")}>Name A-Z</Dropdown.Item>
+                  <Dropdown.Item onClick={() => setFileSortMode("name_desc")}>Name Z-A</Dropdown.Item>
+                  <Dropdown.Item onClick={() => setFileSortMode("category_asc")}>Category</Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
           </div>
 
           {resolvedActiveKey === "recent" && (

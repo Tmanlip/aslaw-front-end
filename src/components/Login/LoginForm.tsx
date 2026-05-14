@@ -9,26 +9,9 @@ import EmailConfirm from "../../pages/ForgotPassword/MFA";
 import { useAuth } from "../../context/AuthContext";
 import AuthMemory from "../../data/authMemory";
 import PATH from "../../constant/paths";
+import { resolveApiBaseUrl } from "../../api/resolveApiBaseUrl";
 
-const normalizeEnvUrl = (value?: string): string => {
-  const trimmed = (value || "").trim();
-  if (!trimmed) return "";
-
-  const normalized = trimmed.replace(/\/+$/, "");
-  if (/^https?:\/\//i.test(normalized)) {
-    return normalized;
-  }
-
-  return `https://${normalized}`;
-};
-
-const apiUrlFromEnv = normalizeEnvUrl(process.env.REACT_APP_API_URL);
-const baseUrlFromEnv = normalizeEnvUrl(process.env.REACT_APP_BASE_URL);
-
-const resolvedApiUrl =
-  apiUrlFromEnv || (baseUrlFromEnv ? `${baseUrlFromEnv}/api` : "") || "/api";
-
-const API_URL = resolvedApiUrl.replace(/\/+$/, "");
+const API_URL = resolveApiBaseUrl().replace(/\/+$/, "");
 
 type LoginFormProps = {
   onLoginSuccess?: (

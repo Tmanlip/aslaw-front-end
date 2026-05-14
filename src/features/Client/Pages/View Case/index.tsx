@@ -9,7 +9,6 @@ import { fetchClientFullData } from "../../../../hooks/clientApi";
 import { Case, ClientFullData } from "../../../../data/userInfo";
 import axiosUser from "../../../../api/axiosUser";
 import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import { formatCaseDate } from "../../../../utils/caseDates";
 import LoadingSpinner from "../../../../components/ui/Spinner";
@@ -34,6 +33,7 @@ const ViewCase: React.FC = () => {
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploadMessageVariant, setUploadMessageVariant] = useState<"success" | "danger">("success");
+  const uploadInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const refreshClientData = useCallback(async () => {
     const firmID = AuthMemory.getUser()?.firmID;
@@ -258,8 +258,10 @@ const ViewCase: React.FC = () => {
                       <div className="client-view-case-upload-note">
                         Uploaded documents will be reviewed by a Lawyer or Admin before being stored securely.
                       </div>
-                      <Form.Control
+                      <input
+                        ref={uploadInputRef}
                         type="file"
+                        style={{ display: "none" }}
                         accept="application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         disabled={!selectedCase || uploadingDocument || normalizedCaseStatus === "archived"}
                         onChange={(event) => {
@@ -269,6 +271,13 @@ const ViewCase: React.FC = () => {
                           input.value = "";
                         }}
                       />
+                      <Button
+                        variant="outline-secondary"
+                        onClick={() => uploadInputRef.current?.click()}
+                        disabled={!selectedCase || uploadingDocument || normalizedCaseStatus === "archived"}
+                      >
+                        {uploadFile ? "Change File" : "Choose File"}
+                      </Button>
                       {uploadFile && (
                         <div className="client-view-case-upload-file-name">
                           Selected file: {uploadFile.name}

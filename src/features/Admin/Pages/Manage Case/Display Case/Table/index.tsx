@@ -31,8 +31,16 @@ interface CaseRecord {
   caseType?: string;
   status?: string;
   created_at?: string;
+  updated_at?: string;
   blob_folder_path?: string;
 }
+
+type CaseSortMode =
+  | "modified_desc"
+  | "modified_asc"
+  | "case_number_asc"
+  | "client_name_asc"
+  | "case_name_asc";
 
 interface InteractionLog {
   _id?: string;
@@ -63,6 +71,7 @@ export default function CaseTable() {
   const [showManageModal, setShowManageModal] = React.useState(false);
   const [selectedCase, setSelectedCase] = React.useState<CaseRecord | null>(null);
   const [loadingNavigate, setLoadingNavigate] = React.useState(false);
+  const [sortMode, setSortMode] = React.useState<CaseSortMode>("modified_desc");
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -202,6 +211,39 @@ export default function CaseTable() {
 
     return dateValue.toLocaleDateString();
   };
+
+  const sortedCases = React.useMemo(() => {
+    const toMillis = (value?: string) => {
+      if (!value) return 0;
+      const millis = new Date(value).getTime();
+      return Number.isFinite(millis) ? millis : 0;
+    };
+
+    return [...cases].sort((a, b) => {
+      const aModified = toMillis(a.updated_at || a.created_at);
+      const bModified = toMillis(b.updated_at || b.created_at);
+      const aCaseNo = String(a.caseNumber || `CASE-${a.id}`).toLowerCase();
+      const bCaseNo = String(b.caseNumber || `CASE-${b.id}`).toLowerCase();
+      const aClient = String(a.clientName || "").toLowerCase();
+      const bClient = String(b.clientName || "").toLowerCase();
+      const aCaseName = String(a.caseName || "").toLowerCase();
+      const bCaseName = String(b.caseName || "").toLowerCase();
+
+      switch (sortMode) {
+        case "modified_asc":
+          return aModified - bModified || aCaseNo.localeCompare(bCaseNo);
+        case "case_number_asc":
+          return aCaseNo.localeCompare(bCaseNo) || bModified - aModified;
+        case "client_name_asc":
+          return aClient.localeCompare(bClient) || bModified - aModified;
+        case "case_name_asc":
+          return aCaseName.localeCompare(bCaseName) || bModified - aModified;
+        case "modified_desc":
+        default:
+          return bModified - aModified || aCaseNo.localeCompare(bCaseNo);
+      }
+    });
+  }, [cases, sortMode]);
 
   const isCaseRelatedLog = (log: InteractionLog): boolean => {
     const path = String(log.path || "").toLowerCase();
@@ -449,7 +491,22 @@ export default function CaseTable() {
       </section>
 
       <section className="admin-case-toolbar">
-        <p>Showing {cases.length} case records</p>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+          <p style={{ margin: 0 }}>Showing {sortedCases.length} case records</p>
+          <select
+            aria-label="Sort cases"
+            className="form-select form-select-sm"
+            style={{ width: "220px" }}
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as CaseSortMode)}
+          >
+            <option value="modified_desc">Latest Modified</option>
+            <option value="modified_asc">Oldest Modified</option>
+            <option value="case_number_asc">Case Number A-Z</option>
+            <option value="client_name_asc">Client Name A-Z</option>
+            <option value="case_name_asc">Case Name A-Z</option>
+          </select>
+        </div>
         {(role === "admin" || role === "junioradmin") && (
           <Button className="admin-case-register-btn" onClick={handleRegisterCase}>
             + Register New Case
@@ -459,7 +516,7 @@ export default function CaseTable() {
 
       <Paper className="admin-case-table-shell" style={{ height: "min(62vh, 560px)", width: "100%", minWidth: 0 }}>
         <TableVirtuoso
-          data={cases}
+          data={sortedCases}
           components={VirtuosoTableComponents}
           fixedHeaderContent={() => (
             <TableRow>

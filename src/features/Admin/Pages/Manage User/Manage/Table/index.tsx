@@ -28,7 +28,11 @@ interface User {
   role: "admin" | "junioradmin" | "client" | "lawyer";
   status: "Active" | "Inactive" | "Archived";
   caseId?: number | null;
+  created_at?: string;
+  updated_at?: string;
 }
+
+type UserSortMode = "modified_desc" | "modified_asc" | "name_asc" | "name_desc" | "role_asc" | "status_asc";
 
 interface CaseRecord {
   id: number;
@@ -71,6 +75,7 @@ export default function UserTable() {
 
   const [roleFilter, setRoleFilter] = React.useState<"all" | "admin" | "junioradmin" | "client" | "lawyer">("all");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "active" | "inactive" | "archived">("all");
+  const [sortMode, setSortMode] = React.useState<UserSortMode>("modified_desc");
 
   React.useEffect(() => {
     const fetchUsers = async () => {
@@ -360,6 +365,41 @@ export default function UserTable() {
     return roleMatches && statusMatches;
   });
 
+  const sortedUsers = React.useMemo(() => {
+    const toMillis = (value?: string) => {
+      if (!value) return 0;
+      const millis = new Date(value).getTime();
+      return Number.isFinite(millis) ? millis : 0;
+    };
+
+    return [...filteredUsers].sort((a, b) => {
+      const aModified = toMillis(a.updated_at || a.created_at);
+      const bModified = toMillis(b.updated_at || b.created_at);
+      const aName = String(a.name || "").toLowerCase();
+      const bName = String(b.name || "").toLowerCase();
+      const aRole = String(a.role || "").toLowerCase();
+      const bRole = String(b.role || "").toLowerCase();
+      const aStatus = String(a.status || "").toLowerCase();
+      const bStatus = String(b.status || "").toLowerCase();
+
+      switch (sortMode) {
+        case "modified_asc":
+          return aModified - bModified || aName.localeCompare(bName);
+        case "name_asc":
+          return aName.localeCompare(bName) || bModified - aModified;
+        case "name_desc":
+          return bName.localeCompare(aName) || bModified - aModified;
+        case "role_asc":
+          return aRole.localeCompare(bRole) || bModified - aModified;
+        case "status_asc":
+          return aStatus.localeCompare(bStatus) || bModified - aModified;
+        case "modified_desc":
+        default:
+          return bModified - aModified || aName.localeCompare(bName);
+      }
+    });
+  }, [filteredUsers, sortMode]);
+
   if (loadingUsers) {
     return (
       <Box height={500} display="flex" justifyContent="center" alignItems="center">
@@ -489,7 +529,23 @@ export default function UserTable() {
           </select>
         </div>
 
-        <p className="admin-table-filter-result">Showing {filteredUsers.length} of {users.length} users</p>
+        <div className="admin-table-filter-item">
+          <label htmlFor="admin-user-sort">Sort</label>
+          <select
+            id="admin-user-sort"
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as UserSortMode)}
+          >
+            <option value="modified_desc">Latest Modified</option>
+            <option value="modified_asc">Oldest Modified</option>
+            <option value="name_asc">Name A-Z</option>
+            <option value="name_desc">Name Z-A</option>
+            <option value="role_asc">Role</option>
+            <option value="status_asc">Status</option>
+          </select>
+        </div>
+
+        <p className="admin-table-filter-result">Showing {sortedUsers.length} of {users.length} users</p>
 
         {(role === "admin" || role === "junioradmin") && (
           <Button className="admin-register-btn" onClick={handleRegisterUser}>
@@ -500,7 +556,7 @@ export default function UserTable() {
 
       <Paper className="admin-table-shell" style={{ height: "min(62vh, 560px)", width: "100%", minWidth: 0 }}>
         <TableVirtuoso
-          data={filteredUsers}
+          data={sortedUsers}
           components={VirtuosoTableComponents}
           fixedHeaderContent={() => (
             <TableRow>
