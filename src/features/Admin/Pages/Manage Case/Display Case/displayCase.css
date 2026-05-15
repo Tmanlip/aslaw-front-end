@@ -133,7 +133,12 @@
 .admin-case-donut-wrap {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.45rem;
+  gap: 0;
+  align-content: start;
+}
+
+.admin-case-donut-wrap .recharts-responsive-container {
+  margin-bottom: -0.35rem;
 }
 
 .admin-case-donut-legend {

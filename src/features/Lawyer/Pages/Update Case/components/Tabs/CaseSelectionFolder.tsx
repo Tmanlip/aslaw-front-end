@@ -755,6 +755,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           selectedStage={uploadSection || sectionOptions[0] || "initial"}
           accentColor={colors.red}
           caseTypeFeeJson={selectedCase?.case_type_fee_json || null}
+          encryptedDocuments={selectedCase?.encrypted_documents || null}
         />
       )}
 

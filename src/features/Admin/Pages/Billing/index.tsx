@@ -10,7 +10,7 @@ import AppRoutes from "../../../../routes/AppRouter";
 import { useClientData } from "../../../../context/ClientDataContext";
 import PATH from "../../../../constant/paths";
 import axiosUser from "../../../../api/axiosUser";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatCaseDate } from "../../../../utils/caseDates";
 import "./billing.css";
 
@@ -62,7 +62,11 @@ const UpdateCheque: React.FC = () => {
   const encryptedDocs = Array.isArray((caseToManage as any)?.encrypted_documents)
     ? (caseToManage as any).encrypted_documents
     : [];
-  const activeEncryptedCount = encryptedDocs.filter((doc: any) => doc?.status !== "deleted").length;
+  const activeEncryptedCount = encryptedDocs.filter(
+    (doc: any) =>
+      doc?.status !== "deleted" &&
+      String(doc?.status || "").toLowerCase() !== "pending_approval"
+  ).length;
   const encryptedInvoiceCount = encryptedDocs.filter((doc: any) => doc?.category === "invoices" && doc?.status !== "deleted").length;
   const latestDocumentMillis = encryptedDocs.reduce((latest: number, doc: any) => {
     const docMillis = parseDateMillis(doc?.updated_at || doc?.created_at || doc?.createdAt);
@@ -146,24 +150,94 @@ const UpdateCheque: React.FC = () => {
     }
   }, [requestedActiveFileSection]);
 
-  const refreshCaseData = async () => {
+  const refreshCaseData = useCallback(async (options?: { silent?: boolean }) => {
+    const { silent = false } = options || {};
     const currentCaseId = Number(caseToManage?.caseId ?? caseToManage?.id);
     if (!Number.isFinite(currentCaseId) || currentCaseId <= 0) {
       return;
     }
 
     try {
-      const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`);
-      const allCases = Array.isArray(response.data) ? response.data : [];
-      const updatedCase = allCases.find((item: any) => Number(item.caseId ?? item.id) === currentCaseId);
-      if (updatedCase) {
-        setCaseToManage(updatedCase);
-        setProgressSourceLabel("Refreshed from case data");
+      try {
+        const caseResponse = await axiosUser.get(
+          `${process.env.REACT_APP_API_URL}/cases/${currentCaseId}`,
+          {
+            params: { _ts: Date.now() },
+          }
+        );
+
+        const updatedCase =
+          caseResponse?.data?.case ||
+          caseResponse?.data?.data ||
+          caseResponse?.data ||
+          null;
+
+        if (updatedCase) {
+          setCaseToManage(updatedCase);
+          if (!silent) {
+            setProgressSourceLabel("Refreshed from case data");
+          }
+          return;
+        }
+      } catch (detailError) {
+        console.warn("Case detail refresh failed, falling back to case list", detailError);
+      }
+
+      // Fallback for backends that only expose list response shapes.
+      const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`, {
+        params: { _ts: Date.now() },
+      });
+      const allCases = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response?.data?.data)
+          ? response.data.data
+          : [];
+      const updatedCaseFromList = allCases.find(
+        (item: any) => Number(item.caseId ?? item.id) === currentCaseId
+      );
+      if (updatedCaseFromList) {
+        setCaseToManage(updatedCaseFromList);
+        if (!silent) {
+          setProgressSourceLabel("Refreshed from case data");
+        }
       }
     } catch (error) {
       console.error("Failed to refresh billing case data", error);
     }
-  };
+  }, [caseToManage?.caseId, caseToManage?.id]);
+
+  useEffect(() => {
+    if (!caseToManage) {
+      return;
+    }
+
+    void refreshCaseData({ silent: true });
+  }, [caseToManage?.caseId, caseToManage?.id, refreshCaseData]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void refreshCaseData({ silent: true });
+    }, 10000);
+
+    const handleFocus = () => {
+      void refreshCaseData({ silent: true });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshCaseData({ silent: true });
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshCaseData]);
 
   const handleCaseProgressUpdate = (caseId: number, progress: number) => {
     if (!Number.isFinite(caseId) || caseId <= 0 || !Number.isFinite(progress)) {

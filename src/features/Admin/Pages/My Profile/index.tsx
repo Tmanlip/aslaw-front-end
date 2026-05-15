@@ -3,6 +3,7 @@ import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import AuthMemory from "../../../../data/authMemory";
 import ProfileInfo from "./ProfileInfo";
 import { Lawyer } from "../../../../data/userInfo";
+import { userData } from "../../../../data/userData";
 import "./profile.css";
 
 const normalizeAdminUser = (user: any): Lawyer => ({
@@ -60,7 +61,7 @@ const AdminProfile: React.FC = () => {
       <div className="admin-profile-page">
         <div className="admin-profile-sidebar">
           <img
-            src={admin.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
+            src={admin.photo || userData.photo}
             alt="Passport"
             className="admin-profile-avatar"
           />

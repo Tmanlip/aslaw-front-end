@@ -110,13 +110,6 @@ const AdminLogs: React.FC = () => {
   const [search, setSearch] = useState(initialSearch);
   const [severityFilter, setSeverityFilter] = useState<SeverityLevel | "all">("all");
 
-  // Restrict access for junior admins
-  useEffect(() => {
-    if (role === "junioradmin") {
-      navigate(PATH.ADMIN.DASHBOARD);
-    }
-  }, [role, navigate]);
-
   useEffect(() => {
     const urlSearch = (searchParams.get("search") || searchParams.get("q") || "").trim();
     setSearch(urlSearch);
@@ -130,7 +123,11 @@ const AdminLogs: React.FC = () => {
         );
         setLogs(res.data?.data ?? []);
       } catch (err: any) {
-        const message = err?.response?.data?.message || err?.message || "Failed to load logs";
+        const status = err?.response?.status;
+        const message =
+          status === 401 || status === 403
+            ? "Unauthorized Access"
+            : err?.response?.data?.message || err?.message || "Failed to load logs";
         setError(message);
       } finally {
         setLoading(false);
@@ -170,11 +167,6 @@ const AdminLogs: React.FC = () => {
 
     return results;
   }, [logs, search, severityFilter]);
-
-  // Prevent rendering for junior admins
-  if (role === "junioradmin") {
-    return null;
-  }
 
   return (
     <>

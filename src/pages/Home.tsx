@@ -42,7 +42,12 @@ const handleLoginSuccess = (
     forcePasswordReset?: boolean;
   }
 ) => {
-  const dashboardPath = role === "junioradmin" ? "/admin/dashboard" : `/${role}/dashboard`;
+  const dashboardPath =
+    role === "junioradmin"
+      ? PATH.JUNIOR_ADMIN.DASHBOARD
+      : role === "admin"
+      ? PATH.ADMIN.DASHBOARD
+      : `/${role}/dashboard`;
   const targetPath = options?.redirectTo || dashboardPath;
 
   // The 'login' function was called inside LoginForm. 

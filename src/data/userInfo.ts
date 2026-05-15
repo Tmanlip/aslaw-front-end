@@ -7,6 +7,10 @@ export interface EncryptedDocumentItem {
   is_encrypted?: boolean;
   status: string;
   created_at: string;
+  invoice_stage?: string;
+  payment_stage?: string;
+  type_of_work?: string;
+  paid_amount?: number;
   preview_url: string;
   download_url: string;
   delete_url: string;

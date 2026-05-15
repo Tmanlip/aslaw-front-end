@@ -53,23 +53,12 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCountFromApi, setUnreadCountFromApi] = useState(0);
+  const [markingIds, setMarkingIds] = useState<Record<string, boolean>>({});
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  const lastSeenStorageKey = `aslaw-navbar-notifications-last-seen-${scopeKey}`;
-  const [lastSeenAt, setLastSeenAt] = useState<number>(() => {
-    const raw = localStorage.getItem(lastSeenStorageKey);
-    const parsed = Number(raw || "0");
-    return Number.isFinite(parsed) ? parsed : 0;
-  });
-
   const unreadCount = useMemo(() => {
-    const localUnread = notifications.filter((item) => {
-      const timestamp = new Date(item.createdAt).getTime();
-      return Number.isFinite(timestamp) && timestamp > lastSeenAt;
-    }).length;
-
-    return Math.max(localUnread, unreadCountFromApi);
-  }, [lastSeenAt, notifications, unreadCountFromApi]);
+    return Math.max(unreadCountFromApi, notifications.length);
+  }, [notifications.length, unreadCountFromApi]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -140,7 +129,7 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
             message: item.message || "",
             readAt: item.read_at ?? null,
             createdAt: item.created_at || new Date().toISOString(),
-          }))
+          })).filter((item) => !item.readAt)
         : [];
       setNotifications(items);
       setUnreadCountFromApi(Number(response.unread_count || 0));
@@ -154,17 +143,29 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
     }
   };
 
-  const markAllAsRead = async () => {
+  const markOneAsRead = async (notificationId: string) => {
+    if (markingIds[notificationId]) {
+      return;
+    }
+
+    setMarkingIds((prev) => ({ ...prev, [notificationId]: true }));
+
     try {
       await apiFetch("/notifications/mark-read", {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify({ id: notificationId }),
       });
 
-      setUnreadCountFromApi(0);
-      setNotifications((prev) => prev.map((item) => ({ ...item, readAt: item.readAt || new Date().toISOString() })));
+      setUnreadCountFromApi((prev) => Math.max(0, prev - 1));
+      setNotifications((prev) => prev.filter((item) => item.id !== notificationId));
     } catch (err) {
       console.error("Failed to mark notifications as read", err);
+    } finally {
+      setMarkingIds((prev) => {
+        const next = { ...prev };
+        delete next[notificationId];
+        return next;
+      });
     }
   };
 
@@ -173,11 +174,7 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
     setIsOpen(nextOpen);
 
     if (nextOpen) {
-      const now = Date.now();
-      setLastSeenAt(now);
-      localStorage.setItem(lastSeenStorageKey, String(now));
       void loadNotifications({ force: true });
-      void markAllAsRead();
     }
   };
 
@@ -191,7 +188,9 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
         onClick={handleToggle}
       >
         <span aria-hidden="true">🔔</span>
-        {unreadCount > 0 && <span className="aslaw-metis-notification-badge">{Math.min(unreadCount, 9)}+</span>}
+        {unreadCount > 0 && (
+          <span className="aslaw-metis-notification-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+        )}
       </button>
 
       {isOpen && (
@@ -218,11 +217,23 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
             <ul className="aslaw-metis-notification-list">
               {notifications.map((item) => (
                 <li key={item.id}>
-                  <div className="aslaw-metis-notification-item" role="article" aria-label="Notification item">
-                    <strong>{item.title}</strong>
-                    <p>{item.message}</p>
-                    <small>{formatDateTime(item.createdAt)}</small>
-                  </div>
+                  <button
+                    type="button"
+                    className="aslaw-metis-notification-item"
+                    role="article"
+                    aria-label="Notification item"
+                    onClick={() => void markOneAsRead(item.id)}
+                    disabled={Boolean(markingIds[item.id])}
+                  >
+                    <span className="aslaw-metis-notification-checkbox" aria-hidden="true">
+                      {markingIds[item.id] ? "..." : "☐"}
+                    </span>
+                    <span className="aslaw-metis-notification-content">
+                      <strong>{item.title}</strong>
+                      <p>{item.message}</p>
+                      <small>{formatDateTime(item.createdAt)}</small>
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>

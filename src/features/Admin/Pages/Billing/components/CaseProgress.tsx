@@ -13,6 +13,24 @@ const toSafePercent = (value: unknown): number => {
   return Math.max(0, Math.min(100, numeric));
 };
 
+const toLooseNumber = (value: unknown): number => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const normalized = String(value ?? "")
+    .trim()
+    .replace(/,/g, "")
+    .replace(/%/g, "");
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 const CaseProgress: React.FC<CaseProgressProps> = ({ caseItem, progressSourceLabel }) => {
   if (!caseItem) return <p>No Case Selected</p>;
 
@@ -20,10 +38,11 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ caseItem, progressSourceLab
   const invoicePhaseValues = invoicePhases
     ? (Object.values(invoicePhases) as Array<{ expected?: number; paid?: number }>)
     : [];
-  const totalExpected = invoicePhaseValues.reduce((sum: number, phase) => sum + Number(phase?.expected ?? 0), 0);
-  const totalPaid = invoicePhaseValues.reduce((sum: number, phase) => sum + Number(phase?.paid ?? 0), 0);
-  const progress = Number.isFinite(Number((caseItem as any)?.progress))
-    ? toSafePercent((caseItem as any)?.progress)
+  const totalExpected = invoicePhaseValues.reduce((sum: number, phase) => sum + toLooseNumber(phase?.expected), 0);
+  const totalPaid = invoicePhaseValues.reduce((sum: number, phase) => sum + toLooseNumber(phase?.paid), 0);
+  const progressValue = toLooseNumber((caseItem as any)?.progress);
+  const progress = progressValue > 0
+    ? toSafePercent(progressValue)
     : totalExpected > 0
       ? toSafePercent((totalPaid / totalExpected) * 100)
       : 0; // Force zero progress when there are no invoices

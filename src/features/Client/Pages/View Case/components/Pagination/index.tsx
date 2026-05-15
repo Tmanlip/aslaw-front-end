@@ -6,10 +6,12 @@ interface FileSectionProps {
   selectedCase: Case;
   activeKey?: "recent" | "pending" | "documents" | "reports" | "invoices";
   onActiveKeyChange?: (key: "recent" | "pending" | "documents" | "reports" | "invoices") => void;
+  onUploadSuccess?: () => void;
+  onDeleteSuccess?: () => void;
 }
 
-const FileSection: React.FC<FileSectionProps> = ({ selectedCase, activeKey, onActiveKeyChange }) => {
-  return <CaseFileTabs selectedCase={selectedCase} readOnly={true} activeKey={activeKey} onActiveKeyChange={onActiveKeyChange} />;
+const FileSection: React.FC<FileSectionProps> = ({ selectedCase, activeKey, onActiveKeyChange, onUploadSuccess, onDeleteSuccess }) => {
+  return <CaseFileTabs selectedCase={selectedCase} readOnly={true} activeKey={activeKey} onActiveKeyChange={onActiveKeyChange} onUploadSuccess={onUploadSuccess} onDeleteSuccess={onDeleteSuccess} />;
 };
 
 export default FileSection;

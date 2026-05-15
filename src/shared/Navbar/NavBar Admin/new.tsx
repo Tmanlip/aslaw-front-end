@@ -85,6 +85,8 @@ const NavBarAdmin: React.FC = () => {
   const { logout, role } = useAuth();
   const { setUserData } = useClientData();
   const navigate = useNavigate();
+  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
+  const canAccessLogs = role === "admin";
   const desktopSearchWrapRef = useRef<HTMLDivElement | null>(null);
   const sidebarSearchWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -261,12 +263,12 @@ const NavBarAdmin: React.FC = () => {
   };
 
   const openUsersPage = () => {
-    navigate(`${PATH.ADMIN.MANAGE_USER}?search=${encodeURIComponent(query)}`);
+    navigate(`${adminPathGroup.MANAGE_USER}?search=${encodeURIComponent(query)}`);
     setShowSearchResults(false);
   };
 
   const openCasesPage = () => {
-    navigate(`${PATH.ADMIN.MANAGE_CASE}?search=${encodeURIComponent(query)}`);
+    navigate(`${adminPathGroup.MANAGE_CASE}?search=${encodeURIComponent(query)}`);
     setShowSearchResults(false);
   };
 
@@ -282,11 +284,14 @@ const NavBarAdmin: React.FC = () => {
   };
 
   const openLogsPage = () => {
+    if (!canAccessLogs) return;
     navigate(`${PATH.ADMIN.LOGS}?search=${encodeURIComponent(query)}`);
     setShowSearchResults(false);
   };
 
   const openLogsFromActivity = (log: InteractionLog) => {
+    if (!canAccessLogs) return;
+
     const token = [
       (log.method || "").toUpperCase(),
       log.path || "",
@@ -303,7 +308,7 @@ const NavBarAdmin: React.FC = () => {
 
   const openManageProfileFromUser = async (user: UserRecord) => {
     if (!user.firmID || !user.role) {
-      navigate(PATH.ADMIN.MANAGE_PROFILE);
+      navigate(adminPathGroup.MANAGE_PROFILE);
       setShowSearchResults(false);
       return;
     }
@@ -325,12 +330,17 @@ const NavBarAdmin: React.FC = () => {
     } catch (error) {
       console.error("Failed to prepare user profile data from search result", error);
     } finally {
-      navigate(PATH.ADMIN.MANAGE_PROFILE);
+      navigate(adminPathGroup.MANAGE_PROFILE);
       setShowSearchResults(false);
     }
   };
 
   const openBillingFromCase = (caseItem: CaseRecord) => {
+    if (role !== "admin") {
+      openCasesPage();
+      return;
+    }
+
     const lockManageUser = getLockManageUserByCaseAndQuery(caseItem);
     const resolvedCaseId = Number(caseItem.caseId ?? caseItem.id);
 
@@ -349,6 +359,11 @@ const NavBarAdmin: React.FC = () => {
   };
 
   const openBillingFromDocument = (documentMatch: DocumentMatch) => {
+    if (role !== "admin") {
+      openCasesPage();
+      return;
+    }
+
     const { caseItem, category } = documentMatch;
     const lockManageUser = getLockManageUserByCaseAndQuery(caseItem);
     const resolvedCaseId = Number(caseItem.caseId ?? caseItem.id);
@@ -369,12 +384,12 @@ const NavBarAdmin: React.FC = () => {
   };
 
   const openDocumentsPage = () => {
-    if (matchedDocuments.length > 0) {
+    if (role === "admin" && matchedDocuments.length > 0) {
       openBillingFromDocument(matchedDocuments[0]);
       return;
     }
 
-    navigate(`${PATH.ADMIN.MANAGE_CASE}?search=${encodeURIComponent(query)}`);
+    navigate(`${adminPathGroup.MANAGE_CASE}?search=${encodeURIComponent(query)}`);
     setShowSearchResults(false);
   };
 
@@ -400,7 +415,7 @@ const NavBarAdmin: React.FC = () => {
               <span>{matchedUsers.length} users</span>
               <span>{matchedCases.length} cases</span>
               <span>{matchedDocuments.length} documents</span>
-              <span>{matchedLogs.length} activities</span>
+              {canAccessLogs && <span>{matchedLogs.length} activities</span>}
             </div>
 
             <div className="aslaw-navbar-search-section">
@@ -450,7 +465,7 @@ const NavBarAdmin: React.FC = () => {
                       <button
                         type="button"
                         className="aslaw-navbar-search-item-btn"
-                        onClick={() => navigate(PATH.ADMIN.BILLING)}
+                        onClick={() => openBillingFromDocument(documentMatch)}
                       >
                         <strong>{documentMatch.fileName || "Unnamed document"}</strong>
                         <p>
@@ -464,23 +479,25 @@ const NavBarAdmin: React.FC = () => {
               </ul>
             </div>
 
-            <div className="aslaw-navbar-search-section">
-              <div className="aslaw-navbar-search-section-head">
-                <h6>Activities</h6>
-                <button type="button" onClick={openLogsPage}>Open</button>
+            {canAccessLogs && (
+              <div className="aslaw-navbar-search-section">
+                <div className="aslaw-navbar-search-section-head">
+                  <h6>Activities</h6>
+                  <button type="button" onClick={openLogsPage}>Open</button>
+                </div>
+                <ul>
+                  {matchedLogs.slice(0, 3).map((log, index) => (
+                    <li key={log._id || `${log.path || "log"}-${index}`}>
+                      <button type="button" className="aslaw-navbar-search-item-btn" onClick={() => openLogsFromActivity(log)}>
+                        <strong>{(log.method || "GET").toUpperCase()} {log.path || "-"}</strong>
+                        <p>{log.email || "Unknown actor"}</p>
+                      </button>
+                    </li>
+                  ))}
+                  {matchedLogs.length === 0 && <li className="empty">No activity matches.</li>}
+                </ul>
               </div>
-              <ul>
-                {matchedLogs.slice(0, 3).map((log, index) => (
-                  <li key={log._id || `${log.path || "log"}-${index}`}>
-                    <button type="button" className="aslaw-navbar-search-item-btn" onClick={() => openLogsFromActivity(log)}>
-                      <strong>{(log.method || "GET").toUpperCase()} {log.path || "-"}</strong>
-                      <p>{log.email || "Unknown actor"}</p>
-                    </button>
-                  </li>
-                ))}
-                {matchedLogs.length === 0 && <li className="empty">No activity matches.</li>}
-              </ul>
-            </div>
+            )}
           </>
         )}
       </div>
@@ -543,7 +560,7 @@ const NavBarAdmin: React.FC = () => {
             <span className="aslaw-metis-menu-btn" role="button" tabIndex={0} onClick={toggleSidebar}>
               <MenuIcon src={menuIcon} alt="Menu" style={{ cursor: "pointer" }} />
             </span>
-            <Navbar.Brand href={PATH.ADMIN.DASHBOARD} className="aslaw-metis-logo-wrap">
+            <Navbar.Brand href={adminPathGroup.DASHBOARD} className="aslaw-metis-logo-wrap">
               <Logo src={logo} alt="Logo" />
             </Navbar.Brand>
 
@@ -566,7 +583,10 @@ const NavBarAdmin: React.FC = () => {
 
           {/* Right-side Logout button */}
           <Nav className="aslaw-metis-right">
-            <NavbarNotifications scopeKey={role === "junioradmin" ? "junioradmin" : "admin"} targetPath={PATH.ADMIN.SCHEDULE_MEETING} />
+            <NavbarNotifications
+              scopeKey={role === "junioradmin" ? "junioradmin" : "admin"}
+              targetPath={adminPathGroup.SCHEDULE_MEETING}
+            />
             <CustomButton
               customColor="darkSilver"
               size="lg"

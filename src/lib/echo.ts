@@ -28,6 +28,55 @@ export function getEcho(): Echo<any> {
       enabledTransports: ['ws'],
       disableStats: true,
       authEndpoint: `${API_BASE}/api/broadcasting/auth`,
+      authorizer: (channel: any) => ({
+        authorize: async (socketId: string, callback: (error: any, data: any) => void) => {
+          const token = AuthMemory.getToken() ?? '';
+          const endpoints = [
+            `${API_BASE}/api/broadcasting/auth`,
+            `${API_BASE}/broadcasting/auth`,
+          ];
+
+          const headers: Record<string, string> = {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          };
+
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
+
+          for (let i = 0; i < endpoints.length; i += 1) {
+            try {
+              const response = await fetch(endpoints[i], {
+                method: 'POST',
+                credentials: 'include',
+                headers,
+                body: JSON.stringify({
+                  socket_id: socketId,
+                  channel_name: channel.name,
+                }),
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                callback(null, data);
+                return;
+              }
+
+              if (response.status !== 404 || i === endpoints.length - 1) {
+                const data = await response.json().catch(() => ({ message: 'Authorization failed' }));
+                callback(data, null);
+                return;
+              }
+            } catch (error) {
+              if (i === endpoints.length - 1) {
+                callback(error, null);
+                return;
+              }
+            }
+          }
+        },
+      }),
       auth: {
         headers: {
           Authorization: `Bearer ${AuthMemory.getToken() ?? ''}`,

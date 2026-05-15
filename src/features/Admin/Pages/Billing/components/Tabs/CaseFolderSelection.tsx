@@ -288,6 +288,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     newDocumentId: string;
     newFileName: string;
   } | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingInvoiceUploadFile, setPendingInvoiceUploadFile] = useState<File | null>(null);
   const [resolvedExpectedPaymentPhases, setResolvedExpectedPaymentPhases] = useState<CaseInfo["expected_payment_phases"]>(selectedCase?.expected_payment_phases);
   const [resolvedInvoicePaymentPhases, setResolvedInvoicePaymentPhases] = useState<CaseInfo["invoice_payment_phases"]>(selectedCase?.invoice_payment_phases);
@@ -642,7 +643,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const buildEncryptedDisplayFiles = useCallback(
     (encryptedDocs: EncryptedDocumentItem[] = []): DisplayFile[] => {
       return encryptedDocs
-        .filter((item) => item.category === folderName && item.status !== "deleted")
+        .filter(
+          (item) =>
+            item.category === folderName &&
+            item.status !== "deleted" &&
+            String(item.status || "active").toLowerCase() === "active"
+        )
         .map((item) => ({
           id: item.document_id,
           fileName: item.file_name,
@@ -1047,6 +1053,48 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             </DropdownButton>
           )}
 
+          {!isInvoiceFolder && (
+            <>
+              <button
+                type="button"
+                className="admin-billing-file-btn admin-billing-file-btn-preview"
+                disabled={uploading}
+                onClick={() => uploadInputRef.current?.click()}
+              >
+                {uploading ? (
+                  <>
+                    <LoadingSpinner size={14} color="#ffffff" />
+                    Uploading...
+                  </>
+                ) : (
+                  "Upload File"
+                )}
+              </button>
+
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept="application/pdf"
+                style={{ display: "none" }}
+                disabled={uploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) {
+                    return;
+                  }
+
+                  if (isInvoiceFolder) {
+                    setPendingInvoiceUploadFile(file);
+                  } else {
+                    void submitUpload(file);
+                  }
+
+                  e.currentTarget.value = "";
+                }}
+              />
+            </>
+          )}
+
           <button
             type="button"
             className="admin-billing-file-btn admin-billing-file-btn-delete"
@@ -1130,6 +1178,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           selectedStage={uploadSection}
           accentColor={colors.red}
           caseTypeFeeJson={selectedCase?.case_type_fee_json || null}
+          encryptedDocuments={selectedCase?.encrypted_documents || null}
         />
       )}
 

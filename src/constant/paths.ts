@@ -18,6 +18,19 @@ const PATH = {
     CHATBOT : "/admin/chatbot"
   },
 
+  JUNIOR_ADMIN : {
+    ROOT : "/junior-admin",
+    DASHBOARD : "/junior-admin/dashboard",
+    MY_PROFILE : "/junior-admin/my-profile",
+    SCHEDULE_MEETING : "/junior-admin/schedule-meeting",
+    MANAGE_CASE : "/junior-admin/cases",
+    REGISTER_CASE : "/junior-admin/cases/register-case",
+    MANAGE_USER : "/junior-admin/users",
+    MANAGE_PROFILE : "/junior-admin/users/manage-profile",
+    REGISTER_USER : "/junior-admin/users/register",
+    CHATBOT : "/junior-admin/chatbot"
+  },
+
   CLIENT : {
     ROOT : "/client",
     DASHBOARD : "/client/dashboard",

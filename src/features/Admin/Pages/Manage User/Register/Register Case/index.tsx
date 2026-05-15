@@ -18,6 +18,47 @@ export type User = {
   firmID: string;
 };
 
+type StageKey = "initial" | "first" | "second" | "third" | "final";
+type CaseType = "Litigation" | "Criminal" | "Corporate";
+
+export type FeeOption = {
+  practiceArea: string;
+  typeOfWork: string;
+  estimationFeesRange: string;
+  estimatedAmount: number;
+  rangeMin: number;
+  rangeMax: number;
+};
+
+type StageSelections = Record<StageKey, string[]>;
+type StageAmountInputs = Record<StageKey, Record<string, string>>;
+
+const STAGES: StageKey[] = ["initial", "first", "second", "third", "final"];
+
+const STAGE_LABELS: Record<StageKey, string> = {
+  initial: "Initial",
+  first: "First",
+  second: "Second",
+  third: "Third",
+  final: "Final",
+};
+
+const buildEmptyStageSelections = (): StageSelections => ({
+  initial: [],
+  first: [],
+  second: [],
+  third: [],
+  final: [],
+});
+
+const buildEmptyStageAmountInputs = (): StageAmountInputs => ({
+  initial: {},
+  first: {},
+  second: {},
+  third: {},
+  final: {},
+});
+
 type RegisterCaseProps = {
   user?: User;
 };
@@ -26,22 +67,12 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
   const navigate = useNavigate();
   const SUCCESS_REDIRECT_DELAY_MS = 1200;
 
-  const getDefaultExpectedPayments = (type: "Litigation" | "Criminal" | "Corporate") => {
-    switch (type) {
-      case "Criminal":
-        return { initial: "1200", first: "1800", second: "2000", third: "2200", final: "2800" };
-      case "Corporate":
-        return { initial: "3000", first: "4500", second: "5000", third: "5500", final: "7000" };
-      case "Litigation":
-      default:
-        return { initial: "1500", first: "2500", second: "3000", third: "3000", final: "4000" };
-    }
-  };
-
   const [caseName, setCaseName] = useState("");
-  const [caseType, setCaseType] = useState<"Litigation" | "Criminal" | "Corporate">("Litigation");
+  const [caseType, setCaseType] = useState<CaseType>("Litigation");
   const [description, setDescription] = useState("");
-  const [expectedPayments, setExpectedPayments] = useState(getDefaultExpectedPayments("Litigation"));
+  const [feeOptions, setFeeOptions] = useState<FeeOption[]>([]);
+  const [selectedTypeOfWorkValues, setSelectedTypeOfWorkValues] = useState<StageSelections>(buildEmptyStageSelections());
+  const [selectedTypeOfWorkAmounts, setSelectedTypeOfWorkAmounts] = useState<StageAmountInputs>(buildEmptyStageAmountInputs());
 
   const [lawyer, setLawyer] = useState<User | null>(null);
   const [client, setClient] = useState<User | null>(null);
@@ -49,14 +80,14 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
   const [lawyerOptions, setLawyerOptions] = useState<User[]>([]);
   const [clientOptions, setClientOptions] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [feeOptionsLoading, setFeeOptionsLoading] = useState(false);
+  const [feeOptionsError, setFeeOptionsError] = useState("");
   const [feedback, setFeedback] = useState<{ variant: string; message: string } | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axiosUser.get<User[]>(
-          `${process.env.REACT_APP_API_URL}/users`
-        );
+        const res = await axiosUser.get<User[]>("/users");
 
         setLawyerOptions(res.data.filter((u) => u.role === "lawyer"));
         setClientOptions(res.data.filter((u) => u.role === "client"));
@@ -68,12 +99,65 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    const fetchFeeOptions = async () => {
+      setFeeOptionsLoading(true);
+      setFeeOptionsError("");
+
+      try {
+        const res = await axiosUser.get("/case-type-work-options", {
+          params: { caseType },
+        });
+
+        setFeeOptions(Array.isArray(res.data?.items) ? res.data.items : []);
+        setFeeOptionsError("");
+        setSelectedTypeOfWorkValues(buildEmptyStageSelections());
+        setSelectedTypeOfWorkAmounts(buildEmptyStageAmountInputs());
+      } catch (err: any) {
+        console.error("Failed to fetch type of work options", err);
+        setFeeOptions([]);
+        const status = Number(err?.response?.status || 0);
+        const backendMessage = String(err?.response?.data?.message || "").trim();
+        setFeeOptionsError(
+          backendMessage ||
+            (status === 401 || status === 403
+              ? "Unauthorized while loading Type of Work options."
+              : "Unable to load Type of Work options right now.")
+        );
+      } finally {
+        setFeeOptionsLoading(false);
+      }
+    };
+
+    fetchFeeOptions();
+  }, [caseType]);
+
+  const getOptionKey = (option: FeeOption) => `${option.typeOfWork}|||${option.estimationFeesRange}`;
+
+  const getStageSelectedItems = (stage: StageKey) => {
+    const selectedValues = selectedTypeOfWorkValues[stage];
+    return feeOptions.filter((option) => selectedValues.includes(getOptionKey(option)));
+  };
+
+  const getEnteredAmount = (stage: StageKey, optionKey: string): number => {
+    const raw = selectedTypeOfWorkAmounts[stage]?.[optionKey] ?? "";
+    const amount = Number(raw);
+    return Number.isFinite(amount) ? amount : 0;
+  };
+
+  const getStageAmount = (stage: StageKey) =>
+    getStageSelectedItems(stage).reduce((sum, item) => sum + getEnteredAmount(stage, getOptionKey(item)), 0);
+
   const handleResetExpectedPayments = () => {
-    setExpectedPayments(getDefaultExpectedPayments(caseType));
+    setSelectedTypeOfWorkValues(buildEmptyStageSelections());
+    setSelectedTypeOfWorkAmounts(buildEmptyStageAmountInputs());
   };
 
   const handleSubmit = async () => {
-    if (!caseName || !lawyer || !client) {
+    const trimmedCaseName = caseName.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedCaseName || !lawyer || !client) {
       setFeedback({
         variant: "warning",
         message: "Please complete all required fields with valid values.",
@@ -81,15 +165,114 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
       return;
     }
 
+    if (trimmedCaseName.length > 255) {
+      setFeedback({
+        variant: "warning",
+        message: "Case name cannot exceed 255 characters.",
+      });
+      return;
+    }
+
+    if (!trimmedDescription) {
+      setFeedback({
+        variant: "warning",
+        message: "Case description is required.",
+      });
+      return;
+    }
+
+    for (const stage of STAGES) {
+      const stageLabel = STAGE_LABELS[stage];
+      const selectedItems = getStageSelectedItems(stage);
+
+      if (selectedItems.length === 0) {
+        setFeedback({
+          variant: "warning",
+          message: `${stageLabel} phase requires at least one Type of Work selection.`,
+        });
+        return;
+      }
+
+      if (selectedItems.length > 5) {
+        setFeedback({
+          variant: "warning",
+          message: `${stageLabel} phase can only contain up to 5 Type of Work items.`,
+        });
+        return;
+      }
+
+      const hasInvalidRange = selectedItems.some((item) => !Number.isFinite(item.rangeMin) || !Number.isFinite(item.rangeMax) || item.rangeMin < 0 || item.rangeMax < 0 || item.rangeMin > item.rangeMax);
+      if (hasInvalidRange) {
+        setFeedback({
+          variant: "warning",
+          message: `${stageLabel} phase contains an invalid fee range.`,
+        });
+        return;
+      }
+
+      for (const item of selectedItems) {
+        const optionKey = getOptionKey(item);
+        const enteredRaw = selectedTypeOfWorkAmounts[stage]?.[optionKey] ?? "";
+        const enteredAmount = Number(enteredRaw);
+
+        if (enteredRaw === "" || !Number.isFinite(enteredAmount) || enteredAmount <= 0) {
+          setFeedback({
+            variant: "warning",
+            message: `${stageLabel} phase: enter a valid amount for "${item.typeOfWork}".`,
+          });
+          return;
+        }
+
+        if (enteredAmount < item.rangeMin || enteredAmount > item.rangeMax) {
+          setFeedback({
+            variant: "warning",
+            message: `${stageLabel} phase: amount for "${item.typeOfWork}" must be within ${item.rangeMin} - ${item.rangeMax}.`,
+          });
+          return;
+        }
+      }
+
+      const stageAmount = getStageAmount(stage);
+      if (stageAmount <= 0) {
+        setFeedback({
+          variant: "warning",
+          message: `${stageLabel} phase amount cannot be zero.`,
+        });
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
+      const caseTypeFeeJson = STAGES.reduce((acc, stage) => {
+        const selectedItems = getStageSelectedItems(stage);
+
+        acc[stage] = selectedItems.map((item) => ({
+          optionKey: getOptionKey(item),
+          practiceArea: item.practiceArea,
+          typeOfWork: item.typeOfWork,
+          selectedFee: getEnteredAmount(stage, getOptionKey(item)),
+          estimationFeesRange: item.estimationFeesRange,
+          rangeMin: item.rangeMin,
+          rangeMax: item.rangeMax,
+        }));
+
+        return acc;
+      }, {} as Record<StageKey, Array<Record<string, string | number>>>);
+
+      const expectedPayments = STAGES.reduce((acc, stage) => {
+        acc[stage] = String(getStageAmount(stage));
+        return acc;
+      }, {} as Record<StageKey, string>);
+
       const payload = {
-        title: caseName,
+        title: trimmedCaseName,
         caseType,
-        description,
+        description: trimmedDescription,
         lawyerID: lawyer.firmID,
         clientID: client.firmID,
+        case_type_fee_json: caseTypeFeeJson,
         expected_initial_payment: Number(expectedPayments.initial || 0),
         expected_first_payment: Number(expectedPayments.first || 0),
         expected_second_payment: Number(expectedPayments.second || 0),
@@ -98,7 +281,7 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
       };
 
       await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/registercases`,
+        "/registercases",
         payload,
         {
           headers: {
@@ -114,7 +297,9 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
 
       // Reset form (optional)
       setCaseType("Litigation");
-      setExpectedPayments(getDefaultExpectedPayments("Litigation"));
+      setFeeOptions([]);
+      setSelectedTypeOfWorkValues(buildEmptyStageSelections());
+      setSelectedTypeOfWorkAmounts(buildEmptyStageAmountInputs());
       setCaseName("");
       setDescription("");
       setLawyer(null);
@@ -192,8 +377,20 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
                 setCaseName={setCaseName}
                 caseType={caseType}
                 setCaseType={setCaseType}
-                expectedPayments={expectedPayments}
-                setExpectedPayments={setExpectedPayments}
+                feeOptions={feeOptions}
+                feeOptionsLoading={feeOptionsLoading}
+                feeOptionsError={feeOptionsError}
+                selectedTypeOfWorkValues={selectedTypeOfWorkValues}
+                onSelectedTypeOfWorkValuesChange={setSelectedTypeOfWorkValues}
+                selectedTypeOfWorkAmounts={selectedTypeOfWorkAmounts}
+                onSelectedTypeOfWorkAmountsChange={setSelectedTypeOfWorkAmounts}
+                stageAmounts={{
+                  initial: getStageAmount("initial"),
+                  first: getStageAmount("first"),
+                  second: getStageAmount("second"),
+                  third: getStageAmount("third"),
+                  final: getStageAmount("final"),
+                }}
                 onResetExpectedPayments={handleResetExpectedPayments}
                 description={description}
                 setDescription={setDescription}

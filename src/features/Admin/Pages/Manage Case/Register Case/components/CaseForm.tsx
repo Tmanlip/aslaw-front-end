@@ -13,6 +13,7 @@ import {
 import axiosUser from "../../../../../../api/axiosUser";
 import { useNavigate } from "react-router-dom";
 import PATH from "../../../../../../constant/paths";
+import { useAuth } from "../../../../../../context/AuthContext";
 import ClientSearch, { Client } from "./ClientSearch";
 import LawyerSearch, { Lawyer } from "./LawyerSearch";
 
@@ -59,6 +60,8 @@ const CaseForm: React.FC = () => {
   const [submitError, setSubmitError] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState<string>("");
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
   const SUCCESS_REDIRECT_DELAY_MS = 1200;
 
   // 🔥 Fetch Clients
@@ -137,7 +140,7 @@ const CaseForm: React.FC = () => {
       setSubmitSuccess("Case registered successfully!");
 
       window.setTimeout(() => {
-        navigate(PATH.ADMIN.MANAGE_CASE);
+        navigate(adminPathGroup.MANAGE_CASE);
       }, SUCCESS_REDIRECT_DELAY_MS);
     } catch (error: any) {
       console.error("Error creating case:", error);

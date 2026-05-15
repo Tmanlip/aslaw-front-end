@@ -29,7 +29,6 @@ const ViewCase: React.FC = () => {
   const [activeFileSection, setActiveFileSection] = useState<"recent" | "pending" | "documents" | "reports" | "invoices">(
     requestedActiveFileSection || "recent"
   );
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploadMessageVariant, setUploadMessageVariant] = useState<"success" | "danger">("success");
@@ -95,8 +94,8 @@ const ViewCase: React.FC = () => {
     }
   }, [requestedActiveFileSection]);
 
-  const handleClientUpload = async () => {
-    if (!selectedCase || !uploadFile) {
+  const handleClientUpload = async (file: File) => {
+    if (!selectedCase) {
       return;
     }
 
@@ -104,7 +103,7 @@ const ViewCase: React.FC = () => {
     const token = AuthMemory.getToken();
 
     const formData = new FormData();
-    formData.append("file", uploadFile);
+    formData.append("file", file);
     formData.append("case_id", String(selectedCase.caseId));
     formData.append("category", "documents");
 
@@ -122,7 +121,6 @@ const ViewCase: React.FC = () => {
 
       setUploadMessage("Document submitted for review. A Lawyer or Admin will approve it before it is stored securely.");
       setUploadMessageVariant("success");
-      setUploadFile(null);
       await refreshClientData();
     } catch (error: any) {
       setUploadMessage(error?.response?.data?.message || error?.message || "Failed to upload document.");
@@ -266,27 +264,17 @@ const ViewCase: React.FC = () => {
                         disabled={!selectedCase || uploadingDocument || normalizedCaseStatus === "archived"}
                         onChange={(event) => {
                           const input = event.currentTarget as HTMLInputElement;
-                          const file = input.files?.[0] || null;
-                          setUploadFile(file);
+                          const file = input.files?.[0];
+                          if (file) {
+                            void handleClientUpload(file);
+                          }
                           input.value = "";
                         }}
                       />
                       <Button
-                        variant="outline-secondary"
-                        onClick={() => uploadInputRef.current?.click()}
-                        disabled={!selectedCase || uploadingDocument || normalizedCaseStatus === "archived"}
-                      >
-                        {uploadFile ? "Change File" : "Choose File"}
-                      </Button>
-                      {uploadFile && (
-                        <div className="client-view-case-upload-file-name">
-                          Selected file: {uploadFile.name}
-                        </div>
-                      )}
-                      <Button
                         variant="primary"
-                        onClick={() => void handleClientUpload()}
-                        disabled={!uploadFile || uploadingDocument || !selectedCase || normalizedCaseStatus === "archived"}
+                        onClick={() => uploadInputRef.current?.click()}
+                        disabled={uploadingDocument || !selectedCase || normalizedCaseStatus === "archived"}
                       >
                         {uploadingDocument ? (
                           <>
@@ -308,6 +296,8 @@ const ViewCase: React.FC = () => {
               <div className="admin-billing-files-wrap admin-billing-card">
                 <FileSection
                   selectedCase={selectedCase}
+                  onUploadSuccess={refreshClientData}
+                  onDeleteSuccess={refreshClientData}
                   activeKey={activeFileSection}
                   onActiveKeyChange={setActiveFileSection}
                 />

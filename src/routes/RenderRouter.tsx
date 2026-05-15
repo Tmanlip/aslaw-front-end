@@ -7,6 +7,7 @@ import ForgotPasswordPage from "../pages/ForgotPassword"
 import ArchivedUserPage from "../pages/ArchivedUser";
 import InactiveUserPage from "../pages/InactiveUser";
 import PATH from "../constant/paths";
+import CornerIdentityBadge from "../shared/components/CornerIdentityBadge";
 
 export default function RenderRouter() {
   const { role, user, loading, isArchived, isInactive } = useAuth();
@@ -44,5 +45,10 @@ export default function RenderRouter() {
 
   if (loading) return <div>Loading...</div>;
 
-  return element;
+  return (
+    <>
+      <CornerIdentityBadge />
+      {element}
+    </>
+  );
 }

@@ -100,6 +100,7 @@ const FileSection: React.FC<FileSectionProps> = ({
   const [uploading, setUploading] = useState(false);
   const [pendingDeleteFile, setPendingDeleteFile] = useState<EncryptedDocumentItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingReviewMessage, setPendingReviewMessage] = useState<string | null>(null);
   const [pendingUpdateFile, setPendingUpdateFile] = useState<EncryptedDocumentItem | null>(null);
   const [updateInvoiceData, setUpdateInvoiceData] = useState<any | null>(null);
   const [updateCaseFinancials, setUpdateCaseFinancials] = useState<any | null>(null);
@@ -128,6 +129,11 @@ const FileSection: React.FC<FileSectionProps> = ({
       "";
 
     return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const normalizeApiRelativeUrl = (url?: string): string => {
+    const value = String(url || "");
+    return value.startsWith("/api/") ? value.slice(4) : value;
   };
 
   const documentGeneratorSrc = useMemo(() => {
@@ -248,7 +254,11 @@ const FileSection: React.FC<FileSectionProps> = ({
       ? ((selectedCase as any).encrypted_documents as EncryptedDocumentItem[])
       : [];
 
-    const activeFiles = files.filter((item) => item?.status !== "deleted");
+    const activeFiles = files.filter(
+      (item) =>
+        item?.status !== "deleted" &&
+        String(item?.status || "").toLowerCase() !== "pending_approval"
+    );
     setRecentFiles(activeFiles);
   }, [selectedCase]);
 
@@ -293,6 +303,49 @@ const FileSection: React.FC<FileSectionProps> = ({
     }
   }, [fileSortMode]);
 
+  const pendingFiles = useMemo(() => {
+    const files = Array.isArray((selectedCase as any)?.encrypted_documents)
+      ? ((selectedCase as any).encrypted_documents as EncryptedDocumentItem[])
+      : [];
+
+    return files.filter((item) => String(item?.status || "").toLowerCase() === "pending_approval");
+  }, [selectedCase]);
+
+  const handlePendingReview = async (file: EncryptedDocumentItem, action: "approve" | "reject") => {
+    const documentId = String(file?.document_id || "").trim();
+    if (!documentId) {
+      setPendingReviewMessage("Unable to resolve pending document ID.");
+      return;
+    }
+
+    const actionKey = `review-${action}-${documentId}`;
+    setLoadingAction(actionKey);
+    setPendingReviewMessage(null);
+
+    try {
+      await axiosUser.post(
+        `${process.env.REACT_APP_API_URL}/encrypted-documents/${documentId}/review`,
+        { action },
+        { headers: buildAuthHeaders() }
+      );
+
+      setPendingReviewMessage(
+        action === "approve" ? "Document approved successfully." : "Document rejected successfully."
+      );
+
+      await Promise.resolve(onUploadSuccess?.());
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to review pending document.";
+      setPendingReviewMessage(message);
+    } finally {
+      setLoadingAction((current) => (current === actionKey ? null : current));
+    }
+  };
+
   useEffect(() => {
     if (!isDocGeneratorOpen) return;
 
@@ -335,11 +388,25 @@ const FileSection: React.FC<FileSectionProps> = ({
 
       if (payload.type !== "ASLAW_DOCUMENT_UPLOADED") return;
 
+      const targetCaseId = Number(payload.case_id || 0);
+      const nextProgress = Number(payload.case_progress);
+
+      if (Number.isFinite(targetCaseId) && targetCaseId > 0 && Number.isFinite(nextProgress)) {
+        onCaseProgressUpdate?.(targetCaseId, nextProgress);
+      }
+
       setIsDocGeneratorOpen(false);
-      onUploadSuccess?.();
+
+      Promise.resolve(onUploadSuccess?.()).catch((error) => {
+        console.error("Failed to refresh billing data after document upload", error);
+      });
+
+      // Some API responses can be eventually consistent for encrypted_documents.
       window.setTimeout(() => {
-        window.location.reload();
-      }, 120);
+        Promise.resolve(onUploadSuccess?.()).catch(() => {
+          // Silent retry to keep UX smooth.
+        });
+      }, 600);
     };
 
     window.addEventListener("message", handleGeneratorMessage);
@@ -351,7 +418,7 @@ const FileSection: React.FC<FileSectionProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      const response = await axiosUser.get(file.preview_url, {
+      const response = await axiosUser.get(normalizeApiRelativeUrl(file.preview_url), {
         responseType: "blob",
         headers: buildAuthHeaders(),
       });
@@ -377,7 +444,7 @@ const FileSection: React.FC<FileSectionProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      const response = await axiosUser.get(file.download_url, {
+      const response = await axiosUser.get(normalizeApiRelativeUrl(file.download_url), {
         responseType: "blob",
         headers: buildAuthHeaders(),
       });
@@ -569,6 +636,97 @@ const FileSection: React.FC<FileSectionProps> = ({
                 </div>
               </li>
             ))}
+          </ul>
+        </div>
+      )}
+
+      {resolvedActiveKey === "pending" && (
+        <div className="admin-billing-recent-panel">
+          <div className="admin-billing-files-header">
+            <h2 className="admin-billing-files-title">Pending Review</h2>
+          </div>
+
+          <p className="admin-billing-recent-note">
+            Client-uploaded files stay here until an admin or lawyer approves or rejects them.
+          </p>
+
+          {pendingReviewMessage ? (
+            <p className="admin-billing-recent-note" style={{ color: "#0f766e", marginTop: "0.5rem" }}>
+              {pendingReviewMessage}
+            </p>
+          ) : null}
+
+          <ul className="admin-billing-file-list">
+            {pendingFiles.length === 0 && <p className="admin-billing-empty-list">No pending files found</p>}
+
+            {pendingFiles.map((file) => {
+              const documentId = String(file.document_id || "");
+              const previewActionKey = getActionKey("preview", file);
+              const approveActionKey = `review-approve-${documentId}`;
+              const rejectActionKey = `review-reject-${documentId}`;
+              const isPreviewing = loadingAction === previewActionKey;
+              const isApproving = loadingAction === approveActionKey;
+              const isRejecting = loadingAction === rejectActionKey;
+
+              return (
+                <li key={file.document_id} className="admin-billing-file-row">
+                  <div className="admin-billing-file-main">
+                    <strong className="admin-billing-file-name">{file.file_name}</strong>
+                    <span className="admin-billing-file-badge-encrypted">{String(file.category || "documents").toUpperCase()}</span>
+                  </div>
+
+                  <div className="admin-billing-file-actions">
+                    <button
+                      type="button"
+                      className="admin-billing-file-btn admin-billing-file-btn-download"
+                      onClick={() => void openRecentPreview(file)}
+                      disabled={isPreviewing || isApproving || isRejecting}
+                    >
+                      {isPreviewing ? (
+                        <>
+                          <LoadingSpinner size={16} color="#ffffff" />
+                          Previewing
+                        </>
+                      ) : (
+                        "Preview"
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="admin-billing-file-btn admin-billing-file-btn-preview"
+                      onClick={() => void handlePendingReview(file, "approve")}
+                      disabled={isPreviewing || isApproving || isRejecting}
+                    >
+                      {isApproving ? (
+                        <>
+                          <LoadingSpinner size={16} color="#ffffff" />
+                          Approving
+                        </>
+                      ) : (
+                        "Approve"
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="admin-billing-file-btn admin-billing-file-btn-delete"
+                      onClick={() => void handlePendingReview(file, "reject")}
+                      disabled={isPreviewing || isApproving || isRejecting}
+                    >
+                      {isRejecting ? (
+                        <>
+                          <LoadingSpinner size={16} color="#ffffff" />
+                          Rejecting
+                        </>
+                      ) : (
+                        "Reject"
+                      )}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

@@ -57,14 +57,22 @@ type ActivityItem = {
 };
 
 export default function UserTable() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const navigate = useNavigate();
   const roleRoutes = AppRoutes(role);
+  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
+  const canManageUsers = role === "admin" || role === "junioradmin";
+  const currentUserFirmId = String(user?.firmID ?? "").trim().toLowerCase();
   const { setUserData } = useClientData();
+
+  const isOwnFirmRow = (item: User): boolean => {
+    return currentUserFirmId !== "" && String(item.firmID ?? "").trim().toLowerCase() === currentUserFirmId;
+  };
 
   const [users, setUsers] = React.useState<User[]>([]);
   const [logs, setLogs] = React.useState<InteractionLog[]>([]);
   const [loadingUsers, setLoadingUsers] = React.useState(true);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   const [showModal, setShowModal] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
@@ -80,20 +88,39 @@ export default function UserTable() {
   React.useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const [usersRes, logsRes] = await Promise.all([
+        const [usersResult, logsResult] = await Promise.allSettled([
           axiosUser.get<User[]>(`${process.env.REACT_APP_API_URL}/users`),
           axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=60`),
         ]);
 
-        setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
-        const logData = Array.isArray(logsRes.data?.data)
-          ? logsRes.data.data
-          : Array.isArray(logsRes.data)
-          ? logsRes.data
-          : [];
-        setLogs(logData);
+        if (usersResult.status !== "fulfilled") {
+          throw usersResult.reason;
+        }
+
+        setUsers(Array.isArray(usersResult.value.data) ? usersResult.value.data : []);
+
+        if (logsResult.status === "fulfilled") {
+          const logData = Array.isArray(logsResult.value.data?.data)
+            ? logsResult.value.data.data
+            : Array.isArray(logsResult.value.data)
+            ? logsResult.value.data
+            : [];
+          setLogs(logData);
+        } else {
+          const status = logsResult.reason?.response?.status;
+          if (status !== 403) {
+            console.error(logsResult.reason);
+          }
+          setLogs([]);
+        }
       } catch (err) {
-        console.error(err);
+        const status = (err as any)?.response?.status;
+        if (status === 401 || status === 403) {
+          setErrorMessage("Unauthorized Access");
+        } else {
+          console.error(err);
+          setErrorMessage("Failed to load user data.");
+        }
       } finally {
         setLoadingUsers(false);
       }
@@ -109,7 +136,7 @@ export default function UserTable() {
   };
 
   const handleManageClick = (item: User) => {
-    if (role !== "admin") return;
+    if (!canManageUsers) return;
     setSelectedUser(item);
     setShowModal(true);
   };
@@ -121,7 +148,7 @@ export default function UserTable() {
       const { client, cases } = res.data;
       setUserData(client, cases);
       navigate(
-        roleRoutes.find((r: any) => r.path === PATH.ADMIN.MANAGE_PROFILE)?.path || PATH.ADMIN.MANAGE_PROFILE
+        roleRoutes.find((r: any) => r.path === adminPathGroup.MANAGE_PROFILE)?.path || adminPathGroup.MANAGE_PROFILE
       );
     } catch (err) {
       console.error(err);
@@ -134,29 +161,33 @@ export default function UserTable() {
     setLoadingNavigate(true);
 
     try {
+      const manageProfilePath =
+        roleRoutes.find((r: any) => r.path === adminPathGroup.MANAGE_PROFILE)?.path || adminPathGroup.MANAGE_PROFILE;
+      const shouldRouteToManageProfile = role === "admin" || role === "junioradmin";
+
       if (selectedUser.role === "client") {
         const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${selectedUser.firmID}`);
         const { client, cases } = res.data;
         setUserData(client, cases);
-        navigate(roleRoutes.find((r: any) => r.path === PATH.ADMIN.BILLING)?.path || PATH.ADMIN.BILLING);
-      }
-
-      if (selectedUser.role === "lawyer") {
+        navigate(
+          shouldRouteToManageProfile
+            ? manageProfilePath
+            : roleRoutes.find((r: any) => r.path === PATH.ADMIN.BILLING)?.path || PATH.ADMIN.BILLING
+        );
+      } else if (selectedUser.role === "lawyer") {
         const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/lawyers/${selectedUser.firmID}`);
         const { lawyer, cases } = res.data;
         setUserData(lawyer, cases);
         navigate(
-          roleRoutes.find((r: any) => r.path === PATH.ADMIN.LAWYER_BILLING)?.path || PATH.ADMIN.LAWYER_BILLING
+          shouldRouteToManageProfile
+            ? manageProfilePath
+            : roleRoutes.find((r: any) => r.path === PATH.ADMIN.LAWYER_BILLING)?.path || PATH.ADMIN.LAWYER_BILLING
         );
-      }
-
-      if (selectedUser.role === "admin") {
+      } else if (selectedUser.role === "admin" || selectedUser.role === "junioradmin") {
         const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/admins/${selectedUser.firmID}`);
         const { admin, cases } = res.data;
         setUserData(admin, cases || []);
-        navigate(
-          roleRoutes.find((r: any) => r.path === PATH.ADMIN.MANAGE_PROFILE)?.path || PATH.ADMIN.MANAGE_PROFILE
-        );
+        navigate(manageProfilePath);
       }
 
       setShowModal(false);
@@ -169,7 +200,7 @@ export default function UserTable() {
 
   const handleRegisterUser = () => {
     const registerPath =
-      roleRoutes.find((r: any) => r.path === PATH.ADMIN.REGISTER_USER)?.path || PATH.ADMIN.REGISTER_USER;
+      roleRoutes.find((r: any) => r.path === adminPathGroup.REGISTER_USER)?.path || adminPathGroup.REGISTER_USER;
     navigate(registerPath);
   };
 
@@ -204,6 +235,11 @@ export default function UserTable() {
     { name: "Clients", value: clientUsers, color: "#ffd700" },
     { name: "Lawyers", value: lawyerUsers, color: "#34d399" },
   ];
+
+  const toPercentLabel = (value: number, total: number): string => {
+    if (total <= 0) return "0%";
+    return `${Math.round((value / total) * 100)}%`;
+  };
 
   const formatRelativeTime = (value?: string): string => {
     if (!value) return "-";
@@ -408,6 +444,14 @@ export default function UserTable() {
     );
   }
 
+  if (errorMessage) {
+    return (
+      <Box height={200} display="flex" justifyContent="center" alignItems="center">
+        <p>{errorMessage}</p>
+      </Box>
+    );
+  }
+
   return (
     <>
       <section className="admin-users-top-grid">
@@ -434,12 +478,12 @@ export default function UserTable() {
           <div className="admin-table-donut-wrap">
             <ResponsiveContainer width="100%" height={188}>
               <PieChart>
-                <Pie data={roleDonutData} dataKey="value" nameKey="name" outerRadius={68} paddingAngle={3}>
+                <Pie data={roleDonutData} dataKey="value" nameKey="name" outerRadius={68} paddingAngle={0} stroke="none">
                   {roleDonutData.map((item) => (
                     <Cell key={item.name} fill={item.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => toPercentLabel(Number(value), totalUsers)} />
               </PieChart>
             </ResponsiveContainer>
             <div className="admin-table-donut-legend">
@@ -447,7 +491,7 @@ export default function UserTable() {
                 <div key={item.name}>
                   <span style={{ backgroundColor: item.color }} />
                   <p>{item.name}</p>
-                  <strong>{item.value}</strong>
+                  <strong>{toPercentLabel(item.value, totalUsers)}</strong>
                 </div>
               ))}
             </div>
@@ -456,7 +500,6 @@ export default function UserTable() {
       </section>
 
       <section className="admin-users-activity-grid">
-        {role !== "junioradmin" && (
         <article className="admin-table-analytics-panel">
           <h4>Recent Activity</h4>
           <ul className="admin-table-log-list">
@@ -475,9 +518,7 @@ export default function UserTable() {
             )}
           </ul>
         </article>
-        )}
 
-        {role !== "junioradmin" && (
         <article className="admin-table-analytics-panel">
           <h4>System Activities</h4>
           <ul className="admin-table-log-list">
@@ -496,7 +537,6 @@ export default function UserTable() {
             )}
           </ul>
         </article>
-        )}
       </section>
 
       <section className="admin-table-filter-bar">
@@ -581,14 +621,16 @@ export default function UserTable() {
               <TableCell>
                 {row.role === "client" ? (
                   row.caseId ? (
-                    <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={role !== "admin"} onClick={() => handleManageClick(row)}>
-                      Manage User
-                    </button>
+                    !isOwnFirmRow(row) && (
+                      <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleManageClick(row)}>
+                        Manage User
+                      </button>
+                    )
                   ) : (
                     <div className="d-flex gap-2">
                       <button
                         className="btn btn-sm admin-table-action-btn admin-secondary-action"
-                        disabled={role !== "admin"}
+                        disabled={!canManageUsers}
                         onClick={() => {
                           const caseRecord: CaseRecord = {
                             id: row.id,
@@ -601,15 +643,19 @@ export default function UserTable() {
                       >
                         Assign Case
                       </button>
-                      <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={role !== "admin"} onClick={() => handleDirectManageUser(row)}>
-                        Manage User
-                      </button>
+                      {!isOwnFirmRow(row) && (
+                        <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleDirectManageUser(row)}>
+                          Manage User
+                        </button>
+                      )}
                     </div>
                   )
                 ) : (
-                  <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={role !== "admin"} onClick={() => handleManageClick(row)}>
-                    Manage User
-                  </button>
+                  !isOwnFirmRow(row) && (
+                    <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleManageClick(row)}>
+                      Manage User
+                    </button>
+                  )
                 )}
               </TableCell>
             </>
@@ -656,7 +702,7 @@ export default function UserTable() {
                 Loading...
               </>
             ) : (
-              "Go to Manage User"
+              role === "admin" || role === "junioradmin" ? "Go to Manage Profile" : "Go to Manage User"
             )}
           </Button>
         </Modal.Footer>

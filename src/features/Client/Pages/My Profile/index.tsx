@@ -4,6 +4,7 @@ import AuthMemory from "../../../../data/authMemory";
 import { fetchClientFullData } from "../../../../hooks/clientApi";
 import ProfileInfo from "./ProfileInfo"; // <-- the component
 import { ClientFullData } from "../../../../data/userInfo";
+import { userData } from "../../../../data/userData";
 import "./profile.css";
 
 const ClientProfile: React.FC = () => {
@@ -47,7 +48,7 @@ const ClientProfile: React.FC = () => {
       <div className="client-profile-page">
         <div className="client-profile-sidebar">
           <img
-            src={data.client.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
+            src={data.client.photo || userData.photo}
             alt="Passport"
             className="client-profile-avatar"
           />

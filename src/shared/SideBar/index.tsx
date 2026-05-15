@@ -25,6 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     | "client"
     | "lawyer"
     | "") || "";
+  const isAdminLike = effectiveRole === "admin" || effectiveRole === "junioradmin";
+  const adminPathGroup = effectiveRole === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
   const roleRoutes = AppRoutes(effectiveRole || null);
   const adminExtraRoutes =
     effectiveRole === "admin"
@@ -40,10 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     PATH.ADMIN.REGISTER_CASE,
     PATH.ADMIN.SEARCH,
     PATH.ADMIN.CHATBOT,
+    PATH.JUNIOR_ADMIN.REGISTER_USER,
+    PATH.JUNIOR_ADMIN.MANAGE_PROFILE,
+    PATH.JUNIOR_ADMIN.REGISTER_CASE,
+    PATH.JUNIOR_ADMIN.CHATBOT,
   ]);
 
   const sidebarRoutes =
-    effectiveRole === "admin"
+    isAdminLike
       ? roleRoutes.filter(
           (r) =>
             !r.path ||
@@ -67,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
   const sidebarRouteItems = Array.from(sidebarRouteMap.values());
   const chatbotPath =
     effectiveRole === "admin" || effectiveRole === "junioradmin"
-      ? PATH.ADMIN.CHATBOT
+      ? adminPathGroup.CHATBOT
       : effectiveRole === "client"
       ? PATH.CLIENT.CHATBOT
       : effectiveRole === "lawyer"

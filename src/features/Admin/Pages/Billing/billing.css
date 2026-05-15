@@ -102,8 +102,26 @@
 }
 
 .admin-billing-quick-item-btn.active {
-  border-color: #2f7fca;
-  box-shadow: 0 0 0 3px rgba(47, 127, 202, 0.12);
+  border-color: #1f6bb0;
+  background: linear-gradient(135deg, #1f6bb0 0%, #2f7fca 100%);
+  box-shadow: 0 8px 20px rgba(31, 107, 176, 0.28), 0 0 0 3px rgba(47, 127, 202, 0.2);
+  transform: translateY(-1px);
+}
+
+.admin-billing-quick-item-btn.active .admin-billing-quick-item-main span,
+.admin-billing-quick-item-btn.active .admin-billing-quick-item-main small {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.admin-billing-quick-item-btn.active strong {
+  color: #1f6bb0;
+  border-color: rgba(255, 255, 255, 0.8);
+  background: #ffffff;
+}
+
+.admin-billing-quick-item-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 127, 202, 0.22);
 }
 
 .admin-billing-quick-item-main {

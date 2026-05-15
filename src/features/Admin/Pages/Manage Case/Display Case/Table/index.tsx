@@ -61,11 +61,13 @@ type ActivityItem = {
 export default function CaseTable() {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const isJuniorAdmin = role === "junioradmin";
+  const isAdmin = role === "admin";
+  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
 
   const [cases, setCases] = React.useState<CaseRecord[]>([]);
   const [logs, setLogs] = React.useState<InteractionLog[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   const [showAssign, setShowAssign] = React.useState(false);
   const [showManageModal, setShowManageModal] = React.useState(false);
@@ -76,27 +78,45 @@ export default function CaseTable() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [casesRes, logsRes] = await Promise.all([
+        const [casesResult, logsResult] = await Promise.allSettled([
           axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
           axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=60`),
         ]);
 
-        const casesData = Array.isArray(casesRes.data)
-          ? casesRes.data
-          : Array.isArray(casesRes.data?.data)
-          ? casesRes.data.data
-          : [];
+        if (casesResult.status !== "fulfilled") {
+          throw casesResult.reason;
+        }
 
-        const logsData = Array.isArray(logsRes.data?.data)
-          ? logsRes.data.data
-          : Array.isArray(logsRes.data)
-          ? logsRes.data
+        const casesData = Array.isArray(casesResult.value.data)
+          ? casesResult.value.data
+          : Array.isArray(casesResult.value.data?.data)
+          ? casesResult.value.data.data
           : [];
 
         setCases(casesData);
-        setLogs(logsData);
+
+        if (logsResult.status === "fulfilled") {
+          const logsData = Array.isArray(logsResult.value.data?.data)
+            ? logsResult.value.data.data
+            : Array.isArray(logsResult.value.data)
+            ? logsResult.value.data
+            : [];
+          setLogs(logsData);
+        } else {
+          const status = logsResult.reason?.response?.status;
+          if (status !== 403) {
+            console.error(logsResult.reason);
+          }
+          setLogs([]);
+        }
       } catch (err) {
-        console.error(err);
+        const status = (err as any)?.response?.status;
+        if (status === 401 || status === 403) {
+          setErrorMessage("Unauthorized Access");
+        } else {
+          console.error(err);
+          setErrorMessage("Failed to load case data.");
+        }
       } finally {
         setLoading(false);
       }
@@ -106,7 +126,7 @@ export default function CaseTable() {
   }, []);
 
   const handleRegisterCase = () => {
-    navigate(PATH.ADMIN.REGISTER_CASE);
+    navigate(adminPathGroup.REGISTER_CASE);
   };
 
   const handleShowAssign = (row: CaseRecord) => {
@@ -183,6 +203,11 @@ export default function CaseTable() {
     { name: "Criminal", value: criminalCases, color: "#ffd700" },
     { name: "Corporate", value: corporateCases, color: "#34d399" },
   ];
+
+  const toPercentLabel = (value: number, total: number): string => {
+    if (total <= 0) return "0%";
+    return `${Math.round((value / total) * 100)}%`;
+  };
 
   const formatRelativeTime = (value?: string): string => {
     if (!value) return "-";
@@ -399,6 +424,14 @@ export default function CaseTable() {
     );
   }
 
+  if (errorMessage) {
+    return (
+      <div className="d-flex justify-content-center mt-5">
+        <p>{errorMessage}</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <section className="admin-cases-top-grid">
@@ -425,12 +458,12 @@ export default function CaseTable() {
           <div className="admin-case-donut-wrap">
             <ResponsiveContainer width="100%" height={188}>
               <PieChart>
-                <Pie data={caseTypeDonutData} dataKey="value" nameKey="name" outerRadius={68} paddingAngle={3}>
+                <Pie data={caseTypeDonutData} dataKey="value" nameKey="name" outerRadius={68} paddingAngle={0} stroke="none">
                   {caseTypeDonutData.map((item) => (
                     <Cell key={item.name} fill={item.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => toPercentLabel(Number(value), totalCases)} />
               </PieChart>
             </ResponsiveContainer>
             <div className="admin-case-donut-legend">
@@ -438,7 +471,7 @@ export default function CaseTable() {
                 <div key={item.name}>
                   <span style={{ backgroundColor: item.color }} />
                   <p>{item.name}</p>
-                  <strong>{item.value}</strong>
+                  <strong>{toPercentLabel(item.value, totalCases)}</strong>
                 </div>
               ))}
             </div>
@@ -447,7 +480,6 @@ export default function CaseTable() {
       </section>
 
       <section className="admin-case-ops-grid">
-        {!isJuniorAdmin && (
         <article className="admin-case-analytics-panel">
           <h4>System Activity</h4>
           <ul className="admin-case-log-list">
@@ -466,9 +498,7 @@ export default function CaseTable() {
             )}
           </ul>
         </article>
-        )}
 
-        {!isJuniorAdmin && (
         <article className="admin-case-analytics-panel">
           <h4>Alerts</h4>
           <ul className="admin-case-log-list">
@@ -487,7 +517,6 @@ export default function CaseTable() {
             )}
           </ul>
         </article>
-        )}
       </section>
 
       <section className="admin-case-toolbar">
@@ -571,7 +600,7 @@ export default function CaseTable() {
                     Add Case
                   </Button>
                 )}
-                {row.caseName && (
+                {isAdmin && row.caseName && (
                   <Button
                     className="admin-case-action-btn admin-case-primary-action"
                     size="sm"

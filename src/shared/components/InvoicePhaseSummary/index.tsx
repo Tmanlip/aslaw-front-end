@@ -20,6 +20,15 @@ type InvoicePhaseSummaryProps = {
   selectedStage?: string;
   accentColor?: string;
   caseTypeFeeJson?: CaseTypeFeeJson | null;
+  encryptedDocuments?: Array<{
+    category?: string;
+    status?: string;
+    invoice_stage?: string;
+    payment_stage?: string;
+    type_of_work?: string;
+    typeOfWork?: string;
+    paid_amount?: number | string;
+  }> | null;
 };
 
 const STAGES: InvoiceStage[] = ["initial", "first", "second", "third", "final"];
@@ -38,6 +47,7 @@ const InvoicePhaseSummary: React.FC<InvoicePhaseSummaryProps> = ({
   selectedStage,
   accentColor = "#b91c1c",
   caseTypeFeeJson,
+  encryptedDocuments,
 }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [expandedPhase, setExpandedPhase] = useState<InvoiceStage | null>(null);
@@ -64,6 +74,44 @@ const InvoicePhaseSummary: React.FC<InvoicePhaseSummaryProps> = ({
       return { stage, expected, paid, balance };
     });
   }, [expectedPaymentPhases, invoicePaymentPhases]);
+
+  const paidByStageAndType = useMemo(() => {
+    const bucket: Record<InvoiceStage, Record<string, number>> = {
+      initial: {},
+      first: {},
+      second: {},
+      third: {},
+      final: {},
+    };
+
+    (encryptedDocuments || []).forEach((document) => {
+      const category = String(document?.category || "").toLowerCase();
+      const status = String(document?.status || "").toLowerCase();
+      if (category !== "invoices" || status === "deleted") {
+        return;
+      }
+
+      const stageValue = String(document?.invoice_stage || document?.payment_stage || "").toLowerCase();
+      if (!STAGES.includes(stageValue as InvoiceStage)) {
+        return;
+      }
+
+      const typeOfWork = String(document?.type_of_work || document?.typeOfWork || "").trim().toLowerCase();
+      if (!typeOfWork) {
+        return;
+      }
+
+      const paidAmount = Number(document?.paid_amount ?? 0);
+      if (!Number.isFinite(paidAmount) || paidAmount <= 0) {
+        return;
+      }
+
+      const stage = stageValue as InvoiceStage;
+      bucket[stage][typeOfWork] = (bucket[stage][typeOfWork] || 0) + paidAmount;
+    });
+
+    return bucket;
+  }, [encryptedDocuments]);
 
   return (
     <>
@@ -152,9 +200,11 @@ const InvoicePhaseSummary: React.FC<InvoicePhaseSummaryProps> = ({
                           <tbody>
                             {practices.map((item, idx) => {
                               const itemExpected = Number(item.selectedFee || 0);
-                              const totalPhaseExpected = practices.reduce((sum, p) => sum + Number(p.selectedFee || 0), 0);
-                              const itemPaidProportion = totalPhaseExpected > 0 ? (itemExpected / totalPhaseExpected) * summary.paid : 0;
-                              const itemBalance = Math.max(itemExpected - itemPaidProportion, 0);
+                              const normalizedType = String(item.typeOfWork || "").trim().toLowerCase();
+                              const itemPaid = normalizedType
+                                ? Number(paidByStageAndType[summary.stage as InvoiceStage]?.[normalizedType] || 0)
+                                : 0;
+                              const itemBalance = Math.max(itemExpected - itemPaid, 0);
                               return (
                                 <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
                                   <td style={{ padding: "0.5rem", color: "#333" }}>
@@ -168,7 +218,7 @@ const InvoicePhaseSummary: React.FC<InvoicePhaseSummaryProps> = ({
                                     {formatMoney(itemExpected)}
                                   </td>
                                   <td style={{ textAlign: "right", padding: "0.5rem", color: "#333" }}>
-                                    {formatMoney(itemPaidProportion)}
+                                    {formatMoney(itemPaid)}
                                   </td>
                                   <td style={{ textAlign: "right", padding: "0.5rem", color: itemBalance > 0 ? "#b91c1c" : "#16a34a", fontWeight: "600" }}>
                                     {formatMoney(itemBalance)}

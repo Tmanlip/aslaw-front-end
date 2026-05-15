@@ -12,6 +12,7 @@ import RegisterCase from "./Register Case";
 import { createFailureMessage } from "./feedback";
 import { UserRole } from "../../../../../constant/user";
 import PATH from "../../../../../constant/paths";
+import { useAuth } from "../../../../../context/AuthContext";
 import "./registerUser.css";
 
 type CreatedUser = {
@@ -41,6 +42,8 @@ type ValidationErrors = {
 
 const RegisterUser: React.FC = () => {
   const navigate = useNavigate();
+  const { role: currentRole } = useAuth();
+  const adminPathGroup = currentRole === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
 
   const COUNTRY_CODE_OPTIONS = [
     { label: "Malaysia (+60)", value: "+60" },
@@ -280,6 +283,26 @@ const RegisterUser: React.FC = () => {
       // Reset form after successful registration
       resetForm();
 
+      const emailSent = response?.data?.email_sent !== false;
+      const generatedPassword = response?.data?.generated_password;
+
+      if (!emailSent) {
+        const baseWarning =
+          response?.data?.email_warning ||
+          "User was created but the account email could not be delivered.";
+
+        const passwordHint =
+          typeof generatedPassword === "string" && generatedPassword.trim()
+            ? ` Temporary password (dev only): ${generatedPassword}`
+            : "";
+
+        setFeedback({
+          variant: "warning",
+          message: `${baseWarning}${passwordHint}`,
+        });
+        return;
+      }
+
       setFeedback({
         variant: "success",
         message: "User registered successfully!",
@@ -468,7 +491,7 @@ const RegisterUser: React.FC = () => {
                     </button>
                     <button
                       className="btn btn-secondary"
-                      onClick={() => navigate(PATH.ADMIN.MANAGE_USER)}
+                      onClick={() => navigate(adminPathGroup.MANAGE_USER)}
                     >
                       Back to User Table
                     </button>

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Dropdown from "react-bootstrap/Dropdown";
-import Alert from "react-bootstrap/Alert";
 import ConfirmModal from "../../../components/Modals/ConfirmModal";
 import AuthMemory from "../../../data/authMemory";
 import axiosUser from "../../../api/axiosUser";
@@ -69,6 +68,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
   const getActionKey = (action: "preview" | "download" | "delete" | "approve" | "reject", file: EncryptedDocumentItem) =>
     `${action}-${file.document_id || file.file_name}`;
+  const normalizeApiRelativeUrl = (url?: string): string => {
+    const value = String(url || "");
+    return value.startsWith("/api/") ? value.slice(4) : value;
+  };
 
   const isArchived = (selectedCase.status || "").toLowerCase() === "archived";
   const lockArchivedActions = isArchived;
@@ -80,13 +83,13 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
   const showInvoiceActions = role === "admin" && !showInvoiceLockBanner;
   const canReviewPending = role === "admin" || role === "lawyer";
   const forceArchivedInvoiceView = showInvoiceLockBanner;
+  const forceReadOnlyPreviewView = readOnly;
   const displayedRecentFiles = useMemo(() => {
-    const filtered =
-      resolvedActiveKey === "pending"
-        ? recentFiles.filter((item) => String(item.status || "").toLowerCase() === "pending_approval")
-        : [...recentFiles];
+    const activeFiles = recentFiles.filter(
+      (item) => String(item.status || "").toLowerCase() !== "pending_approval"
+    );
 
-    const sorted = [...filtered].sort((a, b) => {
+    return [...activeFiles].sort((a, b) => {
       const aName = String(a.file_name || "").toLowerCase();
       const bName = String(b.file_name || "").toLowerCase();
       const aCategory = String(a.category || "").toLowerCase();
@@ -108,9 +111,11 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
           return bModified - aModified || aName.localeCompare(bName);
       }
     });
+  }, [fileSortMode, recentFiles]);
 
-    return sorted;
-  }, [fileSortMode, recentFiles, resolvedActiveKey]);
+  const pendingFiles = useMemo(() => {
+    return recentFiles.filter((item) => String(item.status || "").toLowerCase() === "pending_approval");
+  }, [recentFiles]);
 
   const sortLabel = useMemo(() => {
     switch (fileSortMode) {
@@ -168,7 +173,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      const response = await axiosUser.get(file.preview_url, {
+      const response = await axiosUser.get(normalizeApiRelativeUrl(file.preview_url), {
         responseType: "blob",
         headers: authHeaders,
       });
@@ -191,7 +196,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      const response = await axiosUser.get(file.download_url, {
+      const response = await axiosUser.get(normalizeApiRelativeUrl(file.download_url), {
         responseType: "blob",
         headers: authHeaders,
       });
@@ -263,21 +268,12 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
         </div>
       )}
 
-      {reviewMessage && (
-        <div className="admin-billing-alert-wrap">
-          <Alert variant={reviewMessageVariant} dismissible onClose={() => setReviewMessage(null)}>
-            {reviewMessage}
-          </Alert>
-        </div>
-      )}
-
-      {(resolvedActiveKey === "recent" || resolvedActiveKey === "pending") && (
+      {resolvedActiveKey === "recent" && (
         <div className="admin-billing-recent-panel">
           <div className="admin-billing-files-header">
-            <h2 className="admin-billing-files-title">{resolvedActiveKey === "pending" ? "Pending Files" : "Recent Files"}</h2>
-            {!readOnly && (
-              <div className="admin-billing-files-actions">
-                {showUploadMenu && (
+            <h2 className="admin-billing-files-title">Recent Files</h2>
+            <div className="admin-billing-files-actions">
+              {!readOnly && showUploadMenu && (
                   <Dropdown>
                     <Dropdown.Toggle
                       className="admin-billing-file-btn admin-billing-file-btn-preview"
@@ -302,8 +298,9 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                       )}
                     </Dropdown.Menu>
                   </Dropdown>
-                )}
+              )}
 
+              {!readOnly && (
                 <button
                   type="button"
                   className="admin-billing-file-btn admin-billing-file-btn-delete"
@@ -318,7 +315,9 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                 >
                   Create
                 </button>
+              )}
 
+              {!readOnly && (
                 <Dropdown>
                   <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id="recent-select-dropdown-shared">
                     Select
@@ -329,166 +328,195 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                     {showInvoiceActions && <Dropdown.Item onClick={() => setResolvedActiveKey("invoices")}>Select in Invoices</Dropdown.Item>}
                   </Dropdown.Menu>
                 </Dropdown>
+              )}
 
+                <Dropdown>
+                  <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id="recent-sort-dropdown-shared">
+                    Sort: {sortLabel}
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu>
+                    <Dropdown.Item onClick={() => setFileSortMode("modified_desc")}>Latest Modified</Dropdown.Item>
+                    <Dropdown.Item onClick={() => setFileSortMode("modified_asc")}>Oldest Modified</Dropdown.Item>
+                    <Dropdown.Item onClick={() => setFileSortMode("name_asc")}>Name A-Z</Dropdown.Item>
+                    <Dropdown.Item onClick={() => setFileSortMode("name_desc")}>Name Z-A</Dropdown.Item>
+                    <Dropdown.Item onClick={() => setFileSortMode("category_asc")}>Category</Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
               </div>
-            )}
-
-            <div className="admin-billing-files-actions">
-              <Dropdown>
-                <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id="recent-sort-dropdown-shared">
-                  Sort: {sortLabel}
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  <Dropdown.Item onClick={() => setFileSortMode("modified_desc")}>Latest Modified</Dropdown.Item>
-                  <Dropdown.Item onClick={() => setFileSortMode("modified_asc")}>Oldest Modified</Dropdown.Item>
-                  <Dropdown.Item onClick={() => setFileSortMode("name_asc")}>Name A-Z</Dropdown.Item>
-                  <Dropdown.Item onClick={() => setFileSortMode("name_desc")}>Name Z-A</Dropdown.Item>
-                  <Dropdown.Item onClick={() => setFileSortMode("category_asc")}>Category</Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
             </div>
-          </div>
 
-          {resolvedActiveKey === "recent" && (
             <p className="admin-billing-recent-note">
               Upload and Select let you choose section. Create opens Document Generator directly.
             </p>
-          )}
 
-          <ul className="admin-billing-file-list">
-            {displayedRecentFiles.length === 0 && (
-              <p className="admin-billing-empty-list">{resolvedActiveKey === "pending" ? "No pending files found" : "No recent files found"}</p>
-            )}
-            {displayedRecentFiles.map((file) => {
-              const fileStatus = String(file.status || "active").toLowerCase();
-              const isPendingApproval = fileStatus === "pending_approval";
-              const isClientPendingAccess = isPendingApproval && role === "client";
-              const canDeleteThisFile =
-                canMutateGeneralFiles &&
-                (file.category !== "invoices" || canMutateInvoices) &&
-                !isPendingApproval;
+            <ul className="admin-billing-file-list">
+              {displayedRecentFiles.length === 0 && (
+                <p className="admin-billing-empty-list">No recent files found</p>
+              )}
+              {displayedRecentFiles.map((file) => {
+                const canDeleteThisFile =
+                  canMutateGeneralFiles &&
+                  (file.category !== "invoices" || canMutateInvoices);
 
-              return (
-                <li key={file.document_id} className="admin-billing-file-row">
-                  <div className="admin-billing-file-main">
-                    <strong className="admin-billing-file-name">{file.file_name}</strong>
-                    <span className="admin-billing-file-badge-encrypted">{file.category.toUpperCase()}</span>
-                    {isPendingApproval && (
-                      <span
-                        style={{
-                          marginLeft: "0.5rem",
-                          padding: "0.18rem 0.5rem",
-                          borderRadius: "999px",
-                          backgroundColor: "#fff3cd",
-                          color: "#664d03",
-                          border: "1px solid #ffecb5",
-                          fontSize: "0.72rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.01em",
-                        }}
-                      >
-                        Pending Approval
-                      </span>
-                    )}
-                  </div>
+                return (
+                  <li key={file.document_id} className="admin-billing-file-row">
+                    <div className="admin-billing-file-main">
+                      <strong className="admin-billing-file-name">{file.file_name}</strong>
+                      <span className="admin-billing-file-badge-encrypted">{file.category.toUpperCase()}</span>
+                    </div>
 
-                  <div className="admin-billing-file-actions">
-                    <button
-                      type="button"
-                      className="admin-billing-file-btn admin-billing-file-btn-preview"
-                      disabled={loadingAction === getActionKey("preview", file) || isClientPendingAccess}
-                      onClick={() => void openRecentPreview(file)}
-                    >
-                      {isClientPendingAccess ? (
-                        "Pending"
-                      ) : loadingAction === getActionKey("preview", file) ? (
-                        <>
-                          <LoadingSpinner size={16} color="#ffffff" />
-                          Previewing
-                        </>
-                      ) : (
-                        "Preview"
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="admin-billing-file-btn admin-billing-file-btn-download"
-                      disabled={loadingAction === getActionKey("download", file) || isClientPendingAccess}
-                      onClick={() => void downloadRecentFile(file)}
-                    >
-                      {isClientPendingAccess ? (
-                        "Pending"
-                      ) : loadingAction === getActionKey("download", file) ? (
-                        <>
-                          <LoadingSpinner size={16} color="#ffffff" />
-                          Downloading
-                        </>
-                      ) : (
-                        "Download"
-                      )}
-                    </button>
-
-                    {!readOnly && (
+                    <div className="admin-billing-file-actions">
                       <button
                         type="button"
-                        className="admin-billing-file-btn admin-billing-file-btn-delete"
-                        onClick={() => void handleRecentDelete(file)}
-                        disabled={!canDeleteThisFile || loadingAction === getActionKey("delete", file)}
+                        className="admin-billing-file-btn admin-billing-file-btn-preview"
+                        disabled={loadingAction === getActionKey("preview", file)}
+                        onClick={() => void openRecentPreview(file)}
                       >
-                        {loadingAction === getActionKey("delete", file) ? (
+                        {loadingAction === getActionKey("preview", file) ? (
                           <>
                             <LoadingSpinner size={16} color="#ffffff" />
-                            Deleting
+                            Previewing
                           </>
                         ) : (
-                          "Delete"
+                          "Preview"
                         )}
                       </button>
-                    )}
 
-                    {isPendingApproval && canReviewPending && (
-                      <>
-                        <button
-                          type="button"
-                          className="admin-billing-file-btn admin-billing-file-btn-preview"
-                          disabled={loadingAction === getActionKey("approve", file)}
-                          onClick={() => void reviewPendingFile(file, "approve")}
-                        >
-                          {loadingAction === getActionKey("approve", file) ? (
-                            <>
-                              <LoadingSpinner size={16} color="#ffffff" />
-                              Approving
-                            </>
-                          ) : (
-                            "Approve"
-                          )}
-                        </button>
+                      <button
+                        type="button"
+                        className="admin-billing-file-btn admin-billing-file-btn-download"
+                        disabled={loadingAction === getActionKey("download", file)}
+                        onClick={() => void downloadRecentFile(file)}
+                      >
+                        {loadingAction === getActionKey("download", file) ? (
+                          <>
+                            <LoadingSpinner size={16} color="#ffffff" />
+                            Downloading
+                          </>
+                        ) : (
+                          "Download"
+                        )}
+                      </button>
 
+                      {!readOnly && (
                         <button
                           type="button"
                           className="admin-billing-file-btn admin-billing-file-btn-delete"
-                          disabled={loadingAction === getActionKey("reject", file)}
-                          onClick={() => void reviewPendingFile(file, "reject")}
+                          onClick={() => void handleRecentDelete(file)}
+                          disabled={!canDeleteThisFile || loadingAction === getActionKey("delete", file)}
                         >
-                          {loadingAction === getActionKey("reject", file) ? (
+                          {loadingAction === getActionKey("delete", file) ? (
                             <>
                               <LoadingSpinner size={16} color="#ffffff" />
-                              Rejecting
+                              Deleting
                             </>
                           ) : (
-                            "Reject"
+                            "Delete"
                           )}
                         </button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {resolvedActiveKey === "pending" && (
+          <div className="admin-billing-recent-panel">
+            <div className="admin-billing-files-header">
+              <h2 className="admin-billing-files-title">Pending Review</h2>
+            </div>
+
+            <p className="admin-billing-recent-note">
+              Client-uploaded files stay here until an admin or lawyer approves or rejects them.
+            </p>
+
+            {reviewMessage ? (
+              <p className="admin-billing-recent-note" style={{ color: reviewMessageVariant === "success" ? "#0f766e" : "#b91c1c", marginTop: "0.5rem" }}>
+                {reviewMessage}
+              </p>
+            ) : null}
+
+            <ul className="admin-billing-file-list">
+              {pendingFiles.length === 0 && <p className="admin-billing-empty-list">No pending files found</p>}
+
+              {pendingFiles.map((file) => {
+                const documentId = String(file.document_id || "");
+                const previewActionKey = getActionKey("preview", file);
+                const approveActionKey = `approve-${documentId}`;
+                const rejectActionKey = `reject-${documentId}`;
+                const isPreviewing = loadingAction === previewActionKey;
+                const isApproving = loadingAction === approveActionKey;
+                const isRejecting = loadingAction === rejectActionKey;
+
+                return (
+                  <li key={file.document_id} className="admin-billing-file-row">
+                    <div className="admin-billing-file-main">
+                      <strong className="admin-billing-file-name">{file.file_name}</strong>
+                      <span className="admin-billing-file-badge-encrypted">{String(file.category || "documents").toUpperCase()}</span>
+                    </div>
+
+                    <div className="admin-billing-file-actions">
+                      <button
+                        type="button"
+                        className="admin-billing-file-btn admin-billing-file-btn-download"
+                        onClick={() => void openRecentPreview(file)}
+                        disabled={isPreviewing || isApproving || isRejecting}
+                      >
+                        {isPreviewing ? (
+                          <>
+                            <LoadingSpinner size={16} color="#ffffff" />
+                            Previewing
+                          </>
+                        ) : (
+                          "Preview"
+                        )}
+                      </button>
+
+                      {canReviewPending && (
+                        <>
+                          <button
+                            type="button"
+                            className="admin-billing-file-btn admin-billing-file-btn-preview"
+                            onClick={() => void reviewPendingFile(file, "approve")}
+                            disabled={isPreviewing || isApproving || isRejecting}
+                          >
+                            {isApproving ? (
+                              <>
+                                <LoadingSpinner size={16} color="#ffffff" />
+                                Approving
+                              </>
+                            ) : (
+                              "Approve"
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="admin-billing-file-btn admin-billing-file-btn-delete"
+                            onClick={() => void reviewPendingFile(file, "reject")}
+                            disabled={isPreviewing || isApproving || isRejecting}
+                          >
+                            {isRejecting ? (
+                              <>
+                                <LoadingSpinner size={16} color="#ffffff" />
+                                Rejecting
+                              </>
+                            ) : (
+                              "Reject"
+                            )}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
       <ConfirmModal
         show={pendingDeleteFile !== null}
@@ -570,6 +598,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
           onDeleteSuccess={onDeleteSuccess}
           onUploadingChange={setUploading}
           onCreateDocument={onCreateDocument ? () => onCreateDocument("documents") : undefined}
+          forceArchivedView={forceReadOnlyPreviewView}
         />
       )}
 
@@ -586,6 +615,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
           onDeleteSuccess={onDeleteSuccess}
           onUploadingChange={setUploading}
           onCreateDocument={onCreateDocument ? () => onCreateDocument("reports") : undefined}
+          forceArchivedView={forceReadOnlyPreviewView}
         />
       )}
 
@@ -594,14 +624,14 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
           selectedCase={selectedCase}
           folderName="invoices"
           title="Invoices"
-          sectionOptions={["initial", "first", "second", "third", "final"]}
+          sectionOptions={showInvoiceActions ? ["initial", "first", "second", "third", "final"] : []}
           renameFileWithSection={canMutateInvoices && !lockArchivedActions && !showInvoiceLockBanner}
           allowUpload={canMutateInvoices && !showInvoiceLockBanner}
           allowDelete={canMutateInvoices && !showInvoiceLockBanner}
           uploadDisabled={lockArchivedActions || showInvoiceLockBanner}
           deleteDisabled={lockArchivedActions || showInvoiceLockBanner}
           bannerMessage={showInvoiceLockBanner ? "Lawyers do not have access to manage invoices." : undefined}
-          forceArchivedView={forceArchivedInvoiceView}
+          forceArchivedView={forceArchivedInvoiceView || forceReadOnlyPreviewView}
           onUploadSuccess={onUploadSuccess}
           onDeleteSuccess={onDeleteSuccess}
           onUploadingChange={setUploading}

@@ -4,6 +4,7 @@ import AuthMemory from "../../../../data/authMemory";
 import { fetchLawyerFullData } from "../../../../hooks/lawyerApi";
 import ProfileInfo from "./ProfileInfo";
 import { LawyerFullData } from "../../../../data/userInfo";
+import { userData } from "../../../../data/userData";
 import "./profile.css";
 
 const LawyerProfile: React.FC = () => {
@@ -51,7 +52,7 @@ const LawyerProfile: React.FC = () => {
       <div className="lawyer-profile-page">
         <div className="lawyer-profile-sidebar">
           <img
-            src={data.lawyer.photo || "src/assets/pics/Gambar Passport-min.jpeg"}
+            src={data.lawyer.photo || userData.photo}
             alt="Passport"
             className="lawyer-profile-avatar"
           />

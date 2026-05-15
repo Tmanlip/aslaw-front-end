@@ -67,6 +67,39 @@ iframe {
   --aslaw-shadow: 0 12px 24px rgba(17, 24, 39, 0.08);
 }
 
+.aslaw-corner-identity {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1140;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.55);
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.35);
+  pointer-events: none;
+  max-width: min(88vw, 280px);
+}
+
+.aslaw-corner-identity-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.aslaw-corner-identity-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .aslaw-metis-navbar {
   background: linear-gradient(135deg, var(--aslaw-brand-gold), var(--aslaw-brand-gold-strong));
   color: #fff;
@@ -149,9 +182,9 @@ iframe {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(31, 41, 55, 0.22);
-  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: #ffffff;
+  color: #0f172a;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -160,7 +193,7 @@ iframe {
 
 .aslaw-metis-notification-btn:hover {
   transform: translateY(-1px);
-  background: rgba(31, 41, 55, 0.3);
+  background: #f8fafc;
 }
 
 .aslaw-metis-notification-wrap {
@@ -257,10 +290,32 @@ iframe {
   background: #fff;
   text-align: left;
   padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
 }
 
 .aslaw-metis-notification-item:hover {
   background: #f8fafc;
+}
+
+.aslaw-metis-notification-item:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.aslaw-metis-notification-checkbox {
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  width: 1rem;
+  margin-top: 0.05rem;
+}
+
+.aslaw-metis-notification-content {
+  min-width: 0;
+  flex: 1;
 }
 
 .aslaw-metis-notification-item strong {
@@ -540,6 +595,16 @@ iframe {
 }
 
 @media (max-width: 575.98px) {
+  .aslaw-corner-identity {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.3rem 0.55rem;
+  }
+
+  .aslaw-corner-identity-name {
+    max-width: 46vw;
+  }
+
   .aslaw-metis-navbar {
     padding: 0.4rem 0.65rem;
   }
