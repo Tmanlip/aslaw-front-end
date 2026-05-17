@@ -8,7 +8,6 @@ import RegisterUser from "../features/Admin/Pages/Manage User/Register";
 import ManageProfile from "../features/Admin/Pages/Manage User/Manage/Manage Profile";
 import RegisterCase from "../features/Admin/Pages/Manage Case/Register Case";
 import AdminScheduleMeeting from "../features/Admin/Pages/ScheduleMeeting";
-import InternalChatbot from "../pages/Chatbot/InternalChatbot";
 
 const juniorAdminRoutes: RouteObject[] = [
   { path: PATH.JUNIOR_ADMIN.DASHBOARD, element: <Dashboard /> },
@@ -18,7 +17,6 @@ const juniorAdminRoutes: RouteObject[] = [
   { path: PATH.JUNIOR_ADMIN.MANAGE_USER, element: <ManageUser /> },
   { path: PATH.JUNIOR_ADMIN.MANAGE_PROFILE, element: <ManageProfile /> },
   { path: PATH.JUNIOR_ADMIN.REGISTER_USER, element: <RegisterUser /> },
-  { path: PATH.JUNIOR_ADMIN.CHATBOT, element: <InternalChatbot userTypeLabel="Junior Admin" /> },
 ];
 
 export default juniorAdminRoutes;

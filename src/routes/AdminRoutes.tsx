@@ -14,7 +14,6 @@ import AdminProfile from "../features/Admin/Pages/My Profile";
 import AdminScheduleMeeting from "../features/Admin/Pages/ScheduleMeeting";
 import AdminLogs from "../features/Admin/Pages/Logs/index";
 import AdminSearch from "../features/Admin/Pages/Search/index";
-import InternalChatbot from "../pages/Chatbot/InternalChatbot";
 import GeneratorDashboard from "../document-generator/pages/Dashboard";
 import GeneratorTemplateForm from "../document-generator/pages/TemplateForm";
 
@@ -32,7 +31,6 @@ const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.LAWYER_BILLING, element: <LawyerCases />},
   { path: PATH.ADMIN.LOGS, element: <AdminLogs />},
   { path: PATH.ADMIN.SEARCH, element: <AdminSearch />},
-  { path: PATH.ADMIN.CHATBOT, element: <InternalChatbot userTypeLabel="Admin" /> },
   { path: PATH.DOCUMENT_GENERATOR.DASHBOARD, element: <GeneratorDashboard /> },
   { path: PATH.DOCUMENT_GENERATOR.TEMPLATE, element: <GeneratorTemplateForm /> },
 ];

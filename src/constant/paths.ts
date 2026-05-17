@@ -14,8 +14,7 @@ const PATH = {
     MANAGE_PROFILE : "/admin/users/manage-profile",
     REGISTER_USER : "/admin/users/register",
     LOGS : "/admin/logs",
-    SEARCH : "/admin/search",
-    CHATBOT : "/admin/chatbot"
+    SEARCH : "/admin/search"
   },
 
   JUNIOR_ADMIN : {
@@ -27,8 +26,7 @@ const PATH = {
     REGISTER_CASE : "/junior-admin/cases/register-case",
     MANAGE_USER : "/junior-admin/users",
     MANAGE_PROFILE : "/junior-admin/users/manage-profile",
-    REGISTER_USER : "/junior-admin/users/register",
-    CHATBOT : "/junior-admin/chatbot"
+    REGISTER_USER : "/junior-admin/users/register"
   },
 
   CLIENT : {
@@ -36,8 +34,7 @@ const PATH = {
     DASHBOARD : "/client/dashboard",
     MY_PROFILE : "/client/my-profile",
     VIEW_CASE : "/client/view-case",
-    SCHEDULE_MEETING : "/client/schedule-meeting",
-    CHATBOT : "/client/chatbot"
+    SCHEDULE_MEETING : "/client/schedule-meeting"
   },
 
   LAWYER : {
@@ -45,12 +42,7 @@ const PATH = {
     DASHBOARD : "/lawyer/dashboard",
     UPDATE_CASE : "/lawyer/update-case",
     MY_PROFILE : "/lawyer/my-profile",
-    SCHEDULE_MEETING : "/lawyer/schedule-meeting",
-    CHATBOT : "/lawyer/chatbot"
-  },
-
-  CHATBOT : {
-    ROOT : "/chatbot"
+    SCHEDULE_MEETING : "/lawyer/schedule-meeting"
   },
 
   DOCUMENT_GENERATOR: {

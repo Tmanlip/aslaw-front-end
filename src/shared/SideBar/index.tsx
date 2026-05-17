@@ -26,7 +26,6 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     | "lawyer"
     | "") || "";
   const isAdminLike = effectiveRole === "admin" || effectiveRole === "junioradmin";
-  const adminPathGroup = effectiveRole === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
   const roleRoutes = AppRoutes(effectiveRole || null);
   const adminExtraRoutes =
     effectiveRole === "admin"
@@ -41,11 +40,9 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     PATH.ADMIN.ASSIGN_CASE,
     PATH.ADMIN.REGISTER_CASE,
     PATH.ADMIN.SEARCH,
-    PATH.ADMIN.CHATBOT,
     PATH.JUNIOR_ADMIN.REGISTER_USER,
     PATH.JUNIOR_ADMIN.MANAGE_PROFILE,
     PATH.JUNIOR_ADMIN.REGISTER_CASE,
-    PATH.JUNIOR_ADMIN.CHATBOT,
   ]);
 
   const sidebarRoutes =
@@ -56,11 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
             (!adminExcludedPaths.has(r.path) && !isDocumentGeneratorPath(r.path))
         )
       : roleRoutes.filter((r) =>
-          r.path
-            ? r.path !== PATH.CLIENT.CHATBOT &&
-              r.path !== PATH.LAWYER.CHATBOT &&
-              !isDocumentGeneratorPath(r.path)
-            : true
+          r.path ? !isDocumentGeneratorPath(r.path) : true
         );
 
   const sidebarRouteMap = new Map<string, { path?: string }>();
@@ -71,14 +64,6 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
   });
 
   const sidebarRouteItems = Array.from(sidebarRouteMap.values());
-  const chatbotPath =
-    effectiveRole === "admin" || effectiveRole === "junioradmin"
-      ? adminPathGroup.CHATBOT
-      : effectiveRole === "client"
-      ? PATH.CLIENT.CHATBOT
-      : effectiveRole === "lawyer"
-      ? PATH.LAWYER.CHATBOT
-      : PATH.CHATBOT.ROOT;
 
   return (
     <Offcanvas
@@ -111,17 +96,6 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
               </Nav.Link>
             ) : null
           )}
-
-          <hr style={{ borderColor: colors.white, opacity: 0.5 }} />
-
-          <Nav.Link
-            as={Link}
-            to={chatbotPath}
-            onClick={handleClose}
-            className={`aslaw-sidebar-link ${location.pathname === chatbotPath ? "active" : ""}`}
-          >
-            Internal Chatbot
-          </Nav.Link>
         </Nav>
       </Offcanvas.Body>
     </Offcanvas>

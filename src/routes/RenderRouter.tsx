@@ -2,7 +2,6 @@ import { Navigate, useRoutes } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import HomePage from "../pages/Home";
 import AppRoutes from "./AppRouter";
-import chatbotRoutes from "./ChatbotRoutes";
 import ForgotPasswordPage from "../pages/ForgotPassword"
 import ArchivedUserPage from "../pages/ArchivedUser";
 import InactiveUserPage from "../pages/InactiveUser";
@@ -22,7 +21,6 @@ export default function RenderRouter() {
   const publicRoutes = [
     { path: "/", element: <HomePage /> },
     { path: PATH.AUTH.RESET_PASSWORD, element: <ForgotPasswordPage /> },
-    ...chatbotRoutes,
   ];
 
   // 2. Get role-based routes

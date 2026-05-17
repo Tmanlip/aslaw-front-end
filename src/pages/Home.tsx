@@ -29,10 +29,6 @@ const HomePage: React.FC = () => {
     setShowLoginPage(false);
   };
 
-  const handlePublicChatbot = () => {
-    navigate(PATH.CHATBOT.ROOT);
-  };
-
   // ✅ handle login success and redirect with message
 const handleLoginSuccess = (
   role: "admin" | "junioradmin" | "client" | "lawyer",
@@ -138,15 +134,6 @@ const handleLoginSuccess = (
             className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
           >
             Login
-          </CustomButton>
-
-          <CustomButton
-            customColor="red4"
-            size="lg"
-            onClick={handlePublicChatbot}
-            className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
-          >
-            Public Chatbot
           </CustomButton>
         </div>
       </div>
