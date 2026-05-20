@@ -372,8 +372,9 @@ const NavBarAdmin: React.FC = () => {
     const { caseItem, category } = documentMatch;
     const lockManageUser = getLockManageUserByCaseAndQuery(caseItem);
     const resolvedCaseId = Number(caseItem.caseId ?? caseItem.id);
+    const billingPath = role === "adminstaff" ? PATH.ADMIN_STAFF.BILLING : PATH.ADMIN.BILLING;
 
-    navigate(adminPathGroup.BILLING, {
+    navigate(billingPath, {
       state: {
         selectedCase: {
           ...caseItem,
