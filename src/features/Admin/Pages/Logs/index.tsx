@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
-import { useAuth } from "../../../../context/AuthContext";
-import PATH from "../../../../constant/paths";
 import axiosUser from "../../../../api/axiosUser";
 import "./logs.css";
 
@@ -158,8 +156,6 @@ const formatDateTime = (dateStr?: string): string => {
 };
 
 const AdminLogs: React.FC = () => {
-  const { role } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = (searchParams.get("search") || searchParams.get("q") || "").trim();
 

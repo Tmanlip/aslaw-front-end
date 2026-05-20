@@ -5,7 +5,6 @@ import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import Alert from "react-bootstrap/Alert";
 import AuthMemory from "../../../../data/authMemory";
 import axiosUser from "../../../../api/axiosUser";
-import { useAuth } from "../../../../context/AuthContext";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import "./dashboard.css";
 
@@ -29,7 +28,6 @@ const AdminDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const successMessage = location.state?.successMessage || null;
-  const { role } = useAuth();
 
   const [showAlert, setShowAlert] = useState(!!successMessage);
   const [user] = useState(AuthMemory.getUser());

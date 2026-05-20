@@ -166,7 +166,7 @@ const NavBarAdmin: React.FC = () => {
     };
 
     void fetchSearchData();
-  }, [hasFetchedSearchData, queryNormalized, role]);
+  }, [canAccessLogs, hasFetchedSearchData, queryNormalized]);
 
   const matchedUsers = useMemo(() => {
     if (queryNormalized.length < 2) return [];

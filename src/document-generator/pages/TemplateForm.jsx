@@ -315,15 +315,6 @@ const computeExpectedForTypeOfWork = (caseTypeFeeJson, stage, typeOfWork) => {
   return items.reduce((total, item) => total + resolveItemAmount(item), 0);
 };
 
-const computeStageTotalExpected = (caseTypeFeeJson, stage) => {
-  const items = getStageFeeItems(caseTypeFeeJson, stage);
-  if (items.length === 0) {
-    return 0;
-  }
-
-  return items.reduce((total, item) => total + resolveItemAmount(item), 0);
-};
-
 const extractInvoiceDocuments = (...sources) => {
   const collected = [];
 

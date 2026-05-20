@@ -81,6 +81,7 @@ const UpdateCheque: React.FC = () => {
     (caseToManage as any)?.status || (caseToManage as any)?.caseStatus || "Unknown"
   ).trim() || "Unknown";
   const normalizedCaseStatus = caseStatusLabel.toLowerCase();
+  const currentCaseId = Number(caseToManage?.caseId ?? caseToManage?.id ?? 0);
 
   const quickAccessItems = [
     {
@@ -152,7 +153,6 @@ const UpdateCheque: React.FC = () => {
 
   const refreshCaseData = useCallback(async (options?: { silent?: boolean }) => {
     const { silent = false } = options || {};
-    const currentCaseId = Number(caseToManage?.caseId ?? caseToManage?.id);
     if (!Number.isFinite(currentCaseId) || currentCaseId <= 0) {
       return;
     }
@@ -204,15 +204,15 @@ const UpdateCheque: React.FC = () => {
     } catch (error) {
       console.error("Failed to refresh billing case data", error);
     }
-  }, [caseToManage?.caseId, caseToManage?.id]);
+  }, [currentCaseId]);
 
   useEffect(() => {
-    if (!caseToManage) {
+    if (!Number.isFinite(currentCaseId) || currentCaseId <= 0) {
       return;
     }
 
     void refreshCaseData({ silent: true });
-  }, [caseToManage?.caseId, caseToManage?.id, refreshCaseData]);
+  }, [currentCaseId, refreshCaseData]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
