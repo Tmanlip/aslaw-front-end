@@ -5,7 +5,7 @@ import { useAuth } from "../../../../context/AuthContext";
 
 const AdminScheduleMeeting: React.FC = () => {
   const { role, user } = useAuth();
-  const effectiveRole = (role || String(user?.role || "").toLowerCase()) as "admin" | "junioradmin" | "client" | "lawyer";
+  const effectiveRole = (role || String(user?.role || "").toLowerCase()) as "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer";
 
   return (
     <>

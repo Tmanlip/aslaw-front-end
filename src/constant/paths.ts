@@ -1,4 +1,7 @@
 const PATH = {
+  HOME: "/",
+  CHATBOT: "/chatbot",
+
   ADMIN : {
     ROOT : "/admin",
     DASHBOARD : "/admin/dashboard",
@@ -15,6 +18,23 @@ const PATH = {
     REGISTER_USER : "/admin/users/register",
     LOGS : "/admin/logs",
     SEARCH : "/admin/search"
+  },
+
+  ADMIN_STAFF : {
+    ROOT : "/admin-staff",
+    DASHBOARD : "/admin-staff/dashboard",
+    MY_PROFILE : "/admin-staff/my-profile",
+    SCHEDULE_MEETING : "/admin-staff/schedule-meeting",
+    BILLING : "/admin-staff/billing",
+    LAWYER_BILLING : "/admin-staff/lawyer-billing",
+    MANAGE_CASE : "/admin-staff/cases",
+    ASSIGN_CASE : "/admin-staff/cases/assign-case",
+    REGISTER_CASE : "/admin-staff/cases/register-case",
+    EDIT_CASE : "/admin-staff/cases/edit-case",
+    MANAGE_USER : "/admin-staff/users",
+    MANAGE_PROFILE : "/admin-staff/users/manage-profile",
+    REGISTER_USER : "/admin-staff/users/register",
+    SEARCH : "/admin-staff/search"
   },
 
   JUNIOR_ADMIN : {

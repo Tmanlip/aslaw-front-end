@@ -85,7 +85,12 @@ const NavBarAdmin: React.FC = () => {
   const { logout, role } = useAuth();
   const { setUserData } = useClientData();
   const navigate = useNavigate();
-  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
+  const adminPathGroup =
+    role === "junioradmin"
+      ? PATH.JUNIOR_ADMIN
+      : role === "adminstaff"
+      ? PATH.ADMIN_STAFF
+      : PATH.ADMIN;
   const canAccessLogs = role === "admin";
   const desktopSearchWrapRef = useRef<HTMLDivElement | null>(null);
   const sidebarSearchWrapRef = useRef<HTMLDivElement | null>(null);
@@ -122,7 +127,7 @@ const NavBarAdmin: React.FC = () => {
           axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
         ];
 
-        if (role === "admin") {
+        if (canAccessLogs) {
           requests.push(axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=120`));
         }
 
@@ -140,7 +145,7 @@ const NavBarAdmin: React.FC = () => {
           ? casesRes.data.data
           : [];
 
-        const logsData = role === "admin"
+        const logsData = canAccessLogs
           ? Array.isArray((logsRes as any)?.data?.data)
             ? (logsRes as any).data.data
             : Array.isArray((logsRes as any)?.data)
@@ -359,7 +364,7 @@ const NavBarAdmin: React.FC = () => {
   };
 
   const openBillingFromDocument = (documentMatch: DocumentMatch) => {
-    if (role !== "admin") {
+    if (!(role === "admin" || role === "adminstaff")) {
       openCasesPage();
       return;
     }
@@ -368,7 +373,7 @@ const NavBarAdmin: React.FC = () => {
     const lockManageUser = getLockManageUserByCaseAndQuery(caseItem);
     const resolvedCaseId = Number(caseItem.caseId ?? caseItem.id);
 
-    navigate(PATH.ADMIN.BILLING, {
+    navigate(adminPathGroup.BILLING, {
       state: {
         selectedCase: {
           ...caseItem,
@@ -384,7 +389,7 @@ const NavBarAdmin: React.FC = () => {
   };
 
   const openDocumentsPage = () => {
-    if (role === "admin" && matchedDocuments.length > 0) {
+    if ((role === "admin" || role === "adminstaff") && matchedDocuments.length > 0) {
       openBillingFromDocument(matchedDocuments[0]);
       return;
     }
@@ -584,7 +589,13 @@ const NavBarAdmin: React.FC = () => {
           {/* Right-side Logout button */}
           <Nav className="aslaw-metis-right">
             <NavbarNotifications
-              scopeKey={role === "junioradmin" ? "junioradmin" : "admin"}
+              scopeKey={
+                role === "junioradmin"
+                  ? "junioradmin"
+                  : role === "adminstaff"
+                  ? "adminstaff"
+                  : "admin"
+              }
               targetPath={adminPathGroup.SCHEDULE_MEETING}
             />
             <CustomButton

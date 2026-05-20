@@ -14,19 +14,23 @@ const LawyerBilling: React.FC = () => {
   const { role } = useAuth();
   const navigate = useNavigate();
   const routes = AppRoutes(role);
+  const adminPathGroup =
+    role === "adminstaff"
+      ? PATH.ADMIN_STAFF
+      : PATH.ADMIN;
 
   const handleManageUsers = () => {
-    if (role === "admin") {
+    if (role === "admin" || role === "adminstaff") {
       const manageRoute = routes.find(
         (route) =>
           route.path &&
-          route.path.toLowerCase().includes(PATH.ADMIN.MANAGE_PROFILE.toLowerCase())
+          route.path.toLowerCase().includes(adminPathGroup.MANAGE_PROFILE.toLowerCase())
       );
 
       if (manageRoute?.path) {
         navigate(manageRoute.path);
       } else {
-        console.warn("Manage User route not found for admin");
+        console.warn("Manage User route not found for admin-like role");
       }
     } else {
       console.warn("Access denied: only admin can manage users");
@@ -34,7 +38,7 @@ const LawyerBilling: React.FC = () => {
   };
 
   const handleCaseClick = (caseItem: Case) => {
-    navigate(PATH.ADMIN.BILLING, {
+    navigate(adminPathGroup.BILLING, {
       state: {
         selectedCase: caseItem,
         lockManageUser: true, // lock Manage Client button
@@ -59,7 +63,7 @@ const LawyerBilling: React.FC = () => {
               <p>Select a case card to open the case management.</p>
             </div>
 
-            {role === "admin" && (
+            {(role === "admin" || role === "adminstaff") && (
               <Button
                 variant="primary"
                 className="admin-lawyer-billing-manage-btn"

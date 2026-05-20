@@ -62,7 +62,12 @@ export default function CaseTable() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const isAdmin = role === "admin";
-  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
+  const adminPathGroup =
+    role === "junioradmin"
+      ? PATH.JUNIOR_ADMIN
+      : role === "adminstaff"
+      ? PATH.ADMIN_STAFF
+      : PATH.ADMIN;
 
   const [cases, setCases] = React.useState<CaseRecord[]>([]);
   const [logs, setLogs] = React.useState<InteractionLog[]>([]);

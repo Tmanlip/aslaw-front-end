@@ -25,7 +25,7 @@ interface User {
   firmID: string;
   name: string;
   email: string;
-  role: "admin" | "junioradmin" | "client" | "lawyer";
+  role: "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer";
   status: "Active" | "Inactive" | "Archived";
   caseId?: number | null;
   created_at?: string;
@@ -60,8 +60,13 @@ export default function UserTable() {
   const { role, user } = useAuth();
   const navigate = useNavigate();
   const roleRoutes = AppRoutes(role);
-  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
-  const canManageUsers = role === "admin" || role === "junioradmin";
+  const adminPathGroup =
+    role === "junioradmin"
+      ? PATH.JUNIOR_ADMIN
+      : role === "adminstaff"
+      ? PATH.ADMIN_STAFF
+      : PATH.ADMIN;
+  const canManageUsers = role === "admin" || role === "adminstaff" || role === "junioradmin";
   const currentUserFirmId = String(user?.firmID ?? "").trim().toLowerCase();
   const { setUserData } = useClientData();
 
@@ -81,7 +86,7 @@ export default function UserTable() {
   const [showOffcanvas, setShowOffcanvas] = React.useState(false);
   const [selectedCase, setSelectedCase] = React.useState<CaseRecord | null>(null);
 
-  const [roleFilter, setRoleFilter] = React.useState<"all" | "admin" | "junioradmin" | "client" | "lawyer">("all");
+  const [roleFilter, setRoleFilter] = React.useState<"all" | "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer">("all");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "active" | "inactive" | "archived">("all");
   const [sortMode, setSortMode] = React.useState<UserSortMode>("modified_desc");
 
@@ -163,7 +168,7 @@ export default function UserTable() {
     try {
       const manageProfilePath =
         roleRoutes.find((r: any) => r.path === adminPathGroup.MANAGE_PROFILE)?.path || adminPathGroup.MANAGE_PROFILE;
-      const shouldRouteToManageProfile = role === "admin" || role === "junioradmin";
+      const shouldRouteToManageProfile = role === "admin" || role === "adminstaff" || role === "junioradmin";
 
       if (selectedUser.role === "client") {
         const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${selectedUser.firmID}`);
@@ -183,7 +188,7 @@ export default function UserTable() {
             ? manageProfilePath
             : roleRoutes.find((r: any) => r.path === PATH.ADMIN.LAWYER_BILLING)?.path || PATH.ADMIN.LAWYER_BILLING
         );
-      } else if (selectedUser.role === "admin" || selectedUser.role === "junioradmin") {
+      } else if (selectedUser.role === "admin" || selectedUser.role === "adminstaff" || selectedUser.role === "junioradmin") {
         const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/admins/${selectedUser.firmID}`);
         const { admin, cases } = res.data;
         setUserData(admin, cases || []);
@@ -225,12 +230,14 @@ export default function UserTable() {
   const activeUsers = users.filter((item) => String(item.status || "").toLowerCase() === "active").length;
   const inactiveUsers = users.filter((item) => String(item.status || "").toLowerCase() !== "active").length;
   const adminUsers = users.filter((item) => item.role === "admin").length;
+  const adminStaffUsers = users.filter((item) => item.role === "adminstaff").length;
   const juniorAdminUsers = users.filter((item) => item.role === "junioradmin").length;
   const clientUsers = users.filter((item) => item.role === "client").length;
   const lawyerUsers = users.filter((item) => item.role === "lawyer").length;
 
   const roleDonutData = [
     { name: "Admins", value: adminUsers, color: "#0ea5e9" },
+    { name: "Admin Staff", value: adminStaffUsers, color: "#ef4444" },
     { name: "Junior Admins", value: juniorAdminUsers, color: "#f59e0b" },
     { name: "Clients", value: clientUsers, color: "#ffd700" },
     { name: "Lawyers", value: lawyerUsers, color: "#34d399" },
@@ -545,10 +552,11 @@ export default function UserTable() {
           <select
             id="admin-user-role-filter"
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "junioradmin" | "client" | "lawyer")}
+            onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer")}
           >
             <option value="all">All Roles</option>
             <option value="admin">Admin</option>
+            <option value="adminstaff">Admin Staff</option>
             <option value="junioradmin">Junior Admin</option>
             <option value="client">Client</option>
             <option value="lawyer">Lawyer</option>
@@ -587,7 +595,7 @@ export default function UserTable() {
 
         <p className="admin-table-filter-result">Showing {sortedUsers.length} of {users.length} users</p>
 
-        {(role === "admin" || role === "junioradmin") && (
+        {(role === "admin" || role === "adminstaff" || role === "junioradmin") && (
           <Button className="admin-register-btn" onClick={handleRegisterUser}>
             + Register New User
           </Button>

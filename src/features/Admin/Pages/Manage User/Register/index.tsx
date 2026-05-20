@@ -43,7 +43,12 @@ type ValidationErrors = {
 const RegisterUser: React.FC = () => {
   const navigate = useNavigate();
   const { role: currentRole } = useAuth();
-  const adminPathGroup = currentRole === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
+  const adminPathGroup =
+    currentRole === "junioradmin"
+      ? PATH.JUNIOR_ADMIN
+      : currentRole === "adminstaff"
+      ? PATH.ADMIN_STAFF
+      : PATH.ADMIN;
 
   const COUNTRY_CODE_OPTIONS = [
     { label: "Malaysia (+60)", value: "+60" },
@@ -80,7 +85,7 @@ const RegisterUser: React.FC = () => {
   // Page 2 state
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "junioradmin" | "lawyer" | "client" | "">("");
+  const [role, setRole] = useState<"admin" | "adminstaff" | "junioradmin" | "lawyer" | "client" | "">("");
   const [picture, setPicture] = useState<File | null>(null);
 
   // Created user

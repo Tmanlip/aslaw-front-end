@@ -1,6 +1,7 @@
 import { Navigate, useRoutes } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import HomePage from "../pages/Home";
+import ChatbotPage from "../pages/Chatbot";
 import AppRoutes from "./AppRouter";
 import ForgotPasswordPage from "../pages/ForgotPassword"
 import ArchivedUserPage from "../pages/ArchivedUser";
@@ -12,6 +13,7 @@ export default function RenderRouter() {
   const { role, user, loading, isArchived, isInactive } = useAuth();
   const effectiveRole = (role || String(user?.role || "").toLowerCase() || null) as
     | "admin"
+    | "adminstaff"
     | "junioradmin"
     | "client"
     | "lawyer"
@@ -20,6 +22,7 @@ export default function RenderRouter() {
   // 1. Define specific public routes
   const publicRoutes = [
     { path: "/", element: <HomePage /> },
+    { path: PATH.CHATBOT, element: <ChatbotPage /> },
     { path: PATH.AUTH.RESET_PASSWORD, element: <ForgotPasswordPage /> },
   ];
 

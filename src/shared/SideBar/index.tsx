@@ -21,11 +21,12 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     Boolean(path && path.startsWith(PATH.DOCUMENT_GENERATOR.DASHBOARD));
   const effectiveRole = ((role || String(user?.role || "").toLowerCase()) as
     | "admin"
+    | "adminstaff"
     | "junioradmin"
     | "client"
     | "lawyer"
     | "") || "";
-  const isAdminLike = effectiveRole === "admin" || effectiveRole === "junioradmin";
+  const isAdminLike = effectiveRole === "admin" || effectiveRole === "adminstaff" || effectiveRole === "junioradmin";
   const roleRoutes = AppRoutes(effectiveRole || null);
   const adminExtraRoutes =
     effectiveRole === "admin"
@@ -43,6 +44,9 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     PATH.JUNIOR_ADMIN.REGISTER_USER,
     PATH.JUNIOR_ADMIN.MANAGE_PROFILE,
     PATH.JUNIOR_ADMIN.REGISTER_CASE,
+    PATH.ADMIN_STAFF.REGISTER_USER,
+    PATH.ADMIN_STAFF.MANAGE_PROFILE,
+    PATH.ADMIN_STAFF.REGISTER_CASE,
   ]);
 
   const sidebarRoutes =

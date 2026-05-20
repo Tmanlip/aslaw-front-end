@@ -5,6 +5,16 @@ const checkboxLine = (checked, label) => `[${checked ? "x" : " "}] ${label}`;
 export const buildFormalLetter = (data) => {
   const value = (fieldName) => cleanLine(data[fieldName], "");
   const demandDays = cleanLine(data.PaymentWindowDays, "5");
+  const defamationDetails = [
+    value("BackgroundFacts"),
+    value("DefamationActs"),
+    value("DefamatoryStatementsDetails"),
+    value("ImageUploadDetails"),
+    value("AdditionalPublicationDetails"),
+    value("ReshareDetails"),
+  ]
+    .filter((item) => item !== "")
+    .map((item, index) => `${index + 1}. ${item}`);
 
   return [
     "Delivery Method:",
@@ -29,12 +39,7 @@ export const buildFormalLetter = (data) => {
     "",
     `Merujuk kepada perkara di atas di mana kami bertindak bagi pihak ${value("ClientName")} ("Anakguam kami") yang mempunyai alamat penyampaian di ${value("ClientServiceAddress")}.`,
     "Adalah dimaklumkan bahawa pihak kami telah diarahkan oleh Anakguam kami untuk menyatakan seperti berikut:",
-    `1. ${value("BackgroundFacts")}`,
-    `2. ${value("DefamationActs")}`,
-    `3. ${value("DefamatoryStatementsDetails")}`,
-    `4. ${value("ImageUploadDetails")}`,
-    `5. ${value("AdditionalPublicationDetails")}`,
-    `6. ${value("ReshareDetails")}`,
+    ...defamationDetails,
     "",
     `Kenyataan pada ${value("Date")} meraih perhatian awam di akaun ${value("MainSocialAccount")} serta tersebar dengan meluas.`,
     "Akibat penyiaran tersebut, reputasi Anakguam kami terjejas dan kerugian serius telah berlaku.",

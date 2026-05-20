@@ -40,7 +40,7 @@ const AdminDashboard: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!AuthMemory.isLoggedIn() || !(user?.role === "admin" || user?.role === "junioradmin")) {
+    if (!AuthMemory.isLoggedIn() || !(user?.role === "admin" || user?.role === "adminstaff" || user?.role === "junioradmin")) {
       navigate("/login"); // redirect if not logged in or wrong role
     }
   }, [navigate, user]);

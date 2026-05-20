@@ -370,7 +370,7 @@ const UpdateCheque: React.FC = () => {
                   </div>
                 </div>
 
-                {role === "admin" && (
+                {(role === "admin" || role === "adminstaff") && (
                   <div className="admin-billing-action-col">
                     <Button
                       variant="primary"

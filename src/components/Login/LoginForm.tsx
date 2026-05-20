@@ -15,7 +15,7 @@ const API_URL = resolveApiBaseUrl().replace(/\/+$/, "");
 
 type LoginFormProps = {
   onLoginSuccess?: (
-    role: "admin" | "junioradmin" | "client" | "lawyer",
+    role: "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer",
     message: string,
     options?: {
       redirectTo?: string;
@@ -107,15 +107,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
       const normalizedRole = String(data.role || "").toLowerCase() as
         | "admin"
+        | "adminstaff"
         | "junioradmin"
         | "client"
         | "lawyer";
 
       const resolveMyProfilePath = (
-        role: "admin" | "junioradmin" | "client" | "lawyer"
+        role: "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer"
       ): string => {
-        if (role === "admin" || role === "junioradmin") {
+        if (role === "admin") {
           return PATH.ADMIN.MY_PROFILE;
+        }
+
+        if (role === "adminstaff") {
+          return PATH.ADMIN_STAFF.MY_PROFILE;
+        }
+
+        if (role === "junioradmin") {
+          return PATH.JUNIOR_ADMIN.MY_PROFILE;
         }
 
         if (role === "client") {
@@ -125,7 +134,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         return PATH.LAWYER.MY_PROFILE;
       };
 
-      if (!["admin", "junioradmin", "client", "lawyer"].includes(normalizedRole)) {
+      if (!["admin", "adminstaff", "junioradmin", "client", "lawyer"].includes(normalizedRole)) {
         throw new Error("Invalid user role returned from server");
       }
 

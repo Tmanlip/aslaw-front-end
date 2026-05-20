@@ -3,7 +3,7 @@ import React from "react";
 import { Form, Row, Col } from "react-bootstrap";
 import CustomDropdown from "./Option";
 
-type Role = "admin" | "junioradmin" | "lawyer" | "client";
+type Role = "admin" | "adminstaff" | "junioradmin" | "lawyer" | "client";
 
 type Page2FormProps = {
   username: string;
@@ -86,6 +86,7 @@ const Page2Form: React.FC<Page2FormProps> = ({
               title={role || "Select role"}
               options={[
                 { label: "Admin", value: "admin" },
+                { label: "Admin Staff", value: "adminstaff" },
                 { label: "Junior Admin", value: "junioradmin" },
                 { label: "Lawyer", value: "lawyer" },
                 { label: "Client", value: "client" },

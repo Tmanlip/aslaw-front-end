@@ -13,6 +13,8 @@ const formatRoleLabel = (role: string): string => {
   switch (role.toLowerCase()) {
     case "admin":
       return "Admin";
+    case "adminstaff":
+      return "Admin Staff";
     case "junioradmin":
       return "Junior Admin";
     case "lawyer":

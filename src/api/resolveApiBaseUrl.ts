@@ -1,5 +1,8 @@
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
 
+const isLocalHost = (value: string): boolean =>
+  /^localhost(?::\d+)?$/i.test(value) || /^127\.0\.0\.1(?::\d+)?$/i.test(value);
+
 const normalizeEnvUrl = (value?: string): string => {
   const trimmed = (value || "").trim();
   if (!trimmed) return "";
@@ -11,6 +14,10 @@ const normalizeEnvUrl = (value?: string): string => {
 
   if (normalized.startsWith("/")) {
     return normalized;
+  }
+
+  if (isLocalHost(normalized)) {
+    return `http://${normalized}`;
   }
 
   return `https://${normalized}`;
@@ -38,8 +45,14 @@ export const resolveApiBaseUrl = (): string => {
   const apiUrlFromEnv = normalizeEnvUrl(process.env.REACT_APP_API_URL);
   const baseUrlFromEnv = normalizeEnvUrl(process.env.REACT_APP_BASE_URL);
 
+  const localFallback =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+      ? "http://localhost:8000/api"
+      : "/api";
+
   const envResolved =
-    apiUrlFromEnv || (baseUrlFromEnv ? `${trimTrailingSlash(baseUrlFromEnv)}/api` : "") || "/api";
+    apiUrlFromEnv || (baseUrlFromEnv ? `${trimTrailingSlash(baseUrlFromEnv)}/api` : "") || localFallback;
 
   if (typeof window === "undefined") {
     return trimTrailingSlash(envResolved);

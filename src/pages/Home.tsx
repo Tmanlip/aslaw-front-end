@@ -19,6 +19,10 @@ const HomePage: React.FC = () => {
     setTimeout(() => setShowLoginPopup(true), 100);
   };
 
+  const handleOpenChatbot = () => {
+    navigate(PATH.CHATBOT);
+  };
+
   const handleClosePopup = () => {
     setShowLoginPopup(false);
     setTimeout(() => setShowLoginPage(false), 300);
@@ -31,7 +35,7 @@ const HomePage: React.FC = () => {
 
   // ✅ handle login success and redirect with message
 const handleLoginSuccess = (
-  role: "admin" | "junioradmin" | "client" | "lawyer",
+  role: "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer",
   message: string,
   options?: {
     redirectTo?: string;
@@ -41,6 +45,8 @@ const handleLoginSuccess = (
   const dashboardPath =
     role === "junioradmin"
       ? PATH.JUNIOR_ADMIN.DASHBOARD
+      : role === "adminstaff"
+      ? PATH.ADMIN_STAFF.DASHBOARD
       : role === "admin"
       ? PATH.ADMIN.DASHBOARD
       : `/${role}/dashboard`;
@@ -134,6 +140,14 @@ const handleLoginSuccess = (
             className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
           >
             Login
+          </CustomButton>
+          <CustomButton
+            customColor="red4"
+            size="lg"
+            onClick={handleOpenChatbot}
+            className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-12 py-6 text-2xl"
+          >
+            Try Chatbot
           </CustomButton>
         </div>
       </div>

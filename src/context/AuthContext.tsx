@@ -7,7 +7,7 @@ import React, {
   ReactNode,
 } from "react";
 
-type Role = "admin" | "junioradmin" | "client" | "lawyer" | null;
+type Role = "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer" | null;
 const USER_KEY = "user";
 const ROLE_KEY = "role";
 const STORAGE_MODE_KEY = "auth_storage_mode";
@@ -79,6 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const possibleRole = String(parsedUser.role).toLowerCase();
       if (
         possibleRole === "admin" ||
+        possibleRole === "adminstaff" ||
         possibleRole === "junioradmin" ||
         possibleRole === "client" ||
         possibleRole === "lawyer"

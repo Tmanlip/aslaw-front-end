@@ -16,6 +16,9 @@ type InteractionLog = {
   status_code: number;
   ip: string;
   created_at: string;
+  severity?: string;
+  service?: string;
+  module?: string;
 };
 
 const methodToVerb = (method: string): string => {
@@ -52,31 +55,87 @@ const getInteractionLabel = (log: InteractionLog): string => {
   return `${verb} ${objectName}`;
 };
 
-type SeverityLevel = "critical" | "high" | "medium" | "low";
+type SeverityLevel =
+  | "DEBUG"
+  | "INFO"
+  | "NOTICE"
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH"
+  | "CRITICAL"
+  | "SECURITY"
+  | "AUDIT";
 
-const getSeverity = (log: InteractionLog): SeverityLevel => {
+const deriveFallbackSeverity = (log: InteractionLog): SeverityLevel => {
   const statusCode = Number(log.status_code || 0);
   const method = String(log.method || "").toUpperCase();
   const path = String(log.path || "").toLowerCase();
+  const isAuthPath =
+    path.includes("login") ||
+    path.includes("logout") ||
+    path.includes("password") ||
+    path.includes("otp") ||
+    path.includes("reset") ||
+    path.includes("auth");
+  const isAuditPath =
+    path.includes("case") ||
+    path.includes("invoice") ||
+    path.includes("meeting") ||
+    path.includes("document") ||
+    path.includes("encrypted-documents") ||
+    path.includes("user") ||
+    path.includes("lawyer") ||
+    path.includes("client") ||
+    path.includes("admin");
 
-  // Critical: Server errors (5xx) or DELETE operations
-  if (statusCode >= 500 || method === "DELETE") {
-    return "critical";
+  if (statusCode >= 200 && statusCode < 300 && ["POST", "PUT", "PATCH", "DELETE"].includes(method) && isAuditPath) {
+    return "AUDIT";
   }
 
-  // High: Client errors (4xx), user registration, password changes
-  if (statusCode >= 400 || (method === "POST" && (path.includes("register") || path.includes("users"))) || 
-      path.includes("password") || path.includes("otp") || path.includes("reset")) {
-    return "high";
+  if (statusCode >= 100 && statusCode <= 103) return "INFO";
+
+  if (statusCode === 200 || statusCode === 204) return "INFO";
+  if (statusCode === 201 || statusCode === 202) return "NOTICE";
+  if (statusCode === 301 || statusCode === 302) return "LOW";
+  if (statusCode === 304) return "INFO";
+  if (statusCode === 400) return "LOW";
+  if (statusCode === 401) return isAuthPath ? "SECURITY" : "MEDIUM";
+  if (statusCode === 403) return isAuthPath ? "SECURITY" : "HIGH";
+  if (statusCode === 404) return "LOW";
+  if (statusCode === 405) return isAuthPath ? "SECURITY" : "MEDIUM";
+  if (statusCode === 406) return "LOW";
+  if ([408, 409, 413, 415, 422].includes(statusCode)) return "MEDIUM";
+  if (statusCode === 410) return "LOW";
+  if (statusCode === 429) return "SECURITY";
+  if (statusCode === 500) return "HIGH";
+  if (statusCode === 501) return "MEDIUM";
+  if ([502, 503, 504].includes(statusCode)) return "CRITICAL";
+
+  if (statusCode >= 500) return "HIGH";
+  if (statusCode >= 400) return "MEDIUM";
+  if (statusCode >= 300) return "LOW";
+  return "DEBUG";
+};
+
+const normalizeSeverity = (log: InteractionLog): SeverityLevel => {
+  const raw = String(log.severity || "").trim().toUpperCase();
+  const allowed: SeverityLevel[] = [
+    "DEBUG",
+    "INFO",
+    "NOTICE",
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "CRITICAL",
+    "SECURITY",
+    "AUDIT",
+  ];
+
+  if (allowed.includes(raw as SeverityLevel)) {
+    return raw as SeverityLevel;
   }
 
-  // Medium: PUT/PATCH operations (updates)
-  if (method === "PUT" || method === "PATCH") {
-    return "medium";
-  }
-
-  // Low: GET operations (views)
-  return "low";
+  return deriveFallbackSeverity(log);
 };
 
 const formatDateTime = (dateStr?: string): string => {
@@ -162,7 +221,7 @@ const AdminLogs: React.FC = () => {
 
     // Filter by severity
     if (severityFilter !== "all") {
-      results = results.filter((log) => getSeverity(log) === severityFilter);
+      results = results.filter((log) => normalizeSeverity(log) === severityFilter);
     }
 
     return results;
@@ -198,10 +257,15 @@ const AdminLogs: React.FC = () => {
               onChange={(e) => setSeverityFilter(e.target.value as SeverityLevel | "all")}
             >
               <option value="all">All Severity Levels</option>
-              <option value="critical">🔴 Critical</option>
-              <option value="high">🟠 High</option>
-              <option value="medium">🟡 Medium</option>
-              <option value="low">🟢 Low</option>
+              <option value="DEBUG">🟣 Debug</option>
+              <option value="INFO">🔵 Info</option>
+              <option value="NOTICE">🟢 Notice</option>
+              <option value="LOW">🟩 Low</option>
+              <option value="MEDIUM">🟡 Medium</option>
+              <option value="HIGH">🟠 High</option>
+              <option value="CRITICAL">🔴 Critical</option>
+              <option value="SECURITY">🚨 Security</option>
+              <option value="AUDIT">🧾 Audit</option>
             </select>
           </div>
         </div>
@@ -224,18 +288,24 @@ const AdminLogs: React.FC = () => {
               </thead>
               <tbody>
                 {filteredLogs.map((log, index) => {
-                  const severity = getSeverity(log);
+                  const severity = normalizeSeverity(log);
+                  const severityKey = severity.toLowerCase();
                   const severityEmoji = {
-                    critical: "🔴",
-                    high: "🟠",
+                    debug: "🟣",
+                    info: "🔵",
+                    notice: "🟢",
+                    low: "🟩",
                     medium: "🟡",
-                    low: "🟢",
+                    high: "🟠",
+                    critical: "🔴",
+                    security: "🚨",
+                    audit: "🧾",
                   };
                   return (
-                    <tr key={`${log._id || log.path}-${index}`} className={`severity-${severity}`}>
+                    <tr key={`${log._id || log.path}-${index}`} className={`severity-${severityKey}`}>
                       <td data-label="Severity">
-                        <span className={`severity-badge severity-${severity}`}>
-                          {severityEmoji[severity]} {severity.charAt(0).toUpperCase() + severity.slice(1)}
+                        <span className={`severity-badge severity-${severityKey}`}>
+                          {severityEmoji[severityKey as keyof typeof severityEmoji]} {severity}
                         </span>
                       </td>
                       <td data-label="User">

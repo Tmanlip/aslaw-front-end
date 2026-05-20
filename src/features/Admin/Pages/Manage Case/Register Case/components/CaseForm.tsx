@@ -61,7 +61,12 @@ const CaseForm: React.FC = () => {
   const [submitSuccess, setSubmitSuccess] = useState<string>("");
   const navigate = useNavigate();
   const { role } = useAuth();
-  const adminPathGroup = role === "junioradmin" ? PATH.JUNIOR_ADMIN : PATH.ADMIN;
+  const adminPathGroup =
+    role === "junioradmin"
+      ? PATH.JUNIOR_ADMIN
+      : role === "adminstaff"
+      ? PATH.ADMIN_STAFF
+      : PATH.ADMIN;
   const SUCCESS_REDIRECT_DELAY_MS = 1200;
 
   // 🔥 Fetch Clients
