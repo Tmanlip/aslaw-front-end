@@ -3,6 +3,7 @@ import Spinner from "react-bootstrap/Spinner";
 import { apiFetch } from "../../../hooks/api";
 import { useAuth } from "../../../context/AuthContext";
 import { getEcho } from "../../../lib/echo";
+import { subscribeToWebPubSubNotifications } from "../../../lib/webPubSubNotifications";
 
 type NavbarNotificationsProps = {
   scopeKey: "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer";
@@ -31,6 +32,7 @@ type NotificationsResponse = {
 const MIN_FETCH_GAP_MS = 4000;
 let globalNotificationsInFlight = false;
 let globalLastNotificationsFetchAt = 0;
+const REALTIME_DRIVER = (process.env.REACT_APP_REALTIME_DRIVER ?? "reverb").toLowerCase();
 
 const formatDateTime = (input?: string): string => {
   if (!input) return "Unknown date";
@@ -79,10 +81,25 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
     };
   }, []);
 
-  // Real-time WebSocket subscription via Laravel Reverb
+  // Real-time notifications from either Azure Web PubSub or Reverb.
   useEffect(() => {
     const userId = user?.id;
     if (!userId) return;
+
+    if (REALTIME_DRIVER === "webpubsub") {
+      const dispose = subscribeToWebPubSubNotifications(
+        () => {
+          void loadNotifications({ force: true });
+        },
+        (err) => {
+          console.warn("Azure Web PubSub connection issue, notifications may be delayed", err);
+        }
+      );
+
+      return () => {
+        dispose();
+      };
+    }
 
     let channel: ReturnType<ReturnType<typeof getEcho>["private"]> | null = null;
 
