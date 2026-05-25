@@ -547,8 +547,15 @@ const sanitizeUploadTitle = (rawTitle) => {
     return "";
   }
 
-  return normalized
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+  const withoutControlChars = Array.from(normalized)
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code >= 0 && code <= 31 ? " " : char;
+    })
+    .join("");
+
+  return withoutControlChars
+    .replace(/[<>:"/\\|?*]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/[. ]+$/g, "")
     .trim();
