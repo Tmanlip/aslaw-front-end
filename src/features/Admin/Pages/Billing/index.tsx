@@ -10,16 +10,66 @@ import AppRoutes from "../../../../routes/AppRouter";
 import { useClientData } from "../../../../context/ClientDataContext";
 import PATH from "../../../../constant/paths";
 import axiosUser from "../../../../api/axiosUser";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatCaseDate } from "../../../../utils/caseDates";
+import { subscribeToWebPubSubNotifications } from "../../../../lib/webPubSubNotifications";
+import { getEcho } from "../../../../lib/echo";
+import { resolveRealtimeDriver } from "../../../../lib/realtimeDriver";
 import "./billing.css";
+
+const REALTIME_DRIVER = resolveRealtimeDriver();
+
+const extractRealtimeCaseId = (payload: unknown): number | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  const nested = candidate.data && typeof candidate.data === "object" ? (candidate.data as Record<string, unknown>) : null;
+  const source = nested ?? candidate;
+
+  const explicitCaseId = Number(source.case_id);
+  if (Number.isFinite(explicitCaseId) && explicitCaseId > 0) {
+    return explicitCaseId;
+  }
+
+  const message = typeof source.message === "string" ? source.message : "";
+  const match = message.match(/Case\s*#(\d+)/i);
+  if (!match) {
+    return null;
+  }
+
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const isDocumentRealtimeEvent = (payload: unknown): boolean => {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  const nested = candidate.data && typeof candidate.data === "object" ? (candidate.data as Record<string, unknown>) : null;
+  const source = nested ?? candidate;
+
+  const title = String(source.title || source.event || "").toLowerCase();
+  const message = String(source.message || "").toLowerCase();
+
+  return (
+    title.includes("document") ||
+    title.includes("invoice") ||
+    message.includes("document") ||
+    message.includes("invoice")
+  );
+};
 
 const UpdateCheque: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { cases } = useClientData();
   const routes = AppRoutes(role);
+  const lastRealtimeRefreshRef = useRef<{ key: string; at: number } | null>(null);
 
   // Get the selected case and the flag for locking Manage Client button
   const {
@@ -238,6 +288,67 @@ const UpdateCheque: React.FC = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [refreshCaseData]);
+
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId || !Number.isFinite(currentCaseId) || currentCaseId <= 0) {
+      return;
+    }
+
+    const handleRealtimePayload = (payload: unknown) => {
+      if (!isDocumentRealtimeEvent(payload)) {
+        return;
+      }
+
+      const payloadCaseId = extractRealtimeCaseId(payload);
+      if (!payloadCaseId || payloadCaseId !== currentCaseId) {
+        return;
+      }
+
+      const now = Date.now();
+      const refreshKey = `${payloadCaseId}`;
+      const previous = lastRealtimeRefreshRef.current;
+      if (previous && previous.key === refreshKey && now - previous.at < 4000) {
+        return;
+      }
+
+      lastRealtimeRefreshRef.current = { key: refreshKey, at: now };
+      void refreshCaseData({ silent: true });
+    };
+
+    if (REALTIME_DRIVER === "webpubsub") {
+      const dispose = subscribeToWebPubSubNotifications(
+        (payload) => {
+          handleRealtimePayload(payload);
+        },
+        (err) => {
+          console.warn("Azure Web PubSub admin billing sync issue", err);
+        }
+      );
+
+      return () => {
+        dispose();
+      };
+    }
+
+    try {
+      getEcho()
+        .private(`App.Models.User.${userId}`)
+        .listen(".UserNotificationCreated", (payload: unknown) => {
+          handleRealtimePayload(payload);
+        });
+    } catch (err) {
+      console.warn("Realtime admin billing sync subscription failed", err);
+    }
+
+    return () => {
+      try {
+        getEcho().leave(`App.Models.User.${userId}`);
+      } catch {
+        // ignore cleanup errors
+      }
+    };
+  }, [currentCaseId, refreshCaseData, user?.id]);
 
   const handleCaseProgressUpdate = (caseId: number, progress: number) => {
     if (!Number.isFinite(caseId) || caseId <= 0 || !Number.isFinite(progress)) {

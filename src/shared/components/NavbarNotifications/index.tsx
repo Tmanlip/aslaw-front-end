@@ -4,6 +4,7 @@ import { apiFetch } from "../../../hooks/api";
 import { useAuth } from "../../../context/AuthContext";
 import { getEcho } from "../../../lib/echo";
 import { subscribeToWebPubSubNotifications } from "../../../lib/webPubSubNotifications";
+import { resolveRealtimeDriver } from "../../../lib/realtimeDriver";
 
 type NavbarNotificationsProps = {
   scopeKey: "admin" | "adminstaff" | "junioradmin" | "client" | "lawyer";
@@ -16,6 +17,13 @@ type NotificationItem = {
   message: string;
   readAt?: string | null;
   createdAt: string;
+};
+
+type RealtimeActivity = {
+  title: string;
+  message: string;
+  category?: string;
+  createdAt?: string;
 };
 
 type NotificationsResponse = {
@@ -32,7 +40,27 @@ type NotificationsResponse = {
 const MIN_FETCH_GAP_MS = 4000;
 let globalNotificationsInFlight = false;
 let globalLastNotificationsFetchAt = 0;
-const REALTIME_DRIVER = (process.env.REACT_APP_REALTIME_DRIVER ?? "reverb").toLowerCase();
+const REALTIME_DRIVER = resolveRealtimeDriver();
+
+const normalizeRealtimeActivity = (payload: unknown): RealtimeActivity | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  const nested = candidate.data && typeof candidate.data === "object" ? (candidate.data as Record<string, unknown>) : null;
+  const source = nested ?? candidate;
+
+  const title = typeof source.title === "string" ? source.title : typeof source.event === "string" ? source.event : "Realtime update";
+  const message = typeof source.message === "string" ? source.message : "An update was received.";
+
+  return {
+    title,
+    message,
+    category: typeof source.category === "string" ? source.category : undefined,
+    createdAt: typeof source.created_at === "string" ? source.created_at : undefined,
+  };
+};
 
 const formatDateTime = (input?: string): string => {
   if (!input) return "Unknown date";
@@ -56,7 +84,9 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCountFromApi, setUnreadCountFromApi] = useState(0);
   const [markingIds, setMarkingIds] = useState<Record<string, boolean>>({});
+  const [liveActivity, setLiveActivity] = useState<RealtimeActivity | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const liveActivityTimerRef = useRef<number | null>(null);
 
   const unreadCount = useMemo(() => {
     return Math.max(unreadCountFromApi, notifications.length);
@@ -81,6 +111,27 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
     };
   }, []);
 
+  useEffect(() => {
+    if (!liveActivity) {
+      return () => undefined;
+    }
+
+    if (liveActivityTimerRef.current) {
+      window.clearTimeout(liveActivityTimerRef.current);
+    }
+
+    liveActivityTimerRef.current = window.setTimeout(() => {
+      setLiveActivity(null);
+    }, 6000);
+
+    return () => {
+      if (liveActivityTimerRef.current) {
+        window.clearTimeout(liveActivityTimerRef.current);
+        liveActivityTimerRef.current = null;
+      }
+    };
+  }, [liveActivity]);
+
   // Real-time notifications from either Azure Web PubSub or Reverb.
   useEffect(() => {
     const userId = user?.id;
@@ -88,7 +139,11 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
 
     if (REALTIME_DRIVER === "webpubsub") {
       const dispose = subscribeToWebPubSubNotifications(
-        () => {
+        (payload) => {
+          const activity = normalizeRealtimeActivity(payload);
+          if (activity) {
+            setLiveActivity(activity);
+          }
           void loadNotifications({ force: true });
         },
         (err) => {
@@ -105,7 +160,11 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
 
     try {
       channel = getEcho().private(`App.Models.User.${userId}`);
-      channel.listen(".UserNotificationCreated", () => {
+      channel.listen(".UserNotificationCreated", (payload: unknown) => {
+        const activity = normalizeRealtimeActivity(payload);
+        if (activity) {
+          setLiveActivity(activity);
+        }
         void loadNotifications({ force: true });
       });
     } catch (err) {
@@ -197,6 +256,27 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
 
   return (
     <div className="aslaw-metis-notification-wrap" ref={wrapRef}>
+      {liveActivity && (
+        <div className="aslaw-metis-live-toast" role="status" aria-live="polite">
+          <div className="aslaw-metis-live-toast-head">
+            <span className="aslaw-metis-live-toast-pill">
+              {String(liveActivity.category || liveActivity.title || "update").replace(/_/g, " ")}
+            </span>
+            <button
+              type="button"
+              className="aslaw-metis-live-toast-close"
+              aria-label="Dismiss live update"
+              onClick={() => setLiveActivity(null)}
+            >
+              ×
+            </button>
+          </div>
+          <strong>{liveActivity.title}</strong>
+          <p>{liveActivity.message}</p>
+          <small>{formatDateTime(liveActivity.createdAt)}</small>
+        </div>
+      )}
+
       <button
         type="button"
         className="aslaw-metis-notification-btn"

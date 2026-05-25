@@ -541,6 +541,30 @@ const emitCaseProgressUpdate = (caseId, caseProgress) => {
   );
 };
 
+const sanitizeUploadTitle = (rawTitle) => {
+  const normalized = String(rawTitle || "").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/[. ]+$/g, "")
+    .trim();
+};
+
+const resolveFileExtension = (fileName, fallback = "pdf") => {
+  const source = String(fileName || "").trim();
+  const dotIndex = source.lastIndexOf(".");
+
+  if (dotIndex <= 0 || dotIndex === source.length - 1) {
+    return fallback;
+  }
+
+  return source.slice(dotIndex + 1).toLowerCase();
+};
+
 const TemplateForm = () => {
   const { id } = useParams();
   const template = templates.find((t) => t.id === id);
@@ -841,6 +865,10 @@ const TemplateForm = () => {
         initialData[field.name] = resolvedPrefillValue ?? field.defaultValue ?? "";
       }
     });
+
+    if (initialData.upload_title === undefined) {
+      initialData.upload_title = "";
+    }
 
     setFormData(initialData);
     setPrefillLoading(false);
@@ -1452,6 +1480,12 @@ const TemplateForm = () => {
       return;
     }
 
+    const uploadTitle = sanitizeUploadTitle(formData.upload_title);
+    if (!uploadTitle) {
+      setUploadStatusMessage("Please enter Upload Title before uploading.");
+      return;
+    }
+
     setUploadingToCase(true);
     setUploadStatusMessage("Uploading PDF to case...");
 
@@ -1499,6 +1533,10 @@ const TemplateForm = () => {
         const fileName = `${safeTemplateId}-${Date.now()}.pdf`;
         file = new File([pdfBlob], fileName, { type: "application/pdf" });
       }
+
+      const uploadExtension = resolveFileExtension(file?.name, "pdf");
+      const uploadFileName = `${uploadTitle}.${uploadExtension}`;
+      file = new File([file], uploadFileName, { type: file.type || "application/pdf" });
 
       const form = new FormData();
       form.append("file", file);
@@ -1851,6 +1889,8 @@ const TemplateForm = () => {
       loading={loading}
       error={error}
       onChange={handleChange}
+      uploadTitle={formData.upload_title}
+      onUploadTitleChange={handleChange}
       onLanguageChange={setSelectedLanguage}
       onSubmit={handleSubmit}
     />

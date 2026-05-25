@@ -16,6 +16,8 @@ const TemplateEditorCard = ({
   onChange,
   onLanguageChange,
   onSubmit,
+  uploadTitle,
+  onUploadTitleChange,
 }) => {
   const location = useLocation();
   const currentSearch = location.search || "";
@@ -141,6 +143,22 @@ const TemplateEditorCard = ({
               formData={formData}
               onChange={onChange}
             />
+
+            <div>
+              <label className="dg-label" htmlFor="upload_title">
+                Upload Title (Used as File Name)
+              </label>
+              <input
+                id="upload_title"
+                name="upload_title"
+                type="text"
+                className="dg-input"
+                value={uploadTitle || ""}
+                onChange={onUploadTitleChange || onChange}
+                placeholder="Enter file title"
+                maxLength={120}
+              />
+            </div>
 
             {error && <div className="dg-alert-error">{error}</div>}
 
