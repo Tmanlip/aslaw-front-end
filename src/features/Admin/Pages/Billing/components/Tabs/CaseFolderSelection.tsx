@@ -160,6 +160,101 @@ const resolvePhaseBalanceValue = (
   return Number.isFinite(numericValue) ? numericValue : 0;
 };
 
+const getStageFeeItems = (caseTypeFeeJson: Record<string, any> | null, stage: InvoiceStageKey): Array<Record<string, any>> => {
+  const items = caseTypeFeeJson?.[stage];
+  return Array.isArray(items) ? items : [];
+};
+
+const normalizeTypeOfWork = (value: any): string => String(value || "").trim().toLowerCase();
+
+const computeExpectedForTypeOfWork = (
+  caseTypeFeeJson: Record<string, any> | null,
+  stage: InvoiceStageKey,
+  typeOfWork: string
+): number | null => {
+  const normalizedType = normalizeTypeOfWork(typeOfWork);
+  if (!normalizedType) {
+    return null;
+  }
+
+  const items = getStageFeeItems(caseTypeFeeJson, stage).filter((item) => {
+    const itemType = normalizeTypeOfWork(item?.typeOfWork ?? item?.type_of_work);
+    return itemType === normalizedType;
+  });
+
+  if (!items.length) {
+    return null;
+  }
+
+  return items.reduce((total, item) => total + Number(item?.selectedFee ?? item?.selected_fee ?? 0), 0);
+};
+
+const computePaidForTypeOfWork = (
+  invoiceDocuments: Array<Record<string, any>>,
+  stage: InvoiceStageKey,
+  typeOfWork: string
+): number => {
+  const normalizedType = normalizeTypeOfWork(typeOfWork);
+  if (!normalizedType || !Array.isArray(invoiceDocuments)) {
+    return 0;
+  }
+
+  return invoiceDocuments.reduce((total, document) => {
+    const category = String(document?.category || "").toLowerCase();
+    const status = String(document?.status || "").toLowerCase();
+    const documentStage = normalizeInvoiceStage(document?.invoice_stage ?? document?.payment_stage);
+    const documentType = normalizeTypeOfWork(document?.type_of_work ?? document?.typeOfWork);
+    const paidAmount = Number(document?.paid_amount ?? 0);
+
+    if (category !== "invoices" || status === "deleted") {
+      return total;
+    }
+
+    if (documentStage !== stage || documentType !== normalizedType) {
+      return total;
+    }
+
+    if (!Number.isFinite(paidAmount) || paidAmount <= 0) {
+      return total;
+    }
+
+    return total + paidAmount;
+  }, 0);
+};
+
+const computeStageRemainingTotal = (
+  caseTypeFeeJson: Record<string, any> | null,
+  invoiceDocuments: Array<Record<string, any>>,
+  stage: InvoiceStageKey
+): number | null => {
+  const items = getStageFeeItems(caseTypeFeeJson, stage);
+  if (!items.length) {
+    return null;
+  }
+
+  const dedupedTypes = new Set<string>();
+  let total = 0;
+
+  items.forEach((item) => {
+    const rawType = String(item?.typeOfWork ?? item?.type_of_work ?? "").trim();
+    const normalizedType = normalizeTypeOfWork(rawType);
+    if (!normalizedType || dedupedTypes.has(normalizedType)) {
+      return;
+    }
+
+    dedupedTypes.add(normalizedType);
+    const expectedAmount = computeExpectedForTypeOfWork(caseTypeFeeJson, stage, rawType);
+    if (expectedAmount === null) {
+      return;
+    }
+
+    const paidAmount = computePaidForTypeOfWork(invoiceDocuments, stage, rawType);
+    total += Math.max(expectedAmount - paidAmount, 0);
+  });
+
+  return Number(total.toFixed(2));
+};
+
 const buildInvoicePhasesFromCaseFinancials = (caseFinancials: any): CaseInfo["invoice_payment_phases"] => {
   const expected = caseFinancials?.expected_payment_phases || {};
   const balance = caseFinancials?.balance_payment_phases || {};
@@ -280,6 +375,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     fileName: string;
     invoice: any | null;
     caseFinancials: any | null;
+    typeOfWork?: string;
   } | null>(null);
   const [updatePaidAmount, setUpdatePaidAmount] = useState<string>("");
   const [isSavingInvoiceUpdate, setIsSavingInvoiceUpdate] = useState(false);
@@ -397,6 +493,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           fileName: file.fileName,
           invoice: resolvedInvoice,
           caseFinancials: resolvedCaseFinancials,
+          typeOfWork: String(res?.data?.type_of_work ?? resolvedInvoice?.type_of_work ?? ""),
         });
         setUpdateReplacementInfo(null);
         setUpdatePaidAmount(String(resolvedInvoice?.paid_amount ?? ""));
@@ -427,91 +524,18 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
     const invoice = updateInfoPayload.invoice;
     const caseId = invoice?.case_id ?? selectedCase?.caseId;
-    const resolvedCaseTypeFeeJson =
-      parseCaseTypeFeeJson(invoice?.case_type_fee_json) ||
-      parseCaseTypeFeeJson(selectedCase?.case_type_fee_json);
-    const resolvedTypeOfWork = resolveTypeOfWorkLabel(invoice, resolvedCaseTypeFeeJson);
-    const resolvedPhaseBalance = resolvePhaseBalanceValue(
-      invoice,
-      updateInfoPayload.caseFinancials,
-      selectedCase?.invoice_payment_phases
-    );
     if (!caseId) {
-      setSuccessMessage("Case ID is missing. Cannot generate invoice.");
+      setSuccessMessage("Case ID is missing. Cannot update invoice.");
       return;
     }
 
     setIsSavingInvoiceUpdate(true);
     try {
-      // Step 1: Generate PDF via document-generator (updates existing invoice in DB, no LibreOffice needed)
-      const generateRes = await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/document-generator/generate-invoice-pdf`,
-        {
-          formData: {
-            invoice_id: invoice?.id ?? null,
-            invoice_number: invoice?.invoice_number ?? null,
-            case_id: caseId,
-            payment_stage: invoice?.payment_stage ?? "initial",
-            issue_date: invoice?.issue_date ?? new Date().toISOString().split("T")[0],
-            due_date: invoice?.due_date ?? null,
-            expected_amount: invoice?.expected_amount ?? null,
-            paid_amount: numericPaidAmount,
-            tax: invoice?.tax ?? null,
-            discount: invoice?.discount ?? null,
-            type_of_work: resolvedTypeOfWork === "-" ? null : resolvedTypeOfWork,
-            phase_balance: resolvedPhaseBalance,
-            client_name: invoice?.client_name ?? null,
-            case_title: invoice?.case_title ?? null,
-          },
-        },
-        { headers: mutationHeaders, responseType: "arraybuffer" }
-      );
-
-      const xInvoiceNumber = (generateRes.headers as Record<string, string>)["x-invoice-number"] || invoice?.invoice_number || "invoice";
-      const xInvoiceBalance = (generateRes.headers as Record<string, string>)["x-invoice-balance"] || "0";
-
-      // Step 2: Upload the generated PDF as the new invoice document
-      const pdfBlob = new Blob([generateRes.data as ArrayBuffer], {
-        type: "application/pdf",
-      });
-      const safeBase = (invoice?.invoice_number || "invoice").replace(/[^a-zA-Z0-9\-_]/g, "_");
-      const pdfFile = new File(
-        [pdfBlob],
-        `${safeBase}-updated-${Date.now()}.pdf`,
-        { type: "application/pdf" }
-      );
-
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", pdfFile);
-      uploadFormData.append("case_id", String(caseId));
-      uploadFormData.append("category", "invoices");
-      uploadFormData.append("invoice_stage", invoice?.payment_stage || "initial");
-      uploadFormData.append("invoice_number", xInvoiceNumber);
-      uploadFormData.append("paid_amount", String(numericPaidAmount));
-      uploadFormData.append("expected_amount", String(invoice?.expected_amount ?? ""));
-      uploadFormData.append("balance", xInvoiceBalance);
-      if (invoice?.tax != null) uploadFormData.append("tax", String(invoice.tax));
-      if (invoice?.discount != null) uploadFormData.append("discount", String(invoice.discount));
-      if (invoice?.client_name) uploadFormData.append("client_name", invoice.client_name);
-      if (invoice?.case_title) uploadFormData.append("case_title", invoice.case_title);
-      if (invoice?.issue_date) uploadFormData.append("issue_date", invoice.issue_date);
-      if (invoice?.due_date) uploadFormData.append("due_date", invoice.due_date);
-
-      const uploadRes = await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/encrypted-documents/upload`,
-        uploadFormData,
-        { headers: mutationHeaders as Record<string, string> }
-      );
-
-      const newDocumentId: string =
-        String(uploadRes.data?.document_id || uploadRes.data?.data?.document_id || "");
-      const newFileName: string =
-        String(uploadRes.data?.file_name || uploadRes.data?.data?.file_name || pdfFile.name);
-
-      // Step 3: Cleanup old document, sync invoice DB, link new document
+      // Single authoritative update path: backend updates paid amount, regenerates document,
+      // and synchronizes case financials in one transaction to avoid balance drift.
       const cleanupRes = await axiosUser.put(
         `${process.env.REACT_APP_API_URL}/encrypted-documents/${updateInfoPayload.documentId}/invoice`,
-        { paid_amount: numericPaidAmount, new_document_id: newDocumentId },
+        { paid_amount: numericPaidAmount },
         { headers: mutationHeaders }
       );
 
@@ -519,23 +543,31 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       const updatedCaseFinancials = cleanupRes?.data?.case_financials ?? null;
       const updatedProgress = Number(cleanupRes?.data?.case_progress ?? 0);
       const updatedDocument = cleanupRes?.data?.updated_document ?? null;
+      const updatedTypeOfWork = String(
+        cleanupRes?.data?.type_of_work ??
+        updatedDocument?.type_of_work ??
+        updatedInvoice?.type_of_work ??
+        updateInfoPayload.typeOfWork ??
+        ""
+      );
 
       const resolvedCaseId = Number(invoice?.case_id ?? selectedCase?.caseId ?? selectedCase?.id ?? 0);
 
       setUpdateReplacementInfo({
         oldDocumentId: String(updatedDocument?.old_document_id ?? updateInfoPayload.documentId),
-        newDocumentId: String(updatedDocument?.new_document_id ?? newDocumentId),
-        newFileName: String(updatedDocument?.new_file_name ?? newFileName),
+        newDocumentId: String(updatedDocument?.new_document_id ?? updateInfoPayload.documentId),
+        newFileName: String(updatedDocument?.new_file_name ?? updateInfoPayload.fileName),
       });
 
       setUpdateInfoPayload((current) => {
         if (!current) return current;
         return {
           ...current,
-          documentId: String(updatedDocument?.new_document_id ?? newDocumentId ?? current.documentId),
-          fileName: String(updatedDocument?.new_file_name ?? newFileName),
+          documentId: String(updatedDocument?.new_document_id ?? current.documentId),
+          fileName: String(updatedDocument?.new_file_name ?? current.fileName),
           invoice: updatedInvoice || current.invoice,
           caseFinancials: updatedCaseFinancials || current.caseFinancials,
+          typeOfWork: updatedTypeOfWork || current.typeOfWork,
         };
       });
       setUpdatePaidAmount(String(updatedInvoice?.paid_amount ?? numericPaidAmount));
@@ -563,7 +595,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         regenerated_invoice_document: updatedDocument,
       });
 
-      setSuccessMessage("Invoice saved. New invoice document generated and uploaded successfully.");
+      setSuccessMessage("Invoice saved. New invoice document generated successfully.");
     } catch (err: any) {
       const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
       setSuccessMessage(`Failed to save invoice update: ${message}`);
@@ -1363,11 +1395,35 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             parseCaseTypeFeeJson(updateInfoPayload.invoice?.case_type_fee_json) ||
             parseCaseTypeFeeJson(selectedCase?.case_type_fee_json);
           const resolvedTypeOfWork = resolveTypeOfWorkLabel(updateInfoPayload.invoice, resolvedCaseTypeFeeJson);
-          const resolvedPhaseBalance = resolvePhaseBalanceValue(
-            updateInfoPayload.invoice,
-            updateInfoPayload.caseFinancials,
-            selectedCase?.invoice_payment_phases
-          );
+          const exactTypeOfWork = String(updateInfoPayload.typeOfWork || updateInfoPayload.invoice?.type_of_work || resolvedTypeOfWork || "").trim();
+          const resolvedStage = normalizeInvoiceStage(updateInfoPayload.invoice?.payment_stage);
+          const invoiceDocuments = Array.isArray(selectedCase?.encrypted_documents) ? selectedCase?.encrypted_documents : [];
+          const resolvedTypeOfWorkBalance = (() => {
+            const expectedAmount = computeExpectedForTypeOfWork(resolvedCaseTypeFeeJson, resolvedStage, exactTypeOfWork);
+            if (expectedAmount === null) {
+              return Number(updateInfoPayload.invoice?.balance ?? 0);
+            }
+
+            const paidAmount = computePaidForTypeOfWork(invoiceDocuments as Array<Record<string, any>>, resolvedStage, exactTypeOfWork);
+            return Math.max(expectedAmount - paidAmount, 0);
+          })();
+          const resolvedPhaseBalance = (() => {
+            const stageBalance = computeStageRemainingTotal(
+              resolvedCaseTypeFeeJson,
+              invoiceDocuments as Array<Record<string, any>>,
+              resolvedStage
+            );
+
+            if (stageBalance !== null) {
+              return stageBalance;
+            }
+
+            return resolvePhaseBalanceValue(
+              updateInfoPayload.invoice,
+              updateInfoPayload.caseFinancials,
+              selectedCase?.invoice_payment_phases
+            );
+          })();
 
           return (
         <div
@@ -1472,7 +1528,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                     { label: "Issue Date", value: updateInfoPayload.invoice?.issue_date ?? "" },
                     { label: "Due Date", value: updateInfoPayload.invoice?.due_date ?? "" },
                     { label: "Expected Amount", value: updateInfoPayload.invoice?.expected_amount ?? "" },
-                    { label: "Balance", value: updateInfoPayload.invoice?.balance ?? "" },
+                    { label: "Type of Work Balance", value: resolvedTypeOfWorkBalance },
                     { label: "Phase Balance", value: resolvedPhaseBalance },
                     { label: "Tax", value: updateInfoPayload.invoice?.tax ?? "" },
                     { label: "Discount", value: updateInfoPayload.invoice?.discount ?? "" },
@@ -1482,7 +1538,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                       <span style={{ fontWeight: 700, color: "#334155" }}>{field.label}</span>
                       <input
                         type="text"
-                        value={String(field.value || "")}
+                        value={String(field.value ?? "")}
                         readOnly
                         style={{
                           width: "100%",
