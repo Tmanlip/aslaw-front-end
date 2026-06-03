@@ -24,6 +24,7 @@ const TemplateEditorCard = ({
   const currentUserRole = String(AuthMemory.getUser()?.role || "").toLowerCase();
   const hideBiLanguage =
     currentUserRole === "admin" || currentUserRole === "junioradmin" || currentUserRole === "lawyer";
+  const isInvoiceTemplate = template.id === "invoice";
   const [showCaseInfo, setShowCaseInfo] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -144,21 +145,32 @@ const TemplateEditorCard = ({
               onChange={onChange}
             />
 
-            <div>
-              <label className="dg-label" htmlFor="upload_title">
-                Upload Title (Used as File Name)
-              </label>
-              <input
-                id="upload_title"
-                name="upload_title"
-                type="text"
-                className="dg-input"
-                value={uploadTitle || ""}
-                onChange={onUploadTitleChange || onChange}
-                placeholder="Enter file title"
-                maxLength={120}
-              />
-            </div>
+            {isInvoiceTemplate ? (
+              <div>
+                <p className="dg-label" style={{ marginBottom: "0.35rem" }}>
+                  Upload File Name
+                </p>
+                <p style={{ margin: 0, color: "#555" }}>
+                  Invoice uploads will use the invoice number as the file name automatically.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="dg-label" htmlFor="upload_title">
+                  Upload Title (Used as File Name)
+                </label>
+                <input
+                  id="upload_title"
+                  name="upload_title"
+                  type="text"
+                  className="dg-input"
+                  value={uploadTitle || ""}
+                  onChange={onUploadTitleChange || onChange}
+                  placeholder="Enter file title"
+                  maxLength={120}
+                />
+              </div>
+            )}
 
             {error && <div className="dg-alert-error">{error}</div>}
 

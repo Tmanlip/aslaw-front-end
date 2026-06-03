@@ -61,6 +61,29 @@ const getFileNameFromContentDisposition = (headerValue, fallbackName) => {
   return plainMatch?.[1] || fallbackName;
 };
 
+const sanitizeInvoiceFileStem = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  return raw.replace(/[^A-Za-z0-9\-_]/g, "_");
+};
+
+const resolveInvoicePdfFilename = (response, payloadFormData, fallbackName) => {
+  const contentDisposition = response.headers.get("Content-Disposition");
+  if (contentDisposition) {
+    return getFileNameFromContentDisposition(contentDisposition, fallbackName);
+  }
+
+  const invoiceNumberFromHeader = response.headers.get("X-Invoice-Number");
+  const invoiceNumberFromPayload = payloadFormData?.invoice_number;
+  const safeInvoiceNumber =
+    sanitizeInvoiceFileStem(invoiceNumberFromHeader) || sanitizeInvoiceFileStem(invoiceNumberFromPayload);
+
+  return safeInvoiceNumber ? `${safeInvoiceNumber}.pdf` : fallbackName;
+};
+
 const INVOICE_NUMBER_CONFLICT_MESSAGE =
   "Unable to generate a unique invoice number right now. Please try again.";
 
@@ -570,6 +593,26 @@ const resolveFileExtension = (fileName, fallback = "pdf") => {
   }
 
   return source.slice(dotIndex + 1).toLowerCase();
+};
+
+const resolveUploadFileName = ({ templateId, uploadTitle, invoiceNumber, sourceFileName }) => {
+  const extension = resolveFileExtension(sourceFileName, "pdf");
+
+  if (templateId === "invoice") {
+    const invoiceStem = sanitizeInvoiceFileStem(invoiceNumber);
+    if (invoiceStem) {
+      return `${invoiceStem}.${extension}`;
+    }
+
+    const fallbackStem = sanitizeUploadTitle(String(sourceFileName || "").replace(/\.[^.]+$/, ""));
+    if (fallbackStem) {
+      return `${fallbackStem}.${extension}`;
+    }
+
+    return `invoice-${Date.now()}.${extension}`;
+  }
+
+  return `${uploadTitle}.${extension}`;
 };
 
 const TemplateForm = () => {
@@ -1121,7 +1164,7 @@ const TemplateForm = () => {
       const computedTotal =
         safePaid +
         (safePaid * safeTaxPercent) / 100 +
-        (safePaid * safeDiscountPercent) / 100;
+        -((safePaid * safeDiscountPercent) / 100);
       const nextTotal = String(computedTotal);
 
       if (String(prev.total_amount || "") === nextTotal) {
@@ -1209,8 +1252,7 @@ const TemplateForm = () => {
     }
 
     const blob = await response.blob();
-    const contentDisposition = response.headers.get("Content-Disposition");
-    const fileName = getFileNameFromContentDisposition(contentDisposition, "Invoice_Template.pdf");
+    const fileName = resolveInvoicePdfFilename(response, normalizedInvoiceFormData, "Invoice_Template.pdf");
 
     return { blob, fileName };
   };
@@ -1488,7 +1530,8 @@ const TemplateForm = () => {
     }
 
     const uploadTitle = sanitizeUploadTitle(formData.upload_title);
-    if (!uploadTitle) {
+    const requiresUploadTitle = template.id !== "invoice";
+    if (requiresUploadTitle && !uploadTitle) {
       setUploadStatusMessage("Please enter Upload Title before uploading.");
       return;
     }
@@ -1541,8 +1584,12 @@ const TemplateForm = () => {
         file = new File([pdfBlob], fileName, { type: "application/pdf" });
       }
 
-      const uploadExtension = resolveFileExtension(file?.name, "pdf");
-      const uploadFileName = `${uploadTitle}.${uploadExtension}`;
+      const uploadFileName = resolveUploadFileName({
+        templateId: template.id,
+        uploadTitle,
+        invoiceNumber: formData.invoice_number,
+        sourceFileName: file?.name,
+      });
       file = new File([file], uploadFileName, { type: file.type || "application/pdf" });
 
       const form = new FormData();
@@ -1778,9 +1825,9 @@ const TemplateForm = () => {
         }
 
         const blob = await response.blob();
-        const contentDisposition = response.headers.get("Content-Disposition");
-        const fileName = getFileNameFromContentDisposition(
-          contentDisposition,
+        const fileName = resolveInvoicePdfFilename(
+          response,
+          payloadFormData,
           invoicePdfConfig.fallbackFilename,
         );
 
@@ -1867,7 +1914,10 @@ const TemplateForm = () => {
         pdfPreviewUrl={pdfPreviewUrl}
         preferContentPreview={false}
       >
-        {renderGeneratedPreview(template.id, generatedContent)}
+        {renderGeneratedPreview(template.id, generatedContent, {
+          formData,
+          language: selectedLanguage,
+        })}
       </TemplatePreviewCard>
     );
   }

@@ -237,6 +237,9 @@ const FileSection: React.FC<FileSectionProps> = ({
   }, [selectedCaseId]);
 
   const openDocGeneratorPopup = (src: string, caseMeta?: { caseId: string; caseTitle: string }) => {
+    Promise.resolve(onUploadSuccess?.()).catch((error) => {
+      console.error("Failed to refresh billing data before opening document generator", error);
+    });
     setDocGeneratorPopupSrc(src);
     setDocGeneratorCaseMeta(caseMeta || null);
     setIsDocGeneratorOpen(true);

@@ -379,6 +379,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   } | null>(null);
   const [updatePaidAmount, setUpdatePaidAmount] = useState<string>("");
   const [isSavingInvoiceUpdate, setIsSavingInvoiceUpdate] = useState(false);
+  const [updatedInvoiceFileKeys, setUpdatedInvoiceFileKeys] = useState<string[]>([]);
   const [updateReplacementInfo, setUpdateReplacementInfo] = useState<{
     oldDocumentId: string;
     newDocumentId: string;
@@ -557,6 +558,19 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         oldDocumentId: String(updatedDocument?.old_document_id ?? updateInfoPayload.documentId),
         newDocumentId: String(updatedDocument?.new_document_id ?? updateInfoPayload.documentId),
         newFileName: String(updatedDocument?.new_file_name ?? updateInfoPayload.fileName),
+      });
+
+      const resolvedUpdatedDocumentId = String(updatedDocument?.new_document_id ?? updateInfoPayload.documentId);
+      const resolvedUpdatedFileName = String(updatedDocument?.new_file_name ?? updateInfoPayload.fileName);
+      setUpdatedInvoiceFileKeys((current) => {
+        const next = new Set(current);
+        if (resolvedUpdatedDocumentId) {
+          next.add(`id:${resolvedUpdatedDocumentId}`);
+        }
+        if (resolvedUpdatedFileName) {
+          next.add(`name:${resolvedUpdatedFileName.toLowerCase()}`);
+        }
+        return Array.from(next);
       });
 
       setUpdateInfoPayload((current) => {
@@ -879,6 +893,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   useEffect(() => {
     setResolvedExpectedPaymentPhases(selectedCase?.expected_payment_phases);
     setResolvedInvoicePaymentPhases(selectedCase?.invoice_payment_phases);
+    setUpdatedInvoiceFileKeys([]);
   }, [selectedCase?.caseId, selectedCase?.expected_payment_phases, selectedCase?.invoice_payment_phases]);
 
   /* ================= DELETE ================= */
@@ -1251,6 +1266,23 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           <li key={file.id || idx} className="admin-billing-file-row">
             <div className="admin-billing-file-main">
               <strong className="admin-billing-file-name">{file.fileName}</strong>
+              {updatedInvoiceFileKeys.includes(`id:${String(file.id || "")}`) ||
+              updatedInvoiceFileKeys.includes(`name:${String(file.fileName || "").toLowerCase()}`) ? (
+                <span
+                  style={{
+                    background: "#eff6ff",
+                    color: "#1d4ed8",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: "999px",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    padding: "0.12rem 0.45rem",
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  Updated
+                </span>
+              ) : null}
               {file.encrypted && (
                 <span className="admin-billing-file-badge-encrypted">
                   ENCRYPTED
