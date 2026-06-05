@@ -30,6 +30,7 @@ jobs:
           echo "Run ID: $GITHUB_RUN_ID"
           echo "Event: $GITHUB_EVENT_NAME"
           echo "Ref: $GITHUB_REF"
+          echo "Token length: ${#TOKEN_FALLBACK}" 
 
           has_primary=false
           has_fallback=false
