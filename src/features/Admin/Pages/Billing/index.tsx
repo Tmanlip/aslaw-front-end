@@ -206,6 +206,14 @@ const UpdateCheque: React.FC = () => {
     }
   }, [currentCaseId]);
 
+  useEffect(() => {
+    if (!Number.isFinite(currentCaseId) || currentCaseId <= 0) {
+      return;
+    }
+
+    void refreshCaseData({ silent: true });
+  }, [currentCaseId, refreshCaseData]);
+
 
   const handleCaseProgressUpdate = (caseId: number, progress: number) => {
     if (!Number.isFinite(caseId) || caseId <= 0 || !Number.isFinite(progress)) {
