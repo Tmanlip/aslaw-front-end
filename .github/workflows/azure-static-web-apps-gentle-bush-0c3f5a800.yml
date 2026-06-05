@@ -23,7 +23,6 @@ jobs:
         shell: bash
         env:
           TOKEN_PRIMARY: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          TOKEN_FALLBACK: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
         run: |
           set -euo pipefail
           echo "Repository: $GITHUB_REPOSITORY"
