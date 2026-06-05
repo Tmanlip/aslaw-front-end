@@ -17,7 +17,7 @@ import "./billing.css";
 const UpdateCheque: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, user } = useAuth();
+  const { role } = useAuth();
   const { cases } = useClientData();
   const routes = AppRoutes(role);
 
