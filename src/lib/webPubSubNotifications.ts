@@ -6,6 +6,9 @@ type NegotiateResponse = {
 
 type Dispose = () => void;
 
+const BASE_RECONNECT_MS = 3_000;
+const MAX_RECONNECT_MS = 60_000;
+
 export function subscribeToWebPubSubNotifications(
   onMessage: (payload: unknown) => void,
   onError?: (error: unknown) => void,
@@ -13,6 +16,17 @@ export function subscribeToWebPubSubNotifications(
   let socket: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let isDisposed = false;
+  let attempt = 0;
+
+  const scheduleReconnect = () => {
+    if (isDisposed) return;
+    // Exponential backoff: 3s, 6s, 12s, 24s, 48s, 60s (capped)
+    const delay = Math.min(BASE_RECONNECT_MS * Math.pow(2, attempt), MAX_RECONNECT_MS);
+    attempt += 1;
+    reconnectTimer = setTimeout(() => {
+      void connect();
+    }, delay);
+  };
 
   const connect = async () => {
     try {
@@ -25,6 +39,11 @@ export function subscribeToWebPubSubNotifications(
       }
 
       socket = new WebSocket(negotiation.url);
+
+      socket.onopen = () => {
+        // Reset backoff counter on successful connection.
+        attempt = 0;
+      };
 
       socket.onmessage = (event: MessageEvent) => {
         try {
@@ -41,20 +60,11 @@ export function subscribeToWebPubSubNotifications(
 
       socket.onclose = () => {
         socket = null;
-        if (!isDisposed) {
-          reconnectTimer = setTimeout(() => {
-            void connect();
-          }, 3000);
-        }
+        scheduleReconnect();
       };
     } catch (error) {
       onError?.(error);
-
-      if (!isDisposed) {
-        reconnectTimer = setTimeout(() => {
-          void connect();
-        }, 3000);
-      }
+      scheduleReconnect();
     }
   };
 
