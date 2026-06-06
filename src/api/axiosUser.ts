@@ -36,6 +36,21 @@ const resolveToken = (): string | null => {
   return sessionToken || null;
 };
 
+const normalizeRequestUrl = (url: string): string => {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+
+  // Handles templates like `${process.env.REACT_APP_API_URL}/users` when env var is unset.
+  const withoutUndefinedPrefix = trimmed.replace(/^\/?undefined(?=\/|$)/i, "");
+  if (withoutUndefinedPrefix !== trimmed) {
+    return withoutUndefinedPrefix.startsWith("/")
+      ? withoutUndefinedPrefix || "/"
+      : `/${withoutUndefinedPrefix}`;
+  }
+
+  return trimmed;
+};
+
 // 🔥 Attach Bearer token automatically
 axiosUser.interceptors.request.use((config) => {
   const token = resolveToken();
@@ -45,7 +60,7 @@ axiosUser.interceptors.request.use((config) => {
   }
 
   if (typeof config.url === "string") {
-    config.url = rewriteApiUrlForSwa(config.url);
+    config.url = rewriteApiUrlForSwa(normalizeRequestUrl(config.url));
   }
 
   return config;
