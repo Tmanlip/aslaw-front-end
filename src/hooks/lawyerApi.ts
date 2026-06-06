@@ -1,7 +1,5 @@
 import axiosUser from "../api/axiosUser";
 import { LawyerFullData } from "../data/userInfo";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
 const CACHE_TTL_MS = 5000;
 
 const lawyerCache = new Map<string, { data: LawyerFullData; timestamp: number }>();
@@ -21,7 +19,7 @@ export const fetchLawyerFullData = async (firmID: string): Promise<LawyerFullDat
   }
 
   const request = axiosUser
-    .get<LawyerFullData>(`${API_URL}/lawyers/${firmID}`)
+    .get<LawyerFullData>(`/lawyers/${firmID}`)
     .then((response) => {
       lawyerCache.set(firmID, { data: response.data, timestamp: Date.now() });
       return response.data;

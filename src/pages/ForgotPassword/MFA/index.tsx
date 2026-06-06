@@ -3,12 +3,14 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import axios from "axios";
+import { resolveApiBaseUrl } from "../../../api/resolveApiBaseUrl";
 
 type EmailConfirmProps = {
   initialEmail?: string;
 };
 
 const EmailConfirm: React.FC<EmailConfirmProps> = ({ initialEmail = "" }) => {
+  const apiBaseUrl = resolveApiBaseUrl();
   const [email, setEmail] = useState(initialEmail);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<"success" | "danger">("success");
@@ -20,7 +22,7 @@ const EmailConfirm: React.FC<EmailConfirmProps> = ({ initialEmail = "" }) => {
     setAlertMessage(null);
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/forgot-password`, {
+      const response = await axios.post(`${apiBaseUrl}/forgot-password`, {
         email: email
       });
 

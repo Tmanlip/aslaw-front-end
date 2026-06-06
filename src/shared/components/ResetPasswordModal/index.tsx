@@ -6,6 +6,7 @@ import Spinner from "react-bootstrap/Spinner";
 import Alert from "react-bootstrap/Alert";
 import axios from "axios";
 import axiosUser from "../../../api/axiosUser";
+import { resolveApiBaseUrl } from "../../../api/resolveApiBaseUrl";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import AuthMemory from "../../../data/authMemory";
@@ -26,6 +27,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   forceReloginAfterReset = false,
   onClose,
 }) => {
+  const apiBaseUrl = resolveApiBaseUrl();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -62,14 +64,14 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       setOtpError(null);
       setOtpSuccess(null);
 
-      await axios.post(`${process.env.REACT_APP_API_URL}/password/send-otp`, { email });
+      await axios.post(`${apiBaseUrl}/password/send-otp`, { email });
       setOtpSuccess("OTP sent to your email.");
     } catch (err: any) {
       setOtpError(err?.response?.data?.message || "Failed to send OTP.");
     } finally {
       setSendingOtp(false);
     }
-  }, [email]);
+  }, [apiBaseUrl, email]);
 
   useEffect(() => {
     if (show) {
@@ -109,7 +111,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       setOtpError(null);
       setOtpSuccess(null);
 
-      await axios.post(`${process.env.REACT_APP_API_URL}/password/verify-code`, {
+      await axios.post(`${apiBaseUrl}/password/verify-code`, {
         email,
         code,
       });
@@ -134,13 +136,13 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       setResetError(null);
       setResetSuccess(null);
 
-      await axiosUser.put(`${process.env.REACT_APP_API_URL}/users/${firmID}`, {
+      await axiosUser.put(`/users/${firmID}`, {
         password,
       });
 
       if (forceReloginAfterReset) {
         try {
-          await axiosUser.post(`${process.env.REACT_APP_API_URL}/logout`);
+          await axiosUser.post("/logout");
         } catch {
           // Continue local logout even if API logout fails.
         }

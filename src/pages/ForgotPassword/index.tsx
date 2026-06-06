@@ -12,8 +12,10 @@ import { FaEye, FaEyeSlash } from "react-icons/fa"; // ✅ removed IconType
 import aspic from "../../assets/pics/logo-landscape.png";
 import axios from "axios";
 import Alert from "react-bootstrap/Alert";
+import { resolveApiBaseUrl } from "../../api/resolveApiBaseUrl";
 
 const ForgotPasswordPage: React.FC = () => {
+  const apiBaseUrl = resolveApiBaseUrl();
   const [emailState, setEmailState] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,7 +55,7 @@ const ForgotPasswordPage: React.FC = () => {
 
     try {
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/reset-password`,
+        `${apiBaseUrl}/reset-password`,
         {
           email: emailState,
           token: token,
