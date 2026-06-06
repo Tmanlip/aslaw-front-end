@@ -51,6 +51,30 @@ const normalizeRequestUrl = (url: string): string => {
   return trimmed;
 };
 
+const isLocalRuntimeHost = (hostname: string): boolean =>
+  hostname === "localhost" || hostname === "127.0.0.1";
+
+const rewriteLocalhostApiUrlForHostedRuntime = (url: string): string => {
+  if (typeof window === "undefined") return url;
+
+  const runtimeHost = window.location.hostname;
+  if (isLocalRuntimeHost(runtimeHost)) {
+    // Keep localhost URLs untouched while developing locally.
+    return url;
+  }
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (!isLocalRuntimeHost(parsed.hostname)) {
+      return url;
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return url;
+  }
+};
+
 // 🔥 Attach Bearer token automatically
 axiosUser.interceptors.request.use((config) => {
   const token = resolveToken();
@@ -60,7 +84,9 @@ axiosUser.interceptors.request.use((config) => {
   }
 
   if (typeof config.url === "string") {
-    config.url = rewriteApiUrlForSwa(normalizeRequestUrl(config.url));
+    const normalizedUrl = normalizeRequestUrl(config.url);
+    const runtimeSafeUrl = rewriteLocalhostApiUrlForHostedRuntime(normalizedUrl);
+    config.url = rewriteApiUrlForSwa(runtimeSafeUrl);
   }
 
   return config;
