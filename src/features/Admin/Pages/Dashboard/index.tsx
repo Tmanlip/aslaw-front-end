@@ -63,8 +63,8 @@ const AdminDashboard: React.FC = () => {
     const loadAnalytics = async () => {
       try {
         const [casesRes, usersRes] = await Promise.all([
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/users`),
+          axiosUser.get(`/cases`),
+          axiosUser.get(`/users`),
         ]);
 
         const caseData = parseArrayPayload<CaseItem>(casesRes.data);

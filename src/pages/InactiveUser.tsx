@@ -6,8 +6,10 @@ import Container from "react-bootstrap/Container";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import { colors } from "../constant/color";
+import { resolveApiBaseUrl } from "../api/resolveApiBaseUrl";
 
 const InactiveUserPage: React.FC = () => {
+  const apiBaseUrl = resolveApiBaseUrl();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -16,7 +18,7 @@ const InactiveUserPage: React.FC = () => {
       // Call logout endpoint
       const token = AuthMemory.getToken();
       if (token) {
-        await fetch(`${process.env.REACT_APP_API_URL}/logout`, {
+        await fetch(`${apiBaseUrl}/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

@@ -67,7 +67,7 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
   useEffect(() => {
     const fetchLawyers = async () => {
       try {
-        const res = await axiosUser.get<Lawyer[]>(`${process.env.REACT_APP_API_URL}/users`);
+        const res = await axiosUser.get<Lawyer[]>(`/users`);
         const allLawyers = res.data.filter((u: any) => u.role === "lawyer");
         setLawyers(allLawyers);
         if (allLawyers.length > 0) setSelectedLawyer(allLawyers[0]);
@@ -91,7 +91,7 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
     setSubmitAlert(null);
 
     try {
-      const res = await axiosUser.post(`${process.env.REACT_APP_API_URL}/registercases`, {
+      const res = await axiosUser.post(`/registercases`, {
         title: (e.target as HTMLFormElement).caseTitle.value,
         caseType,
         description: (e.target as HTMLFormElement).caseDescription.value,

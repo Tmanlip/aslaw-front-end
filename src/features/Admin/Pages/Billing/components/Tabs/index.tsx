@@ -326,8 +326,7 @@ const FileSection: React.FC<FileSectionProps> = ({
     setPendingReviewMessage(null);
 
     try {
-      await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/encrypted-documents/${documentId}/review`,
+      await axiosUser.post(`/encrypted-documents/${documentId}/review`,
         { action },
         { headers: buildAuthHeaders() }
       );
@@ -491,7 +490,7 @@ const FileSection: React.FC<FileSectionProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      await axiosUser.delete(`${process.env.REACT_APP_API_URL}/encrypted-documents/${pendingDeleteFile.document_id}`, {
+      await axiosUser.delete(`/encrypted-documents/${pendingDeleteFile.document_id}`, {
         headers: buildAuthHeaders(),
       });
       setRecentFiles((prev) => prev.filter((item) => item.document_id !== pendingDeleteFile.document_id));
@@ -834,8 +833,7 @@ const FileSection: React.FC<FileSectionProps> = ({
           setIsUpdatingInvoice(true);
           try {
             const mutationHeaders = buildAuthHeaders();
-            await axiosUser.post(
-              `${process.env.REACT_APP_API_URL}/invoices/${inv.id}/update-paid`,
+            await axiosUser.post(`/invoices/${inv.id}/update-paid`,
               { paid_amount: newPaid, balance: newBalance, total_amount: newTotal },
               { headers: mutationHeaders }
             );

@@ -220,7 +220,7 @@ const ViewCase: React.FC = () => {
     setUploadingDocument(true);
 
     try {
-      await axiosUser.post(`${process.env.REACT_APP_API_URL}/encrypted-documents/upload`, formData, {
+      await axiosUser.post(`/encrypted-documents/upload`, formData, {
         headers: {
           Accept: "application/json",
           "X-User-Role": currentUser?.role || "",

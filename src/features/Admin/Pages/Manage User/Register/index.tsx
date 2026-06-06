@@ -268,8 +268,7 @@ const RegisterUser: React.FC = () => {
       payload.append("maritalStatus", maritalStatus);
       payload.append("picture", validatedPicture);
 
-      const response = await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/registerusers`,
+      const response = await axiosUser.post(`/registerusers`,
         payload,
         {
           headers: {

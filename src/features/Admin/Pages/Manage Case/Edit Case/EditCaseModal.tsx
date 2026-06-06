@@ -117,7 +117,7 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
       setLawyersError("");
 
       try {
-        const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/lawyers`);
+        const response = await axiosUser.get(`/lawyers`);
         const list = Array.isArray(response.data) ? response.data : [];
 
         const normalized: LawyerOption[] = list
@@ -282,8 +282,7 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
         return;
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await axiosUser.put(`${apiUrl}/cases/${selectedCase.caseId}`, payload, {
+      const response = await axiosUser.put(`/cases/${selectedCase.caseId}`, payload, {
         headers: {
           "Content-Type": "application/json",
           "X-User-Role": currentUser?.role || "",
@@ -293,7 +292,7 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
 
       let refreshedCaseFromApi: Case | null = null;
       try {
-        const casesResponse = await axiosUser.get(`${apiUrl}/cases`);
+        const casesResponse = await axiosUser.get(`/cases`);
         const allCases = Array.isArray(casesResponse.data) ? casesResponse.data : [];
         const currentCaseId = Number(selectedCase.caseId ?? (selectedCase as any).id ?? 0);
         const matchedCase = allCases.find(

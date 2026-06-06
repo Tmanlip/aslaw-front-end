@@ -8,6 +8,7 @@ import ConfirmModal from "../../../../../../components/Modals/ConfirmModal";
 import { Case, EncryptedDocumentItem } from "../../../../../../data/userInfo";
 import AuthMemory from "../../../../../../data/authMemory";
 import axiosUser from "../../../../../../api/axiosUser";
+import { resolveApiBaseUrl } from "../../../../../../api/resolveApiBaseUrl";
 import LoadingSpinner from "../../../../../../components/ui/Spinner";
 import InvoicePhaseSummary from "../../../../../../shared/components/InvoicePhaseSummary";
 
@@ -48,6 +49,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   onUploadingChange,
   onCreateDocument,
 }) => {
+  const apiBaseUrl = resolveApiBaseUrl();
   const currentUser = AuthMemory.getUser();
   const token = AuthMemory.getToken();
 
@@ -254,8 +256,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     setUploading(true);
 
     try {
-      await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/encrypted-documents/upload`,
+      await axiosUser.post(`/encrypted-documents/upload`,
         formData,
         { headers: mutationHeaders as Record<string, string> }
       );
@@ -297,7 +298,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   };
 
   const getFileUrl = useCallback(async (endpoint: string): Promise<string> => {
-    const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}${endpoint}`, {
+    const res = await axiosUser.get(`${endpoint}`, {
       responseType: "blob",
       headers: mutationHeaders as Record<string, string>,
     });
@@ -320,7 +321,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         return;
       }
 
-      setPreviewFile(`${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`);
+      setPreviewFile(`${apiBaseUrl}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`);
     } catch (err: any) {
       setSuccessMessage(`Preview failed: ${err.message}`);
     } finally {
@@ -346,7 +347,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       }
 
       const a = document.createElement("a");
-      a.href = `${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
+      a.href = `${apiBaseUrl}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
       a.download = file.fileName;
       document.body.appendChild(a);
       a.click();
@@ -373,7 +374,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
             return objectUrl;
           });
         } else {
-          const directUrl = `${process.env.REACT_APP_API_URL}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
+          const directUrl = `${apiBaseUrl}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
           setArchivedPreviewUrl((prev) => {
             if (prev?.startsWith("blob:")) {
               URL.revokeObjectURL(prev);
@@ -388,7 +389,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         setArchivedPreviewLoading(false);
       }
     },
-    [folderName, getFileUrl, selectedCase?.blob_folder_path]
+    [apiBaseUrl, folderName, getFileUrl, selectedCase?.blob_folder_path]
   );
 
   useEffect(() => {
@@ -500,12 +501,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
         try {
           if (file.encrypted && file.id) {
-            await axiosUser.delete(`${process.env.REACT_APP_API_URL}/encrypted-documents/${file.id}`, {
+            await axiosUser.delete(`/encrypted-documents/${file.id}`, {
               headers: mutationHeaders as Record<string, string>,
             });
           } else if (!file.encrypted) {
             const filePath = `${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
-            await axiosUser.delete(`${process.env.REACT_APP_API_URL}/delete/${filePath}`, {
+            await axiosUser.delete(`/delete/${filePath}`, {
               headers: mutationHeaders as Record<string, string>,
             });
           }
@@ -528,13 +529,13 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         try {
           for (const file of filesToDelete) {
             if (file.encrypted && file.id) {
-              await axiosUser.delete(`${process.env.REACT_APP_API_URL}/encrypted-documents/${file.id}`, {
+              await axiosUser.delete(`/encrypted-documents/${file.id}`, {
                 headers: mutationHeaders as Record<string, string>,
               });
             } else {
               const folderPath = `${selectedCase?.blob_folder_path}${folderName}`.replace(/\/+$/, "");
               const filePath = `${folderPath}/${file.fileName}`;
-              await axiosUser.delete(`${process.env.REACT_APP_API_URL}/files?path=${encodeURIComponent(filePath)}`, {
+              await axiosUser.delete(`/files?path=${encodeURIComponent(filePath)}`, {
                 headers: mutationHeaders as Record<string, string>,
               });
             }
@@ -887,8 +888,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           const handleSubmit = async () => {
             setUpdatePaidAmountLoading(true);
             try {
-              await axiosUser.post(
-                `${process.env.REACT_APP_API_URL}/invoices/${inv.id}/update-paid`,
+              await axiosUser.post(`/invoices/${inv.id}/update-paid`,
                 { paid_amount: newPaid, balance: newBalance, total_amount: newTotal },
                 { headers: mutationHeaders as Record<string, string> }
               );

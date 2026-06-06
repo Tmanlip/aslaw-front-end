@@ -37,7 +37,7 @@ const EditCase: React.FC = () => {
       if (!selectedCaseId) return;
 
       try {
-        const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`);
+        const response = await axiosUser.get(`/cases`);
         const list = Array.isArray(response.data) ? response.data : [];
         const latestCase = list.find((item: any) => Number(item.caseId ?? item.id) === selectedCaseId);
         if (latestCase) {

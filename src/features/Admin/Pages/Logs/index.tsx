@@ -174,7 +174,7 @@ const AdminLogs: React.FC = () => {
     const loadLogs = async () => {
       try {
         const res = await axiosUser.get<{ data: InteractionLog[] }>(
-          `${process.env.REACT_APP_API_URL}/logs/interactions?limit=300`
+          `/logs/interactions?limit=300`
         );
         setLogs(res.data?.data ?? []);
       } catch (err: any) {

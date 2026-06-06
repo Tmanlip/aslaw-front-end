@@ -159,8 +159,7 @@ const UpdateCheque: React.FC = () => {
 
     try {
       try {
-        const caseResponse = await axiosUser.get(
-          `${process.env.REACT_APP_API_URL}/cases/${currentCaseId}`,
+        const caseResponse = await axiosUser.get(`/cases/${currentCaseId}`,
           {
             params: { _ts: Date.now() },
           }
@@ -184,7 +183,7 @@ const UpdateCheque: React.FC = () => {
       }
 
       // Fallback for backends that only expose list response shapes.
-      const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`, {
+      const response = await axiosUser.get(`/cases`, {
         params: { _ts: Date.now() },
       });
       const allCases = Array.isArray(response.data)

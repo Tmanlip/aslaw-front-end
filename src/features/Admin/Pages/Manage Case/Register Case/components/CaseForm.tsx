@@ -17,8 +17,6 @@ import { useAuth } from "../../../../../../context/AuthContext";
 import ClientSearch, { Client } from "./ClientSearch";
 import LawyerSearch, { Lawyer } from "./LawyerSearch";
 
-const API_URL = process.env.REACT_APP_API_URL;
-
 type ExpectedPayments = {
   initial: string;
   first: string;
@@ -72,7 +70,7 @@ const CaseForm: React.FC = () => {
   // 🔥 Fetch Clients
   const fetchClients = async () => {
     try {
-      const res = await axiosUser.get(`${API_URL}/clients`);
+      const res = await axiosUser.get(`/clients`);
       setClients(res.data);
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -83,7 +81,7 @@ const CaseForm: React.FC = () => {
   // 🔥 Fetch Lawyers
   const fetchLawyers = async () => {
     try {
-      const res = await axiosUser.get(`${API_URL}/lawyers`);
+      const res = await axiosUser.get(`/lawyers`);
       setLawyers(res.data);
     } catch (error) {
       console.error("Error fetching lawyers:", error);
@@ -140,7 +138,7 @@ const CaseForm: React.FC = () => {
         expected_final_payment: Number(expectedPayments.final || 0),
       };
 
-      await axiosUser.post(`${API_URL}/registercases`, payload);
+      await axiosUser.post(`/registercases`, payload);
 
       setSubmitSuccess("Case registered successfully!");
 

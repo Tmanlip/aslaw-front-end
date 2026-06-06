@@ -86,9 +86,9 @@ const AdminSearch: React.FC = () => {
 
       try {
         const [usersRes, casesRes, logsRes] = await Promise.all([
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/users`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=120`),
+          axiosUser.get(`/users`),
+          axiosUser.get(`/cases`),
+          axiosUser.get(`/logs/interactions?limit=120`),
         ]);
 
         const usersData = Array.isArray(usersRes.data)

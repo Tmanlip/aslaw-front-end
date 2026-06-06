@@ -84,8 +84,8 @@ export default function CaseTable() {
     const fetchData = async () => {
       try {
         const [casesResult, logsResult] = await Promise.allSettled([
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=60`),
+          axiosUser.get(`/cases`),
+          axiosUser.get(`/logs/interactions?limit=60`),
         ]);
 
         if (casesResult.status !== "fulfilled") {
@@ -687,3 +687,4 @@ export default function CaseTable() {
     </>
   );
 }
+

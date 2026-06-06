@@ -94,8 +94,8 @@ export default function UserTable() {
     const fetchUsers = async () => {
       try {
         const [usersResult, logsResult] = await Promise.allSettled([
-          axiosUser.get<User[]>(`${process.env.REACT_APP_API_URL}/users`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=60`),
+          axiosUser.get<User[]>(`/users`),
+          axiosUser.get(`/logs/interactions?limit=60`),
         ]);
 
         if (usersResult.status !== "fulfilled") {
@@ -149,7 +149,7 @@ export default function UserTable() {
   const handleDirectManageUser = async (item: User) => {
     setSelectedUser(item);
     try {
-      const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${item.firmID}`);
+      const res = await axiosUser.get(`/clients/${item.firmID}`);
       const { client, cases } = res.data;
       setUserData(client, cases);
       navigate(
@@ -171,7 +171,7 @@ export default function UserTable() {
       const shouldRouteToManageProfile = role === "admin" || role === "adminstaff" || role === "junioradmin";
 
       if (selectedUser.role === "client") {
-        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${selectedUser.firmID}`);
+        const res = await axiosUser.get(`/clients/${selectedUser.firmID}`);
         const { client, cases } = res.data;
         setUserData(client, cases);
         navigate(
@@ -180,7 +180,7 @@ export default function UserTable() {
             : roleRoutes.find((r: any) => r.path === PATH.ADMIN.BILLING)?.path || PATH.ADMIN.BILLING
         );
       } else if (selectedUser.role === "lawyer") {
-        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/lawyers/${selectedUser.firmID}`);
+        const res = await axiosUser.get(`/lawyers/${selectedUser.firmID}`);
         const { lawyer, cases } = res.data;
         setUserData(lawyer, cases);
         navigate(
@@ -189,7 +189,7 @@ export default function UserTable() {
             : roleRoutes.find((r: any) => r.path === PATH.ADMIN.LAWYER_BILLING)?.path || PATH.ADMIN.LAWYER_BILLING
         );
       } else if (selectedUser.role === "admin" || selectedUser.role === "adminstaff" || selectedUser.role === "junioradmin") {
-        const res = await axiosUser.get(`${process.env.REACT_APP_API_URL}/admins/${selectedUser.firmID}`);
+        const res = await axiosUser.get(`/admins/${selectedUser.firmID}`);
         const { admin, cases } = res.data;
         setUserData(admin, cases || []);
         navigate(manageProfilePath);

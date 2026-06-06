@@ -360,10 +360,9 @@ const UpdateCase: React.FC = () => {
 
     try {
       const currentUser = AuthMemory.getUser();
-      const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
 
       await axiosUser.put(
-        `${apiUrl}/cases/${selectedCase.caseId}`,
+        `/cases/${selectedCase.caseId}`,
         {
           title: caseForm.title.trim(),
           description: caseForm.description.trim(),

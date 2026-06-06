@@ -123,12 +123,12 @@ const NavBarAdmin: React.FC = () => {
 
       try {
         const requests = [
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/users`),
-          axiosUser.get(`${process.env.REACT_APP_API_URL}/cases`),
+          axiosUser.get(`/users`),
+          axiosUser.get(`/cases`),
         ];
 
         if (canAccessLogs) {
-          requests.push(axiosUser.get(`${process.env.REACT_APP_API_URL}/logs/interactions?limit=120`));
+          requests.push(axiosUser.get(`/logs/interactions?limit=120`));
         }
 
         const [usersRes, casesRes, logsRes] = await Promise.all(requests);
@@ -320,15 +320,15 @@ const NavBarAdmin: React.FC = () => {
 
     try {
       if (user.role === "client") {
-        const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/clients/${user.firmID}`);
+        const response = await axiosUser.get(`/clients/${user.firmID}`);
         const { client, cases } = response.data;
         setUserData(client, cases || []);
       } else if (user.role === "lawyer") {
-        const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/lawyers/${user.firmID}`);
+        const response = await axiosUser.get(`/lawyers/${user.firmID}`);
         const { lawyer, cases } = response.data;
         setUserData(lawyer, cases || []);
       } else {
-        const response = await axiosUser.get(`${process.env.REACT_APP_API_URL}/admins/${user.firmID}`);
+        const response = await axiosUser.get(`/admins/${user.firmID}`);
         const { admin, cases } = response.data;
         setUserData(admin, cases || []);
       }

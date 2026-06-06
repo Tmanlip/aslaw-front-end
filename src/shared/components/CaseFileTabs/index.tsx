@@ -138,8 +138,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      await axiosUser.post(
-        `${process.env.REACT_APP_API_URL}/encrypted-documents/${file.document_id}/review`,
+      await axiosUser.post(`/encrypted-documents/${file.document_id}/review`,
         { action },
         { headers: authHeaders }
       );
@@ -237,7 +236,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     setLoadingAction(actionKey);
 
     try {
-      await axiosUser.delete(`${process.env.REACT_APP_API_URL}/encrypted-documents/${pendingDeleteFile.document_id}`, {
+      await axiosUser.delete(`/encrypted-documents/${pendingDeleteFile.document_id}`, {
         headers: authHeaders,
       });
       setRecentFiles((prev) => prev.filter((item) => item.document_id !== pendingDeleteFile.document_id));
@@ -643,3 +642,4 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
 };
 
 export default CaseFileTabs;
+
