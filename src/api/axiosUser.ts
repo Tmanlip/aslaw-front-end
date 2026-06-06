@@ -69,7 +69,8 @@ const rewriteLocalhostApiUrlForHostedRuntime = (url: string): string => {
       return url;
     }
 
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    // Keep same-origin absolute URL to avoid axios baseURL prefixing `/api` twice.
+    return `${window.location.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
     return url;
   }
