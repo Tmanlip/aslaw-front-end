@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { Mail, AlertCircle, Stethoscope, Clipboard } from 'lucide-react';
@@ -102,13 +102,13 @@ const Dashboard = () => {
     };
   }, []);
 
-  const isTemplateVisible = (templateId) => {
+  const isTemplateVisible = useCallback((templateId) => {
     if (!Object.prototype.hasOwnProperty.call(templateVisibility, templateId)) {
       return true;
     }
 
     return Boolean(templateVisibility[templateId]);
-  };
+  }, [templateVisibility]);
 
   const visibleSections = sectionConfig.filter((section) => {
     if (isLawyer && section.key === "invoices") return false;
@@ -124,7 +124,7 @@ const Dashboard = () => {
         if (filterCategory && cat !== filterCategory) return false;
         return true;
       }),
-    [filterCategory, isLawyer, templateVisibility]
+    [filterCategory, isLawyer, isTemplateVisible]
   );
 
   const groupedTemplates = useMemo(
