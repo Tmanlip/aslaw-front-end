@@ -19,6 +19,8 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
   const location = useLocation();
   const isDocumentGeneratorPath = (path?: string) =>
     Boolean(path && path.startsWith(PATH.DOCUMENT_GENERATOR.DASHBOARD));
+  const isSidebarAllowedDocumentGeneratorPath = (path?: string) =>
+    path === PATH.DOCUMENT_GENERATOR.TEMPLATE_VISIBILITY;
   const effectiveRole = ((role || String(user?.role || "").toLowerCase()) as
     | "admin"
     | "adminstaff"
@@ -54,10 +56,15 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
       ? roleRoutes.filter(
           (r) =>
             !r.path ||
-            (!adminExcludedPaths.has(r.path) && !isDocumentGeneratorPath(r.path))
+            (!adminExcludedPaths.has(r.path) &&
+              (!isDocumentGeneratorPath(r.path) ||
+                isSidebarAllowedDocumentGeneratorPath(r.path)))
         )
       : roleRoutes.filter((r) =>
-          r.path ? !isDocumentGeneratorPath(r.path) : true
+          r.path
+            ? !isDocumentGeneratorPath(r.path) ||
+              isSidebarAllowedDocumentGeneratorPath(r.path)
+            : true
         );
 
   const sidebarRouteMap = new Map<string, { path?: string }>();

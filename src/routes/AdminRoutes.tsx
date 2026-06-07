@@ -16,6 +16,7 @@ import AdminLogs from "../features/Admin/Pages/Logs/index";
 import AdminSearch from "../features/Admin/Pages/Search/index";
 import GeneratorDashboard from "../document-generator/pages/Dashboard";
 import GeneratorTemplateForm from "../document-generator/pages/TemplateForm";
+import TemplateVisibilityAdmin from "../document-generator/pages/TemplateVisibilityAdmin";
 
 const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.DASHBOARD, element: <Dashboard /> },
@@ -33,6 +34,7 @@ const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.SEARCH, element: <AdminSearch />},
   { path: PATH.DOCUMENT_GENERATOR.DASHBOARD, element: <GeneratorDashboard /> },
   { path: PATH.DOCUMENT_GENERATOR.TEMPLATE, element: <GeneratorTemplateForm /> },
+  { path: PATH.DOCUMENT_GENERATOR.TEMPLATE_VISIBILITY, element: <TemplateVisibilityAdmin /> },
 ];
 
 export default adminRoutes;

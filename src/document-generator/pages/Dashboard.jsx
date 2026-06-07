@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { Mail, AlertCircle, Stethoscope, Clipboard } from 'lucide-react';
 import { templates } from '../data/templates';
 import AuthMemory from '../../data/authMemory';
+import axiosUser from '../../api/axiosUser';
+import PATH from '../../constant/paths';
 import '../styles/documentGenerator.css';
 
 const iconMap = {
@@ -69,26 +71,70 @@ const Dashboard = () => {
   const currentUser = AuthMemory.getUser?.() || null;
   const currentUserRole = String(currentUser?.role || "").toLowerCase();
   const isLawyer = currentUserRole === "lawyer";
+  const isAdmin = currentUserRole === "admin";
+  const [templateVisibility, setTemplateVisibility] = useState({});
 
   const searchParams = new URLSearchParams(location.search);
   const filterCategory = searchParams.get("category") || null;
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadTemplateVisibility = async () => {
+      try {
+        const response = await axiosUser.get('/document-generator/templates/visibility');
+        if (!isActive) return;
+
+        const visibility = response?.data?.visibility;
+        if (visibility && typeof visibility === 'object') {
+          setTemplateVisibility(visibility);
+        }
+      } catch {
+        if (!isActive) return;
+        setTemplateVisibility({});
+      }
+    };
+
+    loadTemplateVisibility();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const isTemplateVisible = (templateId) => {
+    if (!Object.prototype.hasOwnProperty.call(templateVisibility, templateId)) {
+      return true;
+    }
+
+    return Boolean(templateVisibility[templateId]);
+  };
 
   const visibleSections = sectionConfig.filter((section) => {
     if (isLawyer && section.key === "invoices") return false;
     if (filterCategory && section.key !== filterCategory) return false;
     return true;
   });
-  const visibleTemplates = templates.filter((template) => {
-    const cat = inferCategory(template);
-    if (isLawyer && cat === "invoices") return false;
-    if (filterCategory && cat !== filterCategory) return false;
-    return true;
-  });
+  const visibleTemplates = useMemo(
+    () =>
+      templates.filter((template) => {
+        const cat = inferCategory(template);
+        if (!isTemplateVisible(template.id)) return false;
+        if (isLawyer && cat === "invoices") return false;
+        if (filterCategory && cat !== filterCategory) return false;
+        return true;
+      }),
+    [filterCategory, isLawyer, templateVisibility]
+  );
 
-  const groupedTemplates = visibleSections.map((section) => ({
-    ...section,
-    items: visibleTemplates.filter((template) => inferCategory(template) === section.key),
-  }));
+  const groupedTemplates = useMemo(
+    () =>
+      visibleSections.map((section) => ({
+        ...section,
+        items: visibleTemplates.filter((template) => inferCategory(template) === section.key),
+      })),
+    [visibleSections, visibleTemplates]
+  );
 
   return (
     <div className="dg-page">
@@ -100,6 +146,13 @@ const Dashboard = () => {
           <p>
             Select a document template below to begin creating your legal document.
           </p>
+          {isAdmin ? (
+            <div className="dg-hero-admin-actions">
+              <Link className="dg-hero-admin-link" to={PATH.DOCUMENT_GENERATOR.TEMPLATE_VISIBILITY}>
+                Manage Template Visibility
+              </Link>
+            </div>
+          ) : null}
         </div>
         <div className="dg-sections">
           {groupedTemplates.map((section) => (

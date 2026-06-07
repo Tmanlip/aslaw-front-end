@@ -26,6 +26,10 @@
   color: var(--dg-text);
 }
 
+.dg-page-admin {
+  padding-top: 5.5rem;
+}
+
 .dg-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -52,6 +56,23 @@
   color: var(--dg-text-muted);
   font-size: 1rem;
   max-width: 720px;
+}
+
+.dg-hero-admin-actions {
+  margin-top: 1rem;
+}
+
+.dg-hero-admin-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #b5d6c2;
+  background: #edf8f0;
+  color: #0e4b2f;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .dg-sections {
@@ -329,6 +350,52 @@
   color: #355244;
   padding: 0.6rem 0.75rem;
   font-size: 0.86rem;
+}
+
+.dg-visibility-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.dg-visibility-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+}
+
+.dg-visibility-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid var(--dg-border);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.7rem 0.8rem;
+}
+
+.dg-visibility-item-main {
+  min-width: 0;
+  display: grid;
+}
+
+.dg-visibility-title {
+  font-size: 0.91rem;
+  font-weight: 700;
+  color: #162736;
+  line-height: 1.2;
+}
+
+.dg-visibility-id {
+  margin-top: 0.2rem;
+  font-size: 0.76rem;
+  color: #6a7684;
+}
+
+.dg-visibility-switch {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--dg-primary);
 }
 
 .dg-prefill-loading {

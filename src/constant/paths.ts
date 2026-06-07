@@ -68,6 +68,7 @@ const PATH = {
   DOCUMENT_GENERATOR: {
     DASHBOARD: "/document-generator",
     TEMPLATE: "/document-generator/template/:id",
+    TEMPLATE_VISIBILITY: "/document-generator/template-visibility",
   },
 
   AUTH : {

@@ -13,8 +13,9 @@ import {
 import jsPDF from "jspdf";
 import { Document, Packer, Paragraph } from "docx";
 import { saveAs } from "file-saver";
+import { resolveApiBaseUrl } from "../../api/resolveApiBaseUrl";
 
-const MAIN_API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+const MAIN_API_URL = resolveApiBaseUrl();
 const BACKEND_BASE_URL = `${MAIN_API_URL}/document-generator`;
 
 const templateDocxEndpointById = {
