@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import axiosUser from "../../api/axiosUser";
-import PATH from "../../constant/paths";
 import AuthMemory from "../../data/authMemory";
 import NavBarAdmin from "../../shared/Navbar/NavBar Admin/new";
 import { templates } from "../data/templates";
@@ -125,6 +123,22 @@ const TemplateVisibilityAdmin = () => {
     }));
   }, []);
 
+  const visibilityStats = useMemo(() => {
+    const allTemplateIds = templates
+      .map((template) => template?.id)
+      .filter(Boolean);
+
+    const visibleCount = allTemplateIds.reduce((total, templateId) => {
+      return total + (visibility[templateId] === false ? 0 : 1);
+    }, 0);
+
+    return {
+      total: allTemplateIds.length,
+      visible: visibleCount,
+      hidden: allTemplateIds.length - visibleCount,
+    };
+  }, [visibility]);
+
   const handleToggle = (templateId) => {
     setSuccess("");
     setVisibility((prev) => ({
@@ -163,11 +177,7 @@ const TemplateVisibilityAdmin = () => {
                   <p className="dg-shell-subtitle">Only admins can access this page.</p>
                 </div>
               </div>
-              <div className="dg-body">
-                <Link to={PATH.DOCUMENT_GENERATOR.DASHBOARD} className="dg-link-back">
-                  Back to Document Generator
-                </Link>
-              </div>
+              <div className="dg-body" />
             </div>
           </div>
         </div>
@@ -180,10 +190,6 @@ const TemplateVisibilityAdmin = () => {
       <NavBarAdmin />
       <div className="dg-page dg-page-admin">
         <div className="dg-container">
-          <Link to={PATH.DOCUMENT_GENERATOR.DASHBOARD} className="dg-link-back">
-            Back to Document Generator
-          </Link>
-
           <div className="dg-shell">
             <div className="dg-shell-head">
               <div>
@@ -214,10 +220,29 @@ const TemplateVisibilityAdmin = () => {
                 </div>
               ) : (
                 <div className="dg-visibility-list">
+                  <div className="dg-visibility-summary" role="status" aria-live="polite">
+                    <div className="dg-summary-stat">
+                      <span className="dg-summary-value">{visibilityStats.total}</span>
+                      <span className="dg-summary-label">Total Templates</span>
+                    </div>
+                    <div className="dg-summary-stat dg-summary-stat-visible">
+                      <span className="dg-summary-value">{visibilityStats.visible}</span>
+                      <span className="dg-summary-label">Visible</span>
+                    </div>
+                    <div className="dg-summary-stat dg-summary-stat-hidden">
+                      <span className="dg-summary-value">{visibilityStats.hidden}</span>
+                      <span className="dg-summary-label">Hidden</span>
+                    </div>
+                  </div>
+
                   {groupedTemplates.map((section) => (
                     <section key={section.key} className="dg-section">
                       <div className="dg-section-head">
                         <h2>{section.title}</h2>
+                        <span className="dg-section-count">
+                          {section.items.filter((template) => visibility[template.id] !== false).length}/
+                          {section.items.length} visible
+                        </span>
                       </div>
 
                       <div className="dg-visibility-grid">
@@ -227,13 +252,19 @@ const TemplateVisibilityAdmin = () => {
                           return (
                             <label key={template.id} className="dg-visibility-item">
                               <div className="dg-visibility-item-main">
-                                <span className="dg-visibility-title">{template.title}</span>
-                                <span className="dg-visibility-id">{template.id}</span>
+                                <div className="dg-visibility-title-row">
+                                  <span className="dg-visibility-title">{template.title}</span>
+                                  <span className={`dg-visibility-status ${enabled ? "is-visible" : "is-hidden"}`}>
+                                    {enabled ? "Visible" : "Hidden"}
+                                  </span>
+                                </div>
+                                <span className="dg-visibility-id">ID: {template.id}</span>
                               </div>
                               <input
                                 type="checkbox"
                                 className="dg-visibility-switch"
                                 checked={enabled}
+                                aria-label={`Toggle visibility for ${template.title}`}
                                 onChange={() => handleToggle(template.id)}
                               />
                             </label>

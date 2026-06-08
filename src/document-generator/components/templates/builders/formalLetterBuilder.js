@@ -5,6 +5,7 @@ const checkboxLine = (checked, label) => `[${checked ? "x" : " "}] ${label}`;
 export const buildFormalLetter = (data) => {
   const value = (fieldName) => cleanLine(data[fieldName], "");
   const demandDays = cleanLine(data.PaymentWindowDays, "5");
+  const signedLine = data.SignedImageDataUrl ? "[Signature Image Attached]" : value("Signed");
   const defamationDetails = [
     value("BackgroundFacts"),
     value("DefamationActs"),
@@ -57,7 +58,8 @@ export const buildFormalLetter = (data) => {
     "Yang benar,",
     `Untuk ${value("YourCompanyName")}`,
     "",
-    "__________________________________________",
+    `_____${signedLine}_______________________`,
+    `s.k ${value("LegalClient")}`,
     value("YourSignerName"),
     value("YourSignerTitle"),
     `No. telefon: ${value("ContactPhone")}`,

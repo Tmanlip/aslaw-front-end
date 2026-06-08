@@ -204,31 +204,37 @@ From: ${data.senderName}`,
         name: "BackgroundFacts",
         label: "BackgroundFacts",
         type: "textarea",
+        required: false,
       },
       {
         name: "DefamationActs",
         label: "DefamationActs",
         type: "textarea",
+        required: false,
       },
       {
         name: "DefamatoryStatementsDetails",
         label: "DefamatoryStatementsDetails",
         type: "textarea",
+        required: false,
       },
       {
         name: "ImageUploadDetails",
         label: "ImageUploadDetails",
         type: "textarea",
+        required: false,
       },
       {
         name: "AdditionalPublicationDetails",
         label: "AdditionalPublicationDetails",
         type: "textarea",
+        required: false,
       },
       {
         name: "ReshareDetails",
         label: "ReshareDetails",
         type: "textarea",
+        required: false,
       },
       {
         name: "MainSocialAccount",
@@ -254,6 +260,14 @@ From: ${data.senderName}`,
       { name: "ContactEmail", label: "ContactEmail", type: "text" },
       { name: "YourSignerName", label: "YourSignerName", type: "text" },
       { name: "YourSignerTitle", label: "YourSignerTitle", type: "text" },
+      {
+        name: "SignedImageDataUrl",
+        label: "Signed (Image)",
+        type: "file",
+        accept: "image/png,image/jpeg,image/jpg",
+        required: false,
+      },
+      { name: "LegalClient", label: "LegalClient", type: "text", required: false },
     ],
     generate: (data) => `Prepare a Letter of Demand using these variables:
 
@@ -273,67 +287,48 @@ YourSignerTitle: ${data.YourSignerTitle}`,
     id: "writ-of-summons",
     category: "documents",
     title: "Writ of Summons",
-    description: "Generate a Writ of Summons DOCX using WOS variables.",
+    description: "Generate a Writ of Summons DOCX using Malay writ variables.",
     fields: [
       { name: "Date", label: "Date", type: "date" },
-      { name: "CourtName", label: "Court Name", type: "text" },
-      { name: "CourtLocation", label: "Court Location", type: "text" },
-      { name: "CaseNumber", label: "Case Number", type: "text" },
+      { name: "WritCaseNumber", label: "Case Number (Auto-filled)", type: "text", required: false, readOnly: true },
+      { name: "WritCaseYear", label: "Case Year", type: "text", defaultValue: "2025" },
       { name: "PlaintiffName", label: "Plaintiff Name", type: "text" },
-      { name: "PlaintiffNRIC", label: "Plaintiff NRIC/Reg No", type: "text" },
+      { name: "PlaintiffNRIC", label: "Plaintiff NRIC", type: "text" },
+      { name: "Defendants", label: "Defendants", type: "defendants", required: false },
+      { name: "WitnessDay", label: "Witness Day", type: "text" },
+      { name: "WitnessMonth", label: "Witness Month", type: "text" },
+      { name: "PlaintiffSolicitor", label: "Plaintiff Solicitor", type: "text" },
+      { name: "PlaintiffFirmName", label: "Plaintiff Firm Name", type: "text" },
+      { name: "PlaintiffFirmAddress", label: "Plaintiff Firm Address", type: "textarea" },
+      { name: "ServiceOfficer", label: "Service Officer", type: "text" },
+      { name: "ServiceMethod", label: "Service Method", type: "text" },
+      { name: "ServiceKnownBy", label: "Service Known By", type: "text" },
+      { name: "ServiceAt", label: "Service At", type: "text" },
+      { name: "ServiceOnDate", label: "Service On Date", type: "text" },
+      { name: "EndorsementDate", label: "Endorsement Date (Auto-filled from Date)", type: "text", required: false, readOnly: true },
+      { name: "ServerName", label: "Server Name", type: "text" },
+      { name: "FilingFirmAddress", label: "Filing Firm Address (Auto-filled)", type: "textarea", required: false, readOnly: true },
+      { name: "FilingFirmTel", label: "Filing Firm Tel", type: "text" },
+      { name: "FilingFirmEmail", label: "Filing Firm Email", type: "text" },
+      { name: "FilingReference", label: "Filing Reference", type: "text" },
       {
-        name: "PlaintiffAddressLine1",
-        label: "Plaintiff Address Line 1",
-        type: "text",
+        name: "SignedImageDataUrl",
+        label: "Signed (Image)",
+        type: "file",
+        accept: "image/png,image/jpeg,image/jpg",
+        required: false,
       },
-      {
-        name: "PlaintiffAddressLine2",
-        label: "Plaintiff Address Line 2",
-        type: "text",
-      },
-      { name: "DefendantName", label: "Defendant Name", type: "text" },
-      { name: "DefendantNRIC", label: "Defendant NRIC/Reg No", type: "text" },
-      {
-        name: "DefendantAddressLine1",
-        label: "Defendant Address Line 1",
-        type: "text",
-      },
-      {
-        name: "DefendantAddressLine2",
-        label: "Defendant Address Line 2",
-        type: "text",
-      },
-      { name: "Currency", label: "Currency", type: "text" },
-      { name: "ClaimAmount", label: "Claim Amount", type: "text" },
-      { name: "ClaimDescription", label: "Claim Description", type: "textarea" },
-      { name: "ContractDate", label: "Contract Date", type: "date" },
-      { name: "BreachDetails", label: "Breach Details", type: "textarea" },
-      { name: "InterestRate", label: "Interest Rate", type: "text" },
-      { name: "CostsAmount", label: "Costs Amount", type: "text" },
-      { name: "AppearanceDays", label: "Appearance Days", type: "number" },
-      { name: "HearingDate", label: "Hearing Date", type: "date" },
-      { name: "LawFirmName", label: "Law Firm Name", type: "text" },
-      { name: "LawFirmAddress", label: "Law Firm Address", type: "textarea" },
-      { name: "LawyerName", label: "Lawyer Name", type: "text" },
-      { name: "LawyerPhone", label: "Lawyer Phone", type: "text" },
-      { name: "LawyerEmail", label: "Lawyer Email", type: "text" },
-      {
-        name: "CourtSealReference",
-        label: "Court Seal Reference",
-        type: "text",
-      },
+      { name: "Signed", label: "Signed (Text Fallback)", type: "text", required: false },
     ],
     generate: (data) => `Prepare a Writ of Summons using these variables:
 
-CourtName: ${data.CourtName}
-CaseNumber: ${data.CaseNumber}
+Court Heading 1: ${data.WritCourtHeading1}
+Case Number: ${data.WritCaseNumber}
+Case Year: ${data.WritCaseYear}
 PlaintiffName: ${data.PlaintiffName}
-DefendantName: ${data.DefendantName}
-Currency: ${data.Currency}
-ClaimAmount: ${data.ClaimAmount}
-ClaimDescription: ${data.ClaimDescription}
-LawFirmName: ${data.LawFirmName}
-LawyerName: ${data.LawyerName}`,
+Defendants: ${(Array.isArray(data.Defendants) ? data.Defendants : []).map((d) => d?.name).filter(Boolean).join(", ")}
+Plaintiff Firm Name: ${data.PlaintiffFirmName}
+Filing Reference: ${data.FilingReference}`,
   },
 
   {

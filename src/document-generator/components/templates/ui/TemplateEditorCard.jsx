@@ -14,6 +14,7 @@ const TemplateEditorCard = ({
   loading,
   error,
   onChange,
+  onDefendantsChange,
   onLanguageChange,
   onSubmit,
   uploadTitle,
@@ -143,6 +144,7 @@ const TemplateEditorCard = ({
               fields={template.fields}
               formData={formData}
               onChange={onChange}
+              onDefendantsChange={onDefendantsChange}
             />
 
             {isInvoiceTemplate ? (

@@ -37,6 +37,11 @@ const templatePdfEndpointById = {
     fallbackFilename: "LOD_Template_work.pdf",
     errorText: "Failed to export LOD PDF. Make sure backend is running and LibreOffice is installed.",
   },
+  "writ-of-summons": {
+    endpoint: `${BACKEND_BASE_URL}/generate-writ-pdf`,
+    fallbackFilename: "Writ_of_Summons_Template.pdf",
+    errorText: "Failed to export Writ PDF. Make sure backend is running and LibreOffice is installed.",
+  },
   invoice: {
     endpoint: `${BACKEND_BASE_URL}/generate-invoice-pdf`,
     fallbackFilename: "Invoice_Template.pdf",
@@ -258,6 +263,78 @@ const normalizeInvoiceApiFormData = ({ formData, currentCaseId, currentCase, pre
     total_amount: toNullableNumber(formData?.total_amount),
     phase_balance: toNullableNumber(formData?.phase_balance),
   };
+};
+
+const normalizeDefendantsArray = (rawValue, options = {}) => {
+  const { dropEmpty = true } = options;
+
+  if (!Array.isArray(rawValue)) {
+    return [];
+  }
+
+  const normalized = rawValue
+    .map((item) => ({
+      name: String(item?.name || "").trim(),
+      nric: String(item?.nric || "").trim(),
+      address: String(item?.address || "").trim(),
+    }));
+
+  if (!dropEmpty) {
+    return normalized;
+  }
+
+  return normalized.filter((item) => item.name || item.nric || item.address);
+};
+
+const normalizeWritFormData = (formData) => {
+  const safeFormData = formData && typeof formData === "object" ? formData : {};
+  const hasExplicitDefendants = Array.isArray(safeFormData.Defendants);
+  const defendants = normalizeDefendantsArray(safeFormData.Defendants);
+  const firstDefendant = defendants[0] || { name: "", nric: "", address: "" };
+  const secondDefendant = defendants[1] || { name: "", nric: "", address: "" };
+
+  const output = {
+    ...safeFormData,
+    Defendants: defendants,
+    Defendant1Name: String(
+      hasExplicitDefendants
+        ? (firstDefendant.name || "")
+        : (safeFormData.Defendant1Name || firstDefendant.name || "")
+    ),
+    Defendant1NRIC: String(
+      hasExplicitDefendants
+        ? (firstDefendant.nric || "")
+        : (safeFormData.Defendant1NRIC || firstDefendant.nric || "")
+    ),
+    Defendant1Address: String(
+      hasExplicitDefendants
+        ? (firstDefendant.address || "")
+        : (safeFormData.Defendant1Address || firstDefendant.address || "")
+    ),
+    Defendant2Name: String(
+      hasExplicitDefendants
+        ? (secondDefendant.name || "")
+        : (safeFormData.Defendant2Name || secondDefendant.name || "")
+    ),
+    Defendant2NRIC: String(
+      hasExplicitDefendants
+        ? (secondDefendant.nric || "")
+        : (safeFormData.Defendant2NRIC || secondDefendant.nric || "")
+    ),
+    Defendant2Address: String(
+      hasExplicitDefendants
+        ? (secondDefendant.address || "")
+        : (safeFormData.Defendant2Address || secondDefendant.address || "")
+    ),
+    WritCaseNoLabel: String(safeFormData.WritCaseNoLabel || "GUAMAN NO:"),
+  };
+
+  const dateInput = String(output.Date || "").trim();
+  if (dateInput) {
+    output.EndorsementDate = String(output.EndorsementDate || dateInput);
+  }
+
+  return output;
 };
 
 const normalizeCaseTypeFeeJsonCandidate = (candidate) => {
@@ -487,11 +564,27 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     preparedBy: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName"],
     objective: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
     CaseNumber: ["case_id", "caseId", "case_data.caseId", "case_data.case_id"],
+    WritCaseNumber: ["CaseNumber", "case_id", "caseId", "case_data.caseId", "case_data.case_id", "case_data.caseNumber", "caseNumber"],
+    WritCaseYear: ["case_data.year", "year"],
     PlaintiffName: ["client_name", "ClientName", "case_data.clientName", "case_data.client_name"],
+    Defendant1Name: ["DefendantName"],
+    Defendant1NRIC: ["DefendantNRIC"],
+    PlaintiffFirmName: ["LawFirmName", "YourCompanyName", "LawyerName", "case_data.lawyerName", "lawyerName"],
+    PlaintiffSolicitor: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName"],
+    FilingFirmAddress: ["PlaintiffFirmAddress", "LawFirmAddress", "case_data.lawyerAddress", "lawyerAddress"],
+    FilingFirmTel: ["LawyerPhone", "ContactPhone", "case_data.lawyerPhone", "lawyerPhone"],
+    FilingFirmEmail: ["LawyerEmail", "ContactEmail", "case_data.lawyerEmail", "lawyerEmail"],
+    FilingReference: ["CourtSealReference", "Reference", "case_data.title", "case_title", "title"],
+    RegistrarCourt: ["CourtName", "CourtLocation"],
+    GeneralDamagesAmount: ["ClaimAmount"],
+    Defendant1Address: ["DefendantAddressLine1", "DefendantAddressLine2"],
     ClaimDescription: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
     BreachDetails: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
     LawFirmName: ["YourCompanyName", "LawyerName", "case_data.lawyerName", "lawyerName"],
     LawyerName: ["LawyerName", "YourSignerName", "case_data.lawyerName", "lawyerName"],
+    ContactPhone: ["LawyerPhone", "case_data.lawyerPhone", "lawyerPhone"],
+    ContactEmail: ["LawyerEmail", "case_data.lawyerEmail", "lawyerEmail"],
+    YourSignerName: ["LawyerName", "case_data.lawyerName", "lawyerName"],
     Reference: ["case_data.title", "case_title", "title"],
     GoodsOrServices: ["case_data.description", "description", "case_data.title", "case_title"],
     ClientName: ["client_name", "case_data.clientName", "case_data.client_name"],
@@ -523,11 +616,23 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     preparedBy: () => currentCase?.lawyerName,
     objective: () => currentCase?.description || currentCase?.title,
     CaseNumber: () => currentCase?.caseId || currentCaseId,
+    WritCaseNumber: () => currentCase?.caseId || currentCaseId,
+    WritCaseYear: () => new Date().getFullYear(),
     PlaintiffName: () => currentCase?.clientName,
+    PlaintiffFirmName: () => currentCase?.lawyerName,
+    PlaintiffSolicitor: () => currentCase?.lawyerName,
+    FilingReference: () => currentCase?.title,
+    FilingFirmAddress: () => currentCase?.lawyerAddress,
+    FilingFirmTel: () => currentCase?.lawyerPhone,
+    FilingFirmEmail: () => currentCase?.lawyerEmail,
+    GeneralDamagesAmount: () => undefined,
     ClaimDescription: () => currentCase?.description || currentCase?.title,
     BreachDetails: () => currentCase?.description || currentCase?.title,
     LawFirmName: () => currentCase?.lawyerName,
     LawyerName: () => currentCase?.lawyerName,
+    ContactPhone: () => currentCase?.lawyerPhone,
+    ContactEmail: () => currentCase?.lawyerEmail,
+    YourSignerName: () => currentCase?.lawyerName,
     Reference: () => currentCase?.title,
     GoodsOrServices: () => currentCase?.description || currentCase?.title,
     ClientName: () => currentCase?.clientName,
@@ -910,12 +1015,36 @@ const TemplateForm = () => {
 
       if (field.type === "checkbox") {
         initialData[field.name] = Boolean(resolvedPrefillValue ?? field.defaultValue);
+      } else if (field.type === "defendants") {
+        initialData[field.name] = [];
       } else if (field.type === "date") {
         initialData[field.name] = resolvedPrefillValue || new Date().toISOString().slice(0, 10);
       } else {
         initialData[field.name] = resolvedPrefillValue ?? field.defaultValue ?? "";
       }
     });
+
+    if (template.id === "writ-of-summons") {
+      const defendantCandidates = [
+        {
+          name: String(initialData.Defendant1Name || "").trim(),
+          nric: String(initialData.Defendant1NRIC || "").trim(),
+          address: String(initialData.Defendant1Address || "").trim(),
+        },
+        {
+          name: String(initialData.Defendant2Name || "").trim(),
+          nric: String(initialData.Defendant2NRIC || "").trim(),
+          address: String(initialData.Defendant2Address || "").trim(),
+        },
+      ].filter((item) => item.name || item.nric || item.address);
+
+      initialData.Defendants = defendantCandidates.length > 0 ? defendantCandidates : [{ name: "", nric: "", address: "" }];
+
+      const normalizedDate = String(initialData.Date || "").trim();
+      if (normalizedDate && String(initialData.EndorsementDate || "").trim() === "") {
+        initialData.EndorsementDate = normalizedDate;
+      }
+    }
 
     if (initialData.upload_title === undefined) {
       initialData.upload_title = "";
@@ -924,6 +1053,46 @@ const TemplateForm = () => {
     setFormData(initialData);
     setPrefillLoading(false);
   }, [template, prefillData, currentCase, currentCaseId]);
+
+  useEffect(() => {
+    if (template?.id !== "writ-of-summons") {
+      return;
+    }
+
+    setFormData((prev) => {
+      const normalizedDate = String(prev.Date || "").trim();
+      if (!normalizedDate || String(prev.EndorsementDate || "").trim() === normalizedDate) {
+        if (String(prev.EndorsementDate || "") === normalizedDate) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          EndorsementDate: normalizedDate,
+        };
+      }
+
+      return prev;
+    });
+  }, [template?.id, formData.Date]);
+
+  const handleDefendantsChange = (nextDefendants) => {
+    const normalized = normalizeDefendantsArray(nextDefendants, { dropEmpty: false });
+    const bounded = normalized.length > 0 ? normalized : [{ name: "", nric: "", address: "" }];
+    const first = bounded[0] || { name: "", nric: "", address: "" };
+    const second = bounded[1] || { name: "", nric: "", address: "" };
+
+    setFormData((prev) => ({
+      ...prev,
+      Defendants: bounded,
+      Defendant1Name: first.name,
+      Defendant1NRIC: first.nric,
+      Defendant1Address: first.address,
+      Defendant2Name: second.name,
+      Defendant2NRIC: second.nric,
+      Defendant2Address: second.address,
+    }));
+  };
 
   useEffect(() => {
     if (template?.id !== "invoice") {
@@ -1187,10 +1356,235 @@ const TemplateForm = () => {
     );
   }
 
+  const readFileAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(typeof reader.result === "string" ? reader.result : "");
+      };
+      reader.onerror = () => {
+        reject(new Error("Failed to read file."));
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const loadImageFromDataUrl = (dataUrl) =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Failed to load image."));
+      image.src = dataUrl;
+    });
+
+  const removeSignatureBackgroundFromDataUrl = async (dataUrl) => {
+    if (!dataUrl.startsWith("data:image/")) {
+      return dataUrl;
+    }
+
+    const image = await loadImageFromDataUrl(dataUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, image.width);
+    canvas.height = Math.max(1, image.height);
+
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) {
+      return dataUrl;
+    }
+
+    context.drawImage(image, 0, 0);
+
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const { data, width, height } = imageData;
+
+    const getPixelOffset = (x, y) => ((y * width + x) * 4);
+
+    const luminance = new Uint8Array(width * height);
+    let borderR = 0;
+    let borderG = 0;
+    let borderB = 0;
+    let borderL = 0;
+    let borderCount = 0;
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const offset = getPixelOffset(x, y);
+        const r = data[offset];
+        const g = data[offset + 1];
+        const b = data[offset + 2];
+        const l = Math.max(0, Math.min(255, Math.round(0.299 * r + 0.587 * g + 0.114 * b)));
+        const idx = y * width + x;
+        luminance[idx] = l;
+
+        if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+          borderR += r;
+          borderG += g;
+          borderB += b;
+          borderL += l;
+          borderCount += 1;
+        }
+      }
+    }
+
+    const backgroundR = borderCount > 0 ? borderR / borderCount : 255;
+    const backgroundG = borderCount > 0 ? borderG / borderCount : 255;
+    const backgroundB = borderCount > 0 ? borderB / borderCount : 255;
+    const backgroundL = borderCount > 0 ? borderL / borderCount : 245;
+
+    const visited = new Uint8Array(width * height);
+    const backgroundMask = new Uint8Array(width * height);
+    const queueX = new Int32Array(width * height);
+    const queueY = new Int32Array(width * height);
+    let head = 0;
+    let tail = 0;
+
+    const enqueue = (x, y) => {
+      queueX[tail] = x;
+      queueY[tail] = y;
+      tail += 1;
+    };
+
+    const trySeed = (x, y) => {
+      const idx = y * width + x;
+      if (visited[idx]) {
+        return;
+      }
+
+      const offset = getPixelOffset(x, y);
+      const r = data[offset];
+      const g = data[offset + 1];
+      const b = data[offset + 2];
+      const l = luminance[idx];
+      const colorDistance = Math.sqrt(
+        (r - backgroundR) ** 2 +
+          (g - backgroundG) ** 2 +
+          (b - backgroundB) ** 2
+      );
+
+      if (l >= Math.max(170, backgroundL - 35) || colorDistance <= 65) {
+        visited[idx] = 1;
+        backgroundMask[idx] = 1;
+        enqueue(x, y);
+      }
+    };
+
+    for (let x = 0; x < width; x += 1) {
+      trySeed(x, 0);
+      trySeed(x, height - 1);
+    }
+
+    for (let y = 0; y < height; y += 1) {
+      trySeed(0, y);
+      trySeed(width - 1, y);
+    }
+
+    while (head < tail) {
+      const x = queueX[head];
+      const y = queueY[head];
+      head += 1;
+
+      const neighbors = [
+        [x - 1, y],
+        [x + 1, y],
+        [x, y - 1],
+        [x, y + 1],
+      ];
+
+      neighbors.forEach(([nx, ny]) => {
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
+          return;
+        }
+
+        const nIdx = ny * width + nx;
+        if (visited[nIdx]) {
+          return;
+        }
+
+        const offset = getPixelOffset(nx, ny);
+        const r = data[offset];
+        const g = data[offset + 1];
+        const b = data[offset + 2];
+        const l = luminance[nIdx];
+        const colorDistance = Math.sqrt(
+          (r - backgroundR) ** 2 +
+            (g - backgroundG) ** 2 +
+            (b - backgroundB) ** 2
+        );
+
+        if (l >= Math.max(160, backgroundL - 45) || colorDistance <= 58) {
+          visited[nIdx] = 1;
+          backgroundMask[nIdx] = 1;
+          enqueue(nx, ny);
+        }
+      });
+    }
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const idx = y * width + x;
+        const offset = getPixelOffset(x, y);
+        const l = luminance[idx];
+
+        if (backgroundMask[idx]) {
+          data[offset + 3] = 0;
+          continue;
+        }
+
+        if (l >= 205) {
+          data[offset + 3] = Math.min(data[offset + 3], 0);
+          continue;
+        }
+
+        if (l >= 165) {
+          const soft = 1 - ((l - 165) / 40);
+          data[offset + 3] = Math.round(data[offset + 3] * Math.max(0, Math.min(1, soft)));
+        }
+
+        // Darken surviving strokes slightly so signatures stay visible after transparency processing.
+        data[offset] = Math.max(0, Math.round(data[offset] * 0.7));
+        data[offset + 1] = Math.max(0, Math.round(data[offset + 1] * 0.7));
+        data[offset + 2] = Math.max(0, Math.round(data[offset + 2] * 0.7));
+      }
+    }
+
+    context.putImageData(imageData, 0, 0);
+    return canvas.toDataURL("image/png");
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
 
-    let finalValue = type === "checkbox" ? checked : type === "file" ? files?.[0] || null : value;
+    if (type === "file") {
+      const selectedFile = files?.[0] || null;
+
+      if (!selectedFile) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+        return;
+      }
+
+      (async () => {
+        try {
+          const rawDataUrl = await readFileAsDataUrl(selectedFile);
+          const processedDataUrl =
+            name === "SignedImageDataUrl"
+              ? await removeSignatureBackgroundFromDataUrl(rawDataUrl)
+              : rawDataUrl;
+
+          setFormData((prev) => ({
+            ...prev,
+            [name]: processedDataUrl,
+          }));
+        } catch {
+          setError("Failed to process selected signature image.");
+        }
+      })();
+
+      return;
+    }
+
+    let finalValue = type === "checkbox" ? checked : value;
 
     if ((name === "tax" || name === "discount" || name === "paid_amount") && type === "number") {
       const num = parseFloat(value);
@@ -1258,6 +1652,58 @@ const TemplateForm = () => {
     return { blob, fileName };
   };
 
+  const requestLodPdfBlob = async () => {
+    const lodPdfConfig = templatePdfEndpointById["formal-letter"];
+    if (!lodPdfConfig) {
+      return null;
+    }
+
+    const response = await fetch(lodPdfConfig.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formData, language: selectedLanguage }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get("Content-Disposition");
+    const fileName = getFileNameFromContentDisposition(
+      contentDisposition,
+      lodPdfConfig.fallbackFilename,
+    );
+
+    return { blob, fileName };
+  };
+
+  const requestWritPdfBlob = async () => {
+    const writPdfConfig = templatePdfEndpointById["writ-of-summons"];
+    if (!writPdfConfig) {
+      return null;
+    }
+
+    const response = await fetch(writPdfConfig.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formData: normalizeWritFormData(formData), language: selectedLanguage }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get("Content-Disposition");
+    const fileName = getFileNameFromContentDisposition(
+      contentDisposition,
+      writPdfConfig.fallbackFilename,
+    );
+
+    return { blob, fileName };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1289,8 +1735,12 @@ const TemplateForm = () => {
       const deterministicBuilder = deterministicTemplateBuilders[template.id];
       if (deterministicBuilder) {
         const isInvoiceTemplate = template.id === "invoice";
+        const isLodTemplate = template.id === "formal-letter";
+        const isWritTemplate = template.id === "writ-of-summons";
         const builtContent = deterministicBuilder(formData, selectedLanguage);
-        updatePreviewFromContent(builtContent, { createPdfPreview: !isInvoiceTemplate });
+        updatePreviewFromContent(builtContent, {
+          createPdfPreview: !isInvoiceTemplate && !isLodTemplate && !isWritTemplate,
+        });
 
         if (!isInvoiceTemplate) {
           setShowPreview(true);
@@ -1309,7 +1759,9 @@ const TemplateForm = () => {
               const translationPayload = await translationResponse.json();
               const translatedContent = String(translationPayload?.output || "").trim();
               if (translatedContent) {
-                updatePreviewFromContent(translatedContent, { createPdfPreview: !isInvoiceTemplate });
+                updatePreviewFromContent(translatedContent, {
+                  createPdfPreview: !isInvoiceTemplate && !isLodTemplate && !isWritTemplate,
+                });
               }
             }
           } catch {
@@ -1328,14 +1780,68 @@ const TemplateForm = () => {
               });
             } else {
               // Fallback to local rendering when backend invoice preview is unavailable.
-              updatePreviewFromContent(generatedContent || builtContent, { createPdfPreview: true });
+              updatePreviewFromContent(builtContent, { createPdfPreview: true });
             }
           } catch {
             // Fallback to local rendering when backend invoice preview is unavailable.
-            updatePreviewFromContent(generatedContent || builtContent, { createPdfPreview: true });
+            updatePreviewFromContent(builtContent, { createPdfPreview: true });
           } finally {
             setShowPreview(true);
           }
+        }
+
+        if (isLodTemplate) {
+          let hasBackendPreview = false;
+
+          try {
+            const lodPdf = await requestLodPdfBlob();
+
+            if (lodPdf?.blob) {
+              hasBackendPreview = true;
+              setPdfPreviewUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return URL.createObjectURL(lodPdf.blob);
+              });
+            }
+          } catch {
+            // Handled below with an explicit message.
+          } finally {
+            if (hasBackendPreview) {
+              setShowPreview(true);
+            } else {
+              setShowPreview(false);
+              setError("Unable to load LOD template preview from backend. Please check /generate-lod-pdf.");
+            }
+          }
+
+          return;
+        }
+
+        if (isWritTemplate) {
+          let hasBackendPreview = false;
+
+          try {
+            const writPdf = await requestWritPdfBlob();
+
+            if (writPdf?.blob) {
+              hasBackendPreview = true;
+              setPdfPreviewUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return URL.createObjectURL(writPdf.blob);
+              });
+            }
+          } catch {
+            // Handled below with an explicit message.
+          } finally {
+            if (hasBackendPreview) {
+              setShowPreview(true);
+            } else {
+              setShowPreview(false);
+              setError("Unable to load Writ template preview from backend. Please check /generate-writ-pdf.");
+            }
+          }
+
+          return;
         }
 
         const silentDataSyncEndpointByTemplateId = {
@@ -1458,7 +1964,9 @@ const TemplateForm = () => {
                   currentCase,
                   prefillData,
                 })
-              : formData;
+              : template.id === "writ-of-summons"
+                ? normalizeWritFormData(formData)
+                : formData;
 
           if (template.id === "invoice" && !payloadFormData) {
             throw new Error("Case ID is missing. Open this template from a valid case and try again.");
@@ -1569,6 +2077,32 @@ const TemplateForm = () => {
         const pdfFileName = getFileNameFromContentDisposition(
           contentDisposition,
           lodPdfConfig.fallbackFilename,
+        );
+        file = new File(
+          [pdfBlob],
+          pdfFileName,
+          {
+            type: pdfBlob.type || "application/pdf",
+          },
+        );
+      } else if (template.id === "writ-of-summons") {
+        const writPdfConfig = templatePdfEndpointById["writ-of-summons"];
+        const normalizedWritFormData = normalizeWritFormData(formData);
+        const pdfResponse = await fetch(writPdfConfig.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ formData: normalizedWritFormData, language: selectedLanguage }),
+        });
+
+        if (!pdfResponse.ok) {
+          throw new Error("Failed to generate Writ PDF for upload.");
+        }
+
+        const pdfBlob = await pdfResponse.blob();
+        const contentDisposition = pdfResponse.headers.get("Content-Disposition");
+        const pdfFileName = getFileNameFromContentDisposition(
+          contentDisposition,
+          writPdfConfig.fallbackFilename,
         );
         file = new File(
           [pdfBlob],
@@ -1851,7 +2385,10 @@ const TemplateForm = () => {
         const response = await fetch(templateDocxConfig.endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ formData, language: selectedLanguage }),
+          body: JSON.stringify({
+            formData: template.id === "writ-of-summons" ? normalizeWritFormData(formData) : formData,
+            language: selectedLanguage,
+          }),
         });
 
         if (!response.ok) {
@@ -1947,6 +2484,7 @@ const TemplateForm = () => {
       loading={loading}
       error={error}
       onChange={handleChange}
+      onDefendantsChange={handleDefendantsChange}
       uploadTitle={formData.upload_title}
       onUploadTitleChange={handleChange}
       onLanguageChange={setSelectedLanguage}

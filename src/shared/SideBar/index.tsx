@@ -49,6 +49,10 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
     PATH.ADMIN_STAFF.REGISTER_USER,
     PATH.ADMIN_STAFF.MANAGE_PROFILE,
     PATH.ADMIN_STAFF.REGISTER_CASE,
+    PATH.ADMIN_STAFF.BILLING,
+    PATH.ADMIN_STAFF.LAWYER_BILLING,
+    PATH.ADMIN_STAFF.EDIT_CASE,
+    PATH.ADMIN_STAFF.ASSIGN_CASE,
   ]);
 
   const sidebarRoutes =

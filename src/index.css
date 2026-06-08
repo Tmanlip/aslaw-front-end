@@ -172,9 +172,13 @@ iframe {
 
 .aslaw-metis-right {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
   gap: 0.6rem;
-  margin-left: 0.75rem;
+  margin-left: auto;
+  width: auto;
 }
 
 .aslaw-metis-live-toast {
@@ -640,9 +644,10 @@ iframe {
   }
 
   .aslaw-metis-right {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
-    margin-left: 0;
+    margin-left: auto;
+    align-self: flex-end;
   }
 
   .aslaw-metis-notification-panel {

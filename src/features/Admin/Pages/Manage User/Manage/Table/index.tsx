@@ -710,7 +710,7 @@ export default function UserTable() {
                 Loading...
               </>
             ) : (
-              role === "admin" || role === "junioradmin" ? "Go to Manage Profile" : "Go to Manage User"
+              role === "admin" || role === "adminstaff" || role === "junioradmin" ? "Go to Manage Profile" : "Go to Manage User"
             )}
           </Button>
         </Modal.Footer>

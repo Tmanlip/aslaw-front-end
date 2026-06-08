@@ -41,6 +41,13 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
   const [uploading, setUploading] = useState(false);
   const [pendingDeleteFile, setPendingDeleteFile] = useState<EncryptedDocumentItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [updateInvoicePayload, setUpdateInvoicePayload] = useState<{
+    documentId: string;
+    fileName: string;
+    invoice: any;
+  } | null>(null);
+  const [updatePaidAmount, setUpdatePaidAmount] = useState<string>("");
+  const [isSavingInvoiceUpdate, setIsSavingInvoiceUpdate] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewMessageVariant, setReviewMessageVariant] = useState<"success" | "danger">("success");
   const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
@@ -66,7 +73,7 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
 
   const token = AuthMemory.getToken();
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-  const getActionKey = (action: "preview" | "download" | "delete" | "approve" | "reject", file: EncryptedDocumentItem) =>
+  const getActionKey = (action: "preview" | "download" | "delete" | "update" | "approve" | "reject", file: EncryptedDocumentItem) =>
     `${action}-${file.document_id || file.file_name}`;
   const normalizeApiRelativeUrl = (url?: string): string => {
     const value = String(url || "");
@@ -226,6 +233,110 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     setPendingDeleteFile(file);
   };
 
+  const handleRecentInvoiceUpdate = async (file: EncryptedDocumentItem) => {
+    const documentId = String(file.document_id || "").trim();
+    if (!documentId) {
+      setReviewMessage(`Unable to resolve invoice document for "${file.file_name}".`);
+      setReviewMessageVariant("danger");
+      return;
+    }
+
+    const actionKey = getActionKey("update", file);
+    setLoadingAction(actionKey);
+
+    try {
+      const response = await axiosUser.get(`/encrypted-documents/${documentId}/invoice`, {
+        headers: authHeaders,
+      });
+
+      const resolvedInvoice =
+        response?.data?.invoice ??
+        response?.data?.invoice_table ??
+        response?.data?.data?.invoice ??
+        null;
+
+      if (!resolvedInvoice) {
+        throw new Error("Invoice data was not returned.");
+      }
+
+      setUpdateInvoicePayload({
+        documentId,
+        fileName: file.file_name,
+        invoice: resolvedInvoice,
+      });
+      setUpdatePaidAmount(String(resolvedInvoice?.paid_amount ?? ""));
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to load invoice data.";
+      setReviewMessage(message);
+      setReviewMessageVariant("danger");
+    } finally {
+      setLoadingAction((current) => (current === actionKey ? null : current));
+    }
+  };
+
+  const confirmRecentInvoiceUpdate = async () => {
+    if (!updateInvoicePayload?.documentId) {
+      return;
+    }
+
+    const numericPaidAmount = Number(updatePaidAmount);
+    if (!Number.isFinite(numericPaidAmount) || numericPaidAmount < 0) {
+      setReviewMessage("Paid Amount must be a valid number greater than or equal to 0.");
+      setReviewMessageVariant("danger");
+      return;
+    }
+
+    setIsSavingInvoiceUpdate(true);
+    try {
+      const response = await axiosUser.put(
+        `/encrypted-documents/${updateInvoicePayload.documentId}/invoice`,
+        { paid_amount: numericPaidAmount },
+        { headers: authHeaders }
+      );
+
+      const updatedDocument = response?.data?.updated_document ?? null;
+      const updatedInvoice = response?.data?.invoice ?? updateInvoicePayload.invoice;
+      const nextDocumentId = String(updatedDocument?.new_document_id ?? updateInvoicePayload.documentId);
+      const nextFileName = String(updatedDocument?.new_file_name ?? updateInvoicePayload.fileName);
+
+      setRecentFiles((prev) =>
+        prev.map((item) =>
+          String(item.document_id) === String(updateInvoicePayload.documentId)
+            ? {
+                ...item,
+                document_id: nextDocumentId,
+                file_name: nextFileName,
+                paid_amount: updatedInvoice?.paid_amount ?? numericPaidAmount,
+                payment_stage: updatedInvoice?.payment_stage ?? item.payment_stage,
+                invoice_stage: updatedInvoice?.payment_stage ?? item.invoice_stage,
+                type_of_work: updatedInvoice?.type_of_work ?? item.type_of_work,
+              }
+            : item
+        )
+      );
+
+      setUpdateInvoicePayload(null);
+      setUpdatePaidAmount("");
+      setReviewMessage("Invoice saved successfully.");
+      setReviewMessageVariant("success");
+      onUploadSuccess?.();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to save invoice update.";
+      setReviewMessage(message);
+      setReviewMessageVariant("danger");
+    } finally {
+      setIsSavingInvoiceUpdate(false);
+    }
+  };
+
   const confirmRecentDelete = async () => {
     if (!pendingDeleteFile) {
       return;
@@ -353,9 +464,9 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                 <p className="admin-billing-empty-list">No recent files found</p>
               )}
               {displayedRecentFiles.map((file) => {
-                const canDeleteThisFile =
-                  canMutateGeneralFiles &&
-                  (file.category !== "invoices" || canMutateInvoices);
+                const isInvoiceFile = file.category === "invoices";
+                const canDeleteThisFile = canMutateGeneralFiles && !isInvoiceFile;
+                const canUpdateThisInvoice = canMutateInvoices && isInvoiceFile;
 
                 return (
                   <li key={file.document_id} className="admin-billing-file-row">
@@ -398,21 +509,43 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                       </button>
 
                       {!readOnly && (
-                        <button
-                          type="button"
-                          className="admin-billing-file-btn admin-billing-file-btn-delete"
-                          onClick={() => void handleRecentDelete(file)}
-                          disabled={!canDeleteThisFile || loadingAction === getActionKey("delete", file)}
-                        >
-                          {loadingAction === getActionKey("delete", file) ? (
-                            <>
-                              <LoadingSpinner size={16} color="#ffffff" />
-                              Deleting
-                            </>
-                          ) : (
-                            "Delete"
+                        <>
+                          {canUpdateThisInvoice && (
+                            <button
+                              type="button"
+                              className="admin-billing-file-btn admin-billing-file-btn-download"
+                              onClick={() => void handleRecentInvoiceUpdate(file)}
+                              disabled={loadingAction === getActionKey("update", file)}
+                            >
+                              {loadingAction === getActionKey("update", file) ? (
+                                <>
+                                  <LoadingSpinner size={16} color="#ffffff" />
+                                  Loading
+                                </>
+                              ) : (
+                                "Update"
+                              )}
+                            </button>
                           )}
-                        </button>
+
+                          {canDeleteThisFile && (
+                            <button
+                              type="button"
+                              className="admin-billing-file-btn admin-billing-file-btn-delete"
+                              onClick={() => void handleRecentDelete(file)}
+                              disabled={loadingAction === getActionKey("delete", file)}
+                            >
+                              {loadingAction === getActionKey("delete", file) ? (
+                                <>
+                                  <LoadingSpinner size={16} color="#ffffff" />
+                                  Deleting
+                                </>
+                              ) : (
+                                "Delete"
+                              )}
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </li>
@@ -532,6 +665,241 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
           </p>
         ) : null}
       </ConfirmModal>
+
+      {updateInvoicePayload && (
+        (() => {
+          const invoice = updateInvoicePayload.invoice || {};
+          const expectedAmount = Number(invoice.expected_amount || 0);
+          const paidAmountValue = Number(updatePaidAmount || 0);
+          const taxPct = Number(invoice.tax || 0);
+          const discountPct = Number(invoice.discount || 0);
+          const balanceAmount = Math.max(expectedAmount - paidAmountValue, 0);
+          const totalAmount = paidAmountValue + (paidAmountValue * taxPct) / 100 - (paidAmountValue * discountPct) / 100;
+          const formatAmount = (value: number) =>
+            new Intl.NumberFormat("en-MY", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(Number.isFinite(value) ? value : 0);
+
+          return (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 2800,
+                background: "rgba(0,0,0,0.55)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "1rem",
+              }}
+              onClick={() => {
+                if (!isSavingInvoiceUpdate) {
+                  setUpdateInvoicePayload(null);
+                  setUpdatePaidAmount("");
+                }
+              }}
+            >
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: "12px",
+                  width: "min(96vw, 560px)",
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.22)",
+                }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "1rem 1.25rem 0.75rem",
+                    borderBottom: "3px solid #b91c1c",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#b91c1c" }}>INVOICE</div>
+                    <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.15rem" }}>
+                      Update paid amount from Recent tab
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isSavingInvoiceUpdate) {
+                        setUpdateInvoicePayload(null);
+                        setUpdatePaidAmount("");
+                      }
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "1.4rem",
+                      cursor: isSavingInvoiceUpdate ? "not-allowed" : "pointer",
+                      color: "#64748b",
+                      lineHeight: 1,
+                    }}
+                    disabled={isSavingInvoiceUpdate}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div style={{ padding: "1rem 1.25rem" }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "0.5rem 1rem",
+                      background: "#f8fafc",
+                      borderRadius: "10px",
+                      padding: "0.85rem 1rem",
+                      marginBottom: "1rem",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <div><span style={{ color: "#64748b" }}>Invoice No.</span><br /><strong>{invoice.invoice_number || "-"}</strong></div>
+                    <div><span style={{ color: "#64748b" }}>Payment Stage</span><br /><strong style={{ textTransform: "capitalize" }}>{invoice.payment_stage || "-"}</strong></div>
+                    <div><span style={{ color: "#64748b" }}>Client</span><br /><strong>{invoice.client_name || "-"}</strong></div>
+                    <div><span style={{ color: "#64748b" }}>Case</span><br /><strong>{invoice.case_title || "-"}</strong></div>
+                    <div><span style={{ color: "#64748b" }}>Issue Date</span><br /><strong>{invoice.issue_date || "-"}</strong></div>
+                    <div><span style={{ color: "#64748b" }}>Due Date</span><br /><strong>{invoice.due_date || "-"}</strong></div>
+                  </div>
+
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden", marginBottom: "1rem" }}>
+                    {[
+                      { label: "Expected Amount", value: `RM ${formatAmount(expectedAmount)}` },
+                      { label: "Tax", value: `${taxPct}%` },
+                      { label: "Discount", value: `${discountPct}%` },
+                    ].map(({ label, value }) => (
+                      <div
+                        key={label}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.6rem 1rem",
+                          borderBottom: "1px solid #f1f5f9",
+                          fontSize: "0.9rem",
+                          color: "#64748b",
+                        }}
+                      >
+                        <span>{label}</span>
+                        <span style={{ fontWeight: 600, color: "#1e293b" }}>{value}</span>
+                      </div>
+                    ))}
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.65rem 1rem",
+                        borderBottom: "1px solid #f1f5f9",
+                        background: "#fffbeb",
+                      }}
+                    >
+                      <label htmlFor="recent-update-paid-input" style={{ fontWeight: 600, color: "#92400e", fontSize: "0.9rem" }}>
+                        Paid Amount (RM)
+                      </label>
+                      <input
+                        id="recent-update-paid-input"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={updatePaidAmount}
+                        onChange={(event) => setUpdatePaidAmount(event.target.value)}
+                        style={{
+                          width: "140px",
+                          padding: "0.4rem 0.65rem",
+                          borderRadius: "7px",
+                          border: "2px solid #b91c1c",
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          textAlign: "right",
+                        }}
+                        disabled={isSavingInvoiceUpdate}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.6rem 1rem",
+                        borderBottom: "1px solid #f1f5f9",
+                        fontSize: "0.9rem",
+                        background: "#f0fdf4",
+                      }}
+                    >
+                      <span style={{ color: "#15803d", fontWeight: 600 }}>Balance</span>
+                      <span style={{ fontWeight: 700, color: "#15803d" }}>RM {formatAmount(balanceAmount)}</span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.7rem 1rem",
+                        background: "#fff7ed",
+                        fontSize: "1rem",
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: "#7c2d12" }}>Total Amount</span>
+                      <span style={{ fontWeight: 800, color: "#7c2d12" }}>RM {formatAmount(totalAmount)}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpdateInvoicePayload(null);
+                        setUpdatePaidAmount("");
+                      }}
+                      disabled={isSavingInvoiceUpdate}
+                      style={{
+                        padding: "0.55rem 1.2rem",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#fff",
+                        cursor: isSavingInvoiceUpdate ? "not-allowed" : "pointer",
+                        opacity: isSavingInvoiceUpdate ? 0.6 : 1,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void confirmRecentInvoiceUpdate()}
+                      disabled={isSavingInvoiceUpdate}
+                      style={{
+                        padding: "0.55rem 1.2rem",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "#b91c1c",
+                        color: "#fff",
+                        cursor: isSavingInvoiceUpdate ? "not-allowed" : "pointer",
+                        opacity: isSavingInvoiceUpdate ? 0.6 : 1,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isSavingInvoiceUpdate ? "Saving..." : "Save Update"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()
+      )}
 
       {previewFile &&
         createPortal(
