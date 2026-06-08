@@ -286,6 +286,49 @@ const normalizeDefendantsArray = (rawValue, options = {}) => {
   return normalized.filter((item) => item.name || item.nric || item.address);
 };
 
+const toMalayDayWord = (value) => {
+  const n = Number(value);
+  const map = {
+    1: "satu",
+    2: "dua",
+    3: "tiga",
+    4: "empat",
+    5: "lima",
+    6: "enam",
+    7: "tujuh",
+    8: "lapan",
+    9: "sembilan",
+    10: "sepuluh",
+    11: "sebelas",
+    12: "dua belas",
+    13: "tiga belas",
+    14: "empat belas",
+    15: "lima belas",
+    16: "enam belas",
+    17: "tujuh belas",
+    18: "lapan belas",
+    19: "sembilan belas",
+    20: "dua puluh",
+    21: "dua puluh satu",
+    22: "dua puluh dua",
+    23: "dua puluh tiga",
+    24: "dua puluh empat",
+    25: "dua puluh lima",
+    26: "dua puluh enam",
+    27: "dua puluh tujuh",
+    28: "dua puluh lapan",
+    29: "dua puluh sembilan",
+    30: "tiga puluh",
+    31: "tiga puluh satu",
+  };
+
+  if (!Number.isFinite(n) || n <= 0) {
+    return "";
+  }
+
+  return map[Math.trunc(n)] || String(Math.trunc(n));
+};
+
 const normalizeWritFormData = (formData) => {
   const safeFormData = formData && typeof formData === "object" ? formData : {};
   const hasExplicitDefendants = Array.isArray(safeFormData.Defendants);
@@ -328,6 +371,30 @@ const normalizeWritFormData = (formData) => {
     ),
     WritCaseNoLabel: String(safeFormData.WritCaseNoLabel || "GUAMAN NO:"),
   };
+
+  const appearanceDays = String(output.AppearanceDays || "14").trim() || "14";
+  const writCaseNumber = String(output.WritCaseNumber || output.CaseNumber || "").trim();
+  const writCaseYear = String(output.WritCaseYear || output.CaseYear || "").trim();
+  const lawyerName = String(output.LawyerName || output.PlaintiffSolicitor || "").trim();
+  const plaintiffFirmAddress = String(output.PlaintiffFirmAddress || output.FilingFirmAddress || "").trim();
+
+  output.AppearanceDays = appearanceDays;
+  output.AppearanceDaysWord = String(output.AppearanceDaysWord || toMalayDayWord(appearanceDays));
+  output.CaseNoReference = String(output.CaseNoReference || writCaseNumber);
+  output.CaseYear = String(output.CaseYear || writCaseYear);
+  output.DamagesAmount = String(output.DamagesAmount || output.GeneralDamagesAmount || output.ClaimAmount || "");
+  output.SDamagesText = String(output.SDamagesText || output.SpecialDamagesText || "");
+  output.FirmAddress = String(output.FirmAddress || plaintiffFirmAddress);
+  output.LawyerName = String(output.LawyerName || lawyerName);
+  output.InterestFromText = String(output.InterestFromText || "dari tarikh penghakiman sehingga penyelesaian penuh");
+  output.CostsActionText = String(output.CostsActionText || "Kos tindakan");
+  output.OtherReliefText = String(output.OtherReliefText || "Apa-apa relif yang difikirkan sesuai dan adil oleh mahkamah");
+  output.InitialCostsAmount = String(output.InitialCostsAmount || "225.00");
+  output.SubstitutedServiceCostsAmount = String(output.SubstitutedServiceCostsAmount || "60.00");
+  output.PostagePrice = String(output.PostagePrice || "");
+  output.OpponentLawyer = String(output.OpponentLawyer || "");
+  output.Place = String(output.Place || output.CourtPlace2 || "");
+  output.CourtPlace2 = String(output.CourtPlace2 || output.Place || "");
 
   const dateInput = String(output.Date || "").trim();
   if (dateInput) {
@@ -566,6 +633,8 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     CaseNumber: ["case_id", "caseId", "case_data.caseId", "case_data.case_id"],
     WritCaseNumber: ["CaseNumber", "case_id", "caseId", "case_data.caseId", "case_data.case_id", "case_data.caseNumber", "caseNumber"],
     WritCaseYear: ["case_data.year", "year"],
+    CaseNoReference: ["WritCaseNumber", "CaseNumber", "case_data.caseNumber", "caseNumber"],
+    CaseYear: ["WritCaseYear", "case_data.year", "year"],
     PlaintiffName: ["client_name", "ClientName", "case_data.clientName", "case_data.client_name"],
     Defendant1Name: ["DefendantName"],
     Defendant1NRIC: ["DefendantNRIC"],
@@ -575,7 +644,23 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     FilingFirmTel: ["LawyerPhone", "ContactPhone", "case_data.lawyerPhone", "lawyerPhone"],
     FilingFirmEmail: ["LawyerEmail", "ContactEmail", "case_data.lawyerEmail", "lawyerEmail"],
     FilingReference: ["CourtSealReference", "Reference", "case_data.title", "case_title", "title"],
+    FirmAddress: ["FilingFirmAddress", "PlaintiffFirmAddress", "LawFirmAddress", "case_data.lawyerAddress", "lawyerAddress"],
     RegistrarCourt: ["CourtName", "CourtLocation"],
+    Place: ["CourtLocation", "CourtPlace2"],
+    CourtPlace2: ["CourtLocation", "Place"],
+    AppearanceDays: ["AppearanceDays"],
+    AppearanceDaysWord: ["AppearanceDaysWord"],
+    WitnessYear: ["WitnessYear", "year", "case_data.year"],
+    DamagesAmount: ["GeneralDamagesAmount", "ClaimAmount"],
+    SDamagesText: ["SpecialDamagesText", "SDamagesText"],
+    InterestRate: ["InterestRate"],
+    InterestFromText: ["InterestFromText"],
+    CostsActionText: ["CostsActionText"],
+    OtherReliefText: ["OtherReliefText"],
+    InitialCostsAmount: ["InitialCostsAmount"],
+    SubstitutedServiceCostsAmount: ["SubstitutedServiceCostsAmount"],
+    OpponentLawyer: ["OpponentLawyer"],
+    PostagePrice: ["PostagePrice"],
     GeneralDamagesAmount: ["ClaimAmount"],
     Defendant1Address: ["DefendantAddressLine1", "DefendantAddressLine2"],
     ClaimDescription: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
@@ -585,6 +670,7 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     ContactPhone: ["LawyerPhone", "case_data.lawyerPhone", "lawyerPhone"],
     ContactEmail: ["LawyerEmail", "case_data.lawyerEmail", "lawyerEmail"],
     YourSignerName: ["LawyerName", "case_data.lawyerName", "lawyerName"],
+    CaseDescription: ["case_data.description", "description", "BackgroundFacts", "case_data.title", "case_title"],
     Reference: ["case_data.title", "case_title", "title"],
     GoodsOrServices: ["case_data.description", "description", "case_data.title", "case_title"],
     ClientName: ["client_name", "case_data.clientName", "case_data.client_name"],
@@ -618,10 +704,13 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     CaseNumber: () => currentCase?.caseId || currentCaseId,
     WritCaseNumber: () => currentCase?.caseId || currentCaseId,
     WritCaseYear: () => new Date().getFullYear(),
+    CaseNoReference: () => currentCase?.caseNumber || currentCase?.caseId || currentCaseId,
+    CaseYear: () => new Date().getFullYear(),
     PlaintiffName: () => currentCase?.clientName,
     PlaintiffFirmName: () => currentCase?.lawyerName,
     PlaintiffSolicitor: () => currentCase?.lawyerName,
     FilingReference: () => currentCase?.title,
+    FirmAddress: () => currentCase?.lawyerAddress,
     FilingFirmAddress: () => currentCase?.lawyerAddress,
     FilingFirmTel: () => currentCase?.lawyerPhone,
     FilingFirmEmail: () => currentCase?.lawyerEmail,
@@ -630,6 +719,20 @@ const resolveFieldPrefillValue = ({ fieldName, prefillData, currentCase, current
     BreachDetails: () => currentCase?.description || currentCase?.title,
     LawFirmName: () => currentCase?.lawyerName,
     LawyerName: () => currentCase?.lawyerName,
+    Place: () => currentCase?.courtLocation,
+    CourtPlace2: () => currentCase?.courtLocation,
+    WitnessYear: () => new Date().getFullYear(),
+    AppearanceDays: () => 14,
+    DamagesAmount: () => undefined,
+    SDamagesText: () => "Gantirugi Khas",
+    InterestRate: () => "5",
+    InterestFromText: () => "dari tarikh penghakiman sehingga penyelesaian penuh",
+    CostsActionText: () => "Kos tindakan",
+    OtherReliefText: () => "Apa-apa relif yang difikirkan sesuai dan adil oleh mahkamah",
+    InitialCostsAmount: () => "225.00",
+    SubstitutedServiceCostsAmount: () => "60.00",
+    OpponentLawyer: () => "",
+    PostagePrice: () => "",
     ContactPhone: () => currentCase?.lawyerPhone,
     ContactEmail: () => currentCase?.lawyerEmail,
     YourSignerName: () => currentCase?.lawyerName,
@@ -1061,20 +1164,37 @@ const TemplateForm = () => {
 
     setFormData((prev) => {
       const normalizedDate = String(prev.Date || "").trim();
-      if (!normalizedDate || String(prev.EndorsementDate || "").trim() === normalizedDate) {
-        if (String(prev.EndorsementDate || "") === normalizedDate) {
-          return prev;
-        }
+      const appearanceDays = String(prev.AppearanceDays || "14").trim() || "14";
+      const next = {
+        ...prev,
+        EndorsementDate: normalizedDate || prev.EndorsementDate || "",
+        CaseNoReference: String(prev.CaseNoReference || prev.WritCaseNumber || "").trim(),
+        CaseYear: String(prev.CaseYear || prev.WritCaseYear || "").trim(),
+        AppearanceDaysWord: String(prev.AppearanceDaysWord || toMalayDayWord(appearanceDays)).trim(),
+        FirmAddress: String(prev.FirmAddress || prev.FilingFirmAddress || prev.PlaintiffFirmAddress || "").trim(),
+        LawyerName: String(prev.LawyerName || prev.PlaintiffSolicitor || "").trim(),
+      };
 
-        return {
-          ...prev,
-          EndorsementDate: normalizedDate,
-        };
-      }
+      const changed =
+        next.EndorsementDate !== prev.EndorsementDate ||
+        next.CaseNoReference !== prev.CaseNoReference ||
+        next.CaseYear !== prev.CaseYear ||
+        next.AppearanceDaysWord !== prev.AppearanceDaysWord ||
+        next.FirmAddress !== prev.FirmAddress ||
+        next.LawyerName !== prev.LawyerName;
 
-      return prev;
+      return changed ? next : prev;
     });
-  }, [template?.id, formData.Date]);
+  }, [
+    template?.id,
+    formData.Date,
+    formData.AppearanceDays,
+    formData.WritCaseNumber,
+    formData.WritCaseYear,
+    formData.FilingFirmAddress,
+    formData.PlaintiffFirmAddress,
+    formData.PlaintiffSolicitor,
+  ]);
 
   const handleDefendantsChange = (nextDefendants) => {
     const normalized = normalizeDefendantsArray(nextDefendants, { dropEmpty: false });
