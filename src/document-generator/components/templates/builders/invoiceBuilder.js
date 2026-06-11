@@ -10,6 +10,8 @@ export const buildInvoice = (data, language = "english") => {
   const typeOfWorkLabel = chooseByLanguage(language, "Type of Work", "Jenis Kerja");
   const issueDateLabel = chooseByLanguage(language, "Issue Date", "Tarikh Dikeluarkan");
   const dueDateLabel = chooseByLanguage(language, "Due Date", "Tarikh Akhir");
+  const bankNameLabel = chooseByLanguage(language, "Bank Name", "Nama Bank");
+  const accountNoLabel = chooseByLanguage(language, "Account No.", "No. Akaun");
   const expectedLabel = chooseByLanguage(language, "Expected Amount", "Jumlah Dijangka");
   const paidLabel = chooseByLanguage(language, "Paid Amount", "Jumlah Dibayar");
   const typeOfWorkBalanceLabel = chooseByLanguage(language, "Type of Work Balance", "Baki Jenis Kerja");
@@ -62,6 +64,8 @@ export const buildInvoice = (data, language = "english") => {
     `${typeOfWorkLabel}: ${value("type_of_work")}`,
     `${issueDateLabel}: ${value("issue_date")}`,
     `${dueDateLabel}: ${value("due_date")}`,
+    `${bankNameLabel}: ${value("bank_name")}`,
+    `${accountNoLabel}: ${value("bank_account_no")}`,
     "",
     `${expectedLabel}: ${value("expected_amount")}`,
     `${paidLabel}: ${value("paid_amount")}`,

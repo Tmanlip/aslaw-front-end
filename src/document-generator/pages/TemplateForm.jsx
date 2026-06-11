@@ -2273,6 +2273,8 @@ const TemplateForm = () => {
         appendIfPresent("invoice_number", formData.invoice_number);
         appendIfPresent("issue_date", formData.issue_date);
         appendIfPresent("due_date", formData.due_date);
+        appendIfPresent("bank_name", formData.bank_name);
+        appendIfPresent("bank_account_no", formData.bank_account_no);
         appendIfPresent("client_name", formData.client_name || caseInfoSummary?.clientName);
         appendIfPresent("case_title", formData.case_title || caseInfoSummary?.title);
         appendIfPresent("expected_amount", formData.expected_amount);

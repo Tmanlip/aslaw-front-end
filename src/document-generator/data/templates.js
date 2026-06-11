@@ -392,6 +392,8 @@ Filing Reference: ${data.FilingReference}`,
       },
       { name: "issue_date", label: "Issue Date", type: "date" },
       { name: "due_date", label: "Due Date", type: "date" },
+        { name: "bank_name", label: "Bank Name", type: "text" },
+        { name: "bank_account_no", label: "Account No.", type: "text" },
       { name: "expected_amount", label: "Expected Amount", type: "number" },
       { name: "paid_amount", label: "Paid Amount", type: "number", min: 0 },
         { name: "balance", label: "Type of Work Balance", type: "number" },
@@ -413,6 +415,8 @@ Payment Stage: ${data.payment_stage}
 Type of Work: ${data.type_of_work || "N/A"}
 Issue Date: ${data.issue_date}
 Due Date: ${data.due_date}
+ Bank Name: ${data.bank_name || ""}
+ Account No.: ${data.bank_account_no || ""}
 Expected Amount: ${data.expected_amount}
 Paid Amount: ${data.paid_amount}
 Type of Work Balance: ${data.balance}

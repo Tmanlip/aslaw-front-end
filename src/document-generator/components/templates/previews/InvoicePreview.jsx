@@ -23,6 +23,8 @@ const InvoicePreview = ({ data = {}, language = "english" }) => {
     [chooseByLanguage(language, "Type of Work", "Jenis Kerja"), data.type_of_work],
     [chooseByLanguage(language, "Issue Date", "Tarikh Dikeluarkan"), data.issue_date],
     [chooseByLanguage(language, "Due Date", "Tarikh Akhir"), data.due_date],
+    [chooseByLanguage(language, "Bank Name", "Nama Bank"), data.bank_name],
+    [chooseByLanguage(language, "Account No.", "No. Akaun"), data.bank_account_no],
     [chooseByLanguage(language, "Expected Amount", "Jumlah Dijangka"), data.expected_amount],
     [chooseByLanguage(language, "Paid Amount", "Jumlah Dibayar"), data.paid_amount],
     [chooseByLanguage(language, "Type of Work Balance", "Baki Jenis Kerja"), data.balance],
@@ -45,10 +47,10 @@ const InvoicePreview = ({ data = {}, language = "english" }) => {
       >
         <thead>
           <tr style={{ background: "#f5faf7" }}>
-            <th style={{ textAlign: "left", padding: "0.65rem", borderBottom: "1px solid #dbe6df", width: "36%" }}>
+            <th style={{ textAlign: "left", padding: "0.65rem", borderBottom: "1px solid #dbe6df", width: "36%", whiteSpace: "nowrap" }}>
               {chooseByLanguage(language, "Field", "Medan")}
             </th>
-            <th style={{ textAlign: "left", padding: "0.65rem", borderBottom: "1px solid #dbe6df" }}>
+            <th style={{ textAlign: "left", padding: "0.65rem", borderBottom: "1px solid #dbe6df", whiteSpace: "nowrap" }}>
               {chooseByLanguage(language, "Value", "Nilai")}
             </th>
           </tr>
@@ -56,10 +58,10 @@ const InvoicePreview = ({ data = {}, language = "english" }) => {
         <tbody>
           {rows.map(([label, value]) => (
             <tr key={String(label)}>
-              <td style={{ padding: "0.6rem 0.65rem", borderBottom: "1px solid #eef3ef", fontWeight: 600 }}>
+              <td style={{ padding: "0.6rem 0.65rem", borderBottom: "1px solid #eef3ef", fontWeight: 600, whiteSpace: "nowrap" }}>
                 {label}
               </td>
-              <td style={{ padding: "0.6rem 0.65rem", borderBottom: "1px solid #eef3ef" }}>
+              <td style={{ padding: "0.6rem 0.65rem", borderBottom: "1px solid #eef3ef", whiteSpace: "nowrap" }}>
                 {normalizeValue(value)}
               </td>
             </tr>
