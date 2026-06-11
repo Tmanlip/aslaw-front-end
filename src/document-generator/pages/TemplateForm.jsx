@@ -1767,9 +1767,24 @@ const TemplateForm = () => {
     }
 
     const blob = await response.blob();
+    const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const hasPdfMagic =
+      bytes.length >= 4 &&
+      bytes[0] === 0x25 && // %
+      bytes[1] === 0x50 && // P
+      bytes[2] === 0x44 && // D
+      bytes[3] === 0x46;   // F
+
+    if (!contentType.includes("application/pdf") && !hasPdfMagic) {
+      return null;
+    }
+
+    const normalizedBlob = blob.type === "application/pdf" ? blob : new Blob([buffer], { type: "application/pdf" });
     const fileName = resolveInvoicePdfFilename(response, normalizedInvoiceFormData, "Invoice_Template.pdf");
 
-    return { blob, fileName };
+    return { blob: normalizedBlob, fileName };
   };
 
   const requestLodPdfBlob = async () => {
@@ -1789,13 +1804,28 @@ const TemplateForm = () => {
     }
 
     const blob = await response.blob();
+    const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const hasPdfMagic =
+      bytes.length >= 4 &&
+      bytes[0] === 0x25 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x44 &&
+      bytes[3] === 0x46;
+
+    if (!contentType.includes("application/pdf") && !hasPdfMagic) {
+      return null;
+    }
+
+    const normalizedBlob = blob.type === "application/pdf" ? blob : new Blob([buffer], { type: "application/pdf" });
     const contentDisposition = response.headers.get("Content-Disposition");
     const fileName = getFileNameFromContentDisposition(
       contentDisposition,
       lodPdfConfig.fallbackFilename,
     );
 
-    return { blob, fileName };
+    return { blob: normalizedBlob, fileName };
   };
 
   const requestWritPdfBlob = async () => {
@@ -1815,13 +1845,28 @@ const TemplateForm = () => {
     }
 
     const blob = await response.blob();
+    const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const hasPdfMagic =
+      bytes.length >= 4 &&
+      bytes[0] === 0x25 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x44 &&
+      bytes[3] === 0x46;
+
+    if (!contentType.includes("application/pdf") && !hasPdfMagic) {
+      return null;
+    }
+
+    const normalizedBlob = blob.type === "application/pdf" ? blob : new Blob([buffer], { type: "application/pdf" });
     const contentDisposition = response.headers.get("Content-Disposition");
     const fileName = getFileNameFromContentDisposition(
       contentDisposition,
       writPdfConfig.fallbackFilename,
     );
 
-    return { blob, fileName };
+    return { blob: normalizedBlob, fileName };
   };
 
   const handleSubmit = async (e) => {

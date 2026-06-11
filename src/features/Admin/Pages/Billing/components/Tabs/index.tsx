@@ -337,6 +337,12 @@ const FileSection: React.FC<FileSectionProps> = ({
 
       await Promise.resolve(onUploadSuccess?.());
     } catch (error: any) {
+      if (error?.response?.status === 404) {
+        setPendingReviewMessage("This pending document no longer exists. The list has been refreshed.");
+        await Promise.resolve(onUploadSuccess?.());
+        return;
+      }
+
       const message =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
