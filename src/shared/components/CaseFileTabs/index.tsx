@@ -165,9 +165,23 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
       }
 
       onUploadSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
+      const status = Number(error?.response?.status || 0);
+      const apiMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "";
+
+      if (status === 404) {
+        setRecentFiles((prev) => prev.filter((item) => item.document_id !== file.document_id));
+        setReviewMessage(`"${file.file_name}" is no longer available. The pending list has been refreshed.`);
+        setReviewMessageVariant("danger");
+        onUploadSuccess?.();
+        return;
+      }
+
       console.error(`Failed to ${action} pending file`, error);
-      setReviewMessage(`Failed to ${action} "${file.file_name}".`);
+      setReviewMessage(apiMessage || `Failed to ${action} "${file.file_name}".`);
       setReviewMessageVariant("danger");
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
