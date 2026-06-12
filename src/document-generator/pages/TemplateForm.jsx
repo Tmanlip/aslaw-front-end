@@ -1766,6 +1766,18 @@ const TemplateForm = () => {
       return null;
     }
 
+    const debugSource = response.headers.get("X-Document-Generator-Source") || "";
+    const debugPdfBytes = response.headers.get("X-Document-Generator-PDF-Bytes") || "";
+    const debugHtmlBytes = response.headers.get("X-Document-Generator-HTML-Bytes") || "";
+
+    if (debugSource || debugPdfBytes || debugHtmlBytes) {
+      console.debug("Invoice PDF debug metadata", {
+        source: debugSource,
+        pdfBytes: debugPdfBytes,
+        htmlBytes: debugHtmlBytes,
+      });
+    }
+
     const blob = await response.blob();
     const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
     const buffer = await blob.arrayBuffer();
