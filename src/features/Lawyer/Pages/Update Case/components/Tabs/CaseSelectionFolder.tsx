@@ -11,6 +11,11 @@ import axiosUser from "../../../../../../api/axiosUser";
 import { resolveApiBaseUrl } from "../../../../../../api/resolveApiBaseUrl";
 import LoadingSpinner from "../../../../../../components/ui/Spinner";
 import InvoicePhaseSummary from "../../../../../../shared/components/InvoicePhaseSummary";
+import {
+  DEFAULT_DOCUMENT_PLACEHOLDER,
+  DOCUMENT_PLACEHOLDER_OPTIONS,
+  getDocumentPlaceholderLabel,
+} from "../../../../../../shared/constants/documentPlaceholders";
 
 interface CaseFolderSectionProps {
   selectedCase?: Case;
@@ -70,6 +75,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   type DisplayFile = {
     id?: string;
     fileName: string;
+    typeOfWork?: string;
+    documentPlaceholder?: string;
     encrypted: boolean;
     category?: string;
     modifiedAt?: string;
@@ -87,6 +94,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [uploadSection, setUploadSection] = useState<string>(sectionOptions[0] || "");
+  const [uploadDocumentPlaceholder, setUploadDocumentPlaceholder] = useState<string>(DEFAULT_DOCUMENT_PLACEHOLDER);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [paidAmount, setPaidAmount] = useState<string>("");
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -103,9 +112,9 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [updatePaidAmountLoading, setUpdatePaidAmountLoading] = useState(false);
   const [updatePaidAmountValue, setUpdatePaidAmountValue] = useState<string>("");
   const [archivedActiveFileName, setArchivedActiveFileName] = useState<string | null>(null);
-  const [archivedPreviewUrl, setArchivedPreviewUrl] = useState<string | null>(null);
   const [archivedPreviewLoading, setArchivedPreviewLoading] = useState(false);
   const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
+  const [placeholderFilter, setPlaceholderFilter] = useState<string>("all");
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const alertVariant = useMemo(() => {
@@ -132,9 +141,15 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   const isInvoiceFolder = folderName === "invoices";
   const isAdmin = (currentUser?.role || "").toLowerCase() === "admin";
+  const isClient = (currentUser?.role || "").toLowerCase() === "client";
   const canMutateInvoiceFiles = !isInvoiceFolder || (isAdmin && (allowUpload || allowDelete));
   const isArchivedCase = (selectedCase?.status || "").toLowerCase() === "archived";
   const showArchivedView = isArchivedCase || forceArchivedView;
+
+  const resolveTypeOfWorkLabel = useCallback((rawValue?: string) => {
+    const cleaned = String(rawValue || "").trim();
+    return cleaned !== "" ? cleaned : "Type of Work";
+  }, []);
 
   const getEncryptedFilesFromCase = useCallback((): DisplayFile[] => {
     const encrypted = selectedCase?.encrypted_documents ?? [];
@@ -143,6 +158,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       .map((item: EncryptedDocumentItem) => ({
         id: item.document_id,
         fileName: item.file_name,
+        typeOfWork: String((item as any).type_of_work || "").trim(),
+        documentPlaceholder: String((item as any).document_placeholder || "").trim(),
         encrypted: item.is_encrypted ?? true,
         category: item.category,
         modifiedAt: (item as any).updated_at || item.created_at,
@@ -189,6 +206,24 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     });
   }, [fileSortMode, files]);
 
+  const filteredSortedFiles = useMemo(() => {
+    if (isInvoiceFolder || placeholderFilter === "all") {
+      return sortedFiles;
+    }
+
+    return sortedFiles.filter(
+      (file) => String(file.documentPlaceholder || "other").trim().toLowerCase() === placeholderFilter
+    );
+  }, [isInvoiceFolder, placeholderFilter, sortedFiles]);
+
+  const placeholderFilterLabel = useMemo(() => {
+    if (placeholderFilter === "all") {
+      return "All";
+    }
+
+    return getDocumentPlaceholderLabel(placeholderFilter);
+  }, [placeholderFilter]);
+
   const sortLabel = useMemo(() => {
     switch (fileSortMode) {
       case "modified_asc":
@@ -217,7 +252,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   }, [fetchFiles]);
 
   /* ================= UPLOAD ================= */
-  const handleUpload = async (file: File) => {
+  const submitUpload = async (file: File, placeholderValue: string) => {
     if (uploading) {
       return;
     }
@@ -248,6 +283,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     formData.append("file", finalFile);
     formData.append("case_id", String(selectedCase.caseId || ""));
     formData.append("category", folderName);
+    formData.append("document_placeholder", placeholderValue || "other");
     if (isInvoiceFolder) {
       formData.append("invoice_stage", uploadSection || "initial");
       formData.append("paid_amount", paidAmount === "" ? "0" : paidAmount);
@@ -274,7 +310,12 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       setSuccessMessage(`Upload failed: ${message}`);
     } finally {
       setUploading(false);
+      setPendingUploadFile(null);
     }
+  };
+
+  const handleUpload = async (file: File) => {
+    setPendingUploadFile(file);
   };
 
   /* ================= DELETE ================= */
@@ -367,7 +408,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       try {
         if (file.encrypted && file.id) {
           const objectUrl = await getFileUrl(`/encrypted-documents/${file.id}/preview`);
-          setArchivedPreviewUrl((prev) => {
+          setPreviewFile((prev) => {
             if (prev?.startsWith("blob:")) {
               URL.revokeObjectURL(prev);
             }
@@ -375,7 +416,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           });
         } else {
           const directUrl = `${apiBaseUrl}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`;
-          setArchivedPreviewUrl((prev) => {
+          setPreviewFile((prev) => {
             if (prev?.startsWith("blob:")) {
               URL.revokeObjectURL(prev);
             }
@@ -383,7 +424,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           });
         }
       } catch (err: any) {
-        setArchivedPreviewUrl(null);
         setSuccessMessage(`Preview failed: ${err.message}`);
       } finally {
         setArchivedPreviewLoading(false);
@@ -394,45 +434,36 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   useEffect(() => {
     if (!showArchivedView) {
-      setArchivedPreviewUrl((prev) => {
-        if (prev?.startsWith("blob:")) {
-          URL.revokeObjectURL(prev);
-        }
-        return null;
-      });
       setArchivedActiveFileName(null);
       return;
     }
 
-    if (loadingFiles || archivedPreviewLoading || files.length === 0) {
+    if (loadingFiles || archivedPreviewLoading) {
       return;
     }
 
-    const activeFile =
-      files.find((item) => item.fileName === archivedActiveFileName) || files[0];
-
-    if (archivedActiveFileName === activeFile.fileName && archivedPreviewUrl) {
+    if (filteredSortedFiles.length === 0) {
+      setArchivedActiveFileName(null);
       return;
     }
 
-    void openArchivedPreview(activeFile);
+    if (!archivedActiveFileName) {
+      return;
+    }
+
+    const activeFile = filteredSortedFiles.find((item) => item.fileName === archivedActiveFileName);
+
+    if (!activeFile) {
+      setArchivedActiveFileName(null);
+      return;
+    }
   }, [
     showArchivedView,
     loadingFiles,
     archivedPreviewLoading,
-    files,
+    filteredSortedFiles,
     archivedActiveFileName,
-    archivedPreviewUrl,
-    openArchivedPreview,
   ]);
-
-  useEffect(() => {
-    return () => {
-      if (archivedPreviewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(archivedPreviewUrl);
-      }
-    };
-  }, [archivedPreviewUrl]);
 
   /* ================= SELECTION ================= */
   const toggleSelectionMode = () => {
@@ -708,6 +739,22 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
               <Dropdown.Item onClick={() => setFileSortMode("name_desc")}>Name Z-A</Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown>
+
+          {!isInvoiceFolder && (
+            <Dropdown>
+              <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id={`${folderName}-placeholder-filter-dropdown`}>
+                Placeholder: {placeholderFilterLabel}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item onClick={() => setPlaceholderFilter("all")}>All</Dropdown.Item>
+                {DOCUMENT_PLACEHOLDER_OPTIONS.map((option) => (
+                  <Dropdown.Item key={option.value} onClick={() => setPlaceholderFilter(option.value)}>
+                    {option.label}
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
         </div>
       </div>
 
@@ -788,11 +835,66 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         <>
           {!showArchivedView && (
             <ul className="admin-billing-file-list">
-              {sortedFiles.length === 0 && <p className="admin-billing-empty-list">No files found</p>}
-              {sortedFiles.map((file, idx) => (
+              {filteredSortedFiles.length === 0 && <p className="admin-billing-empty-list">No files found</p>}
+              {filteredSortedFiles.map((file, idx) => (
                 <li key={idx} className="admin-billing-file-row">
                   <div className="admin-billing-file-main">
-                    <strong className="admin-billing-file-name">{file.fileName}</strong>
+                    {isClient ? (
+                      <button
+                        type="button"
+                        onClick={() => handlePreview(file)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          margin: 0,
+                          font: "inherit",
+                          color: "inherit",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        <strong className="admin-billing-file-name">{file.fileName}</strong>
+                      </button>
+                    ) : (
+                      <strong className="admin-billing-file-name">{file.fileName}</strong>
+                    )}
+                    {!isInvoiceFolder && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          marginLeft: "0.5rem",
+                          padding: "0.16rem 0.5rem",
+                          borderRadius: "999px",
+                          border: "1px solid #cbd5e1",
+                          background: "#f8fafc",
+                          color: "#334155",
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {getDocumentPlaceholderLabel(file.documentPlaceholder)}
+                      </span>
+                    )}
+                    {isInvoiceFolder && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          marginLeft: "0.5rem",
+                          padding: "0.16rem 0.5rem",
+                          borderRadius: "999px",
+                          border: "1px solid #fca5a5",
+                          background: "#fff1f2",
+                          color: "#b91c1c",
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {resolveTypeOfWorkLabel(file.typeOfWork)}
+                      </span>
+                    )}
                     {file.encrypted && (
                       <span className="admin-billing-file-badge-encrypted">ENCRYPTED</span>
                     )}
@@ -800,22 +902,24 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                   <div className="admin-billing-file-actions">
                     {!selectionMode && (
                       <>
-                        <button
-                          type="button"
-                          disabled={loadingAction === getActionKey("preview", file)}
-                          className="admin-billing-file-btn admin-billing-file-btn-preview"
-                          style={{ cursor: loadingAction === getActionKey("preview", file) ? "not-allowed" : "pointer" }}
-                          onClick={() => handlePreview(file)}
-                        >
-                          {loadingAction === getActionKey("preview", file) ? (
-                            <>
-                              <LoadingSpinner size={14} color="#ffffff" />
-                              Previewing
-                            </>
-                          ) : (
-                            "Preview"
-                          )}
-                        </button>
+                        {!isClient && (
+                          <button
+                            type="button"
+                            disabled={loadingAction === getActionKey("preview", file)}
+                            className="admin-billing-file-btn admin-billing-file-btn-preview"
+                            style={{ cursor: loadingAction === getActionKey("preview", file) ? "not-allowed" : "pointer" }}
+                            onClick={() => handlePreview(file)}
+                          >
+                            {loadingAction === getActionKey("preview", file) ? (
+                              <>
+                                <LoadingSpinner size={14} color="#ffffff" />
+                                Previewing
+                              </>
+                            ) : (
+                              "Preview"
+                            )}
+                          </button>
+                        )}
 
                         <button
                           type="button"
@@ -1056,85 +1160,133 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           );
         })()}
 
-          {showArchivedView && files.length === 0 && (
+          {showArchivedView && filteredSortedFiles.length === 0 && (
             <p style={{ color: "#475569" }}>No files found</p>
           )}
 
-          {showArchivedView && files.length > 0 && (
+          {showArchivedView && filteredSortedFiles.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {files.map((file) => {
+                {filteredSortedFiles.map((file) => {
                   const active = archivedActiveFileName === file.fileName;
+                  const chipStyle = {
+                    border: `1px solid ${active ? colors.red : "#cbd5e1"}`,
+                    background: active ? "#fff1f2" : "#f8fafc",
+                    color: active ? colors.red : "#334155",
+                    borderRadius: "999px",
+                    padding: "0.38rem 0.8rem",
+                    fontSize: "0.84rem",
+                    whiteSpace: "nowrap" as const,
+                    fontWeight: active ? 700 : 600,
+                  };
+
+                  if (isClient) {
+                    return (
+                      <div
+                        key={`${file.id || "legacy"}-${file.fileName}`}
+                        style={{
+                          ...chipStyle,
+                          display: "inline-flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void openArchivedPreview(file)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            margin: 0,
+                            font: "inherit",
+                            color: "inherit",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {file.fileName}
+                        </button>
+                        {!isInvoiceFolder && (
+                          <span
+                            style={{
+                              marginLeft: "0.45rem",
+                              padding: "0.12rem 0.45rem",
+                              borderRadius: "999px",
+                              border: `1px solid ${active ? "#cbd5e1" : "#cbd5e1"}`,
+                              background: active ? "#eef2ff" : "#fff",
+                              color: "#334155",
+                              fontSize: "0.7rem",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {getDocumentPlaceholderLabel(file.documentPlaceholder)}
+                          </span>
+                        )}
+                        {isInvoiceFolder && (
+                          <span
+                            style={{
+                              marginLeft: "0.45rem",
+                              padding: "0.12rem 0.45rem",
+                              borderRadius: "999px",
+                              border: `1px solid ${active ? "#fecaca" : "#fca5a5"}`,
+                              background: active ? "#fff1f2" : "#fff",
+                              color: "#b91c1c",
+                              fontSize: "0.7rem",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {resolveTypeOfWorkLabel(file.typeOfWork)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <button
                       key={`${file.id || "legacy"}-${file.fileName}`}
                       type="button"
                       onClick={() => void openArchivedPreview(file)}
                       style={{
-                        border: `1px solid ${active ? colors.red : "#cbd5e1"}`,
-                        background: active ? "#fff1f2" : "#f8fafc",
-                        color: active ? colors.red : "#334155",
-                        borderRadius: "999px",
-                        padding: "0.38rem 0.8rem",
-                        fontSize: "0.84rem",
-                        whiteSpace: "nowrap",
-                        fontWeight: active ? 700 : 600,
+                        ...chipStyle,
                         cursor: "pointer",
                       }}
                     >
                       {file.fileName}
+                      {!isInvoiceFolder && (
+                        <span
+                          style={{
+                            marginLeft: "0.45rem",
+                            padding: "0.12rem 0.45rem",
+                            borderRadius: "999px",
+                            border: `1px solid ${active ? "#cbd5e1" : "#cbd5e1"}`,
+                            background: active ? "#eef2ff" : "#fff",
+                            color: "#334155",
+                            fontSize: "0.7rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {getDocumentPlaceholderLabel(file.documentPlaceholder)}
+                        </span>
+                      )}
+                      {isInvoiceFolder && (
+                        <span
+                          style={{
+                            marginLeft: "0.45rem",
+                            padding: "0.12rem 0.45rem",
+                            borderRadius: "999px",
+                            border: `1px solid ${active ? "#fecaca" : "#fca5a5"}`,
+                            background: active ? "#fff1f2" : "#fff",
+                            color: "#b91c1c",
+                            fontSize: "0.7rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {resolveTypeOfWorkLabel(file.typeOfWork)}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
-              </div>
-
-              <div
-                style={{
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "10px",
-                  background: "#fff",
-                  minHeight: "68vh",
-                  overflow: "hidden",
-                  position: "relative",
-                }}
-              >
-                {archivedPreviewLoading && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      display: "grid",
-                      placeItems: "center",
-                      gap: "0.6rem",
-                      background: "rgba(255, 255, 255, 0.88)",
-                      zIndex: 1,
-                    }}
-                  >
-                    <LoadingSpinner size={40} color={colors.red} />
-                    <span style={{ color: "#475569", fontWeight: 600 }}>Loading preview...</span>
-                  </div>
-                )}
-
-                {archivedPreviewUrl ? (
-                  <iframe
-                    src={archivedPreviewUrl}
-                    style={{ width: "100%", height: "68vh", border: "none" }}
-                    title="Archived document preview"
-                  />
-                ) : (
-                  !archivedPreviewLoading && (
-                    <div
-                      style={{
-                        height: "68vh",
-                        display: "grid",
-                        placeItems: "center",
-                        color: "#64748b",
-                      }}
-                    >
-                      Preview not available for this document.
-                    </div>
-                  )
-                )}
               </div>
             </div>
           )}
@@ -1158,6 +1310,46 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           <p style={{ marginBottom: 0 }}>
             Are you sure you want to delete {deleteRequest.files.length} selected file(s)? This action cannot be undone.
           </p>
+        ) : null}
+      </ConfirmModal>
+
+      <ConfirmModal
+        show={pendingUploadFile !== null}
+        title="Select Document Placeholder"
+        confirmText="Upload"
+        confirmingText="Uploading..."
+        isConfirming={uploading}
+        onConfirm={() => {
+          if (pendingUploadFile) {
+            void submitUpload(pendingUploadFile, uploadDocumentPlaceholder);
+          }
+        }}
+        onCancel={() => setPendingUploadFile(null)}
+      >
+        {pendingUploadFile ? (
+          <div style={{ display: "grid", gap: "0.55rem" }}>
+            <p style={{ marginBottom: 0 }}>
+              Upload "{pendingUploadFile.name}" with placeholder:
+            </p>
+            <select
+              value={uploadDocumentPlaceholder}
+              onChange={(event) => setUploadDocumentPlaceholder(event.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.45rem 0.6rem",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                color: "#1e293b",
+              }}
+            >
+              {DOCUMENT_PLACEHOLDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : null}
       </ConfirmModal>
 

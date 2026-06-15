@@ -14,6 +14,10 @@ import jsPDF from "jspdf";
 import { Document, Packer, Paragraph } from "docx";
 import { saveAs } from "file-saver";
 import { resolveApiBaseUrl } from "../../api/resolveApiBaseUrl";
+import {
+  DEFAULT_DOCUMENT_PLACEHOLDER,
+  DOCUMENT_PLACEHOLDER_OPTIONS,
+} from "../../shared/constants/documentPlaceholders";
 
 const MAIN_API_URL = resolveApiBaseUrl();
 const BACKEND_BASE_URL = `${MAIN_API_URL}/document-generator`;
@@ -838,6 +842,8 @@ const TemplateForm = () => {
   const [selectedLanguage, setSelectedLanguage] = useState("english");
   const [uploadingToCase, setUploadingToCase] = useState(false);
   const [uploadStatusMessage, setUploadStatusMessage] = useState("");
+  const [showUploadPlaceholderModal, setShowUploadPlaceholderModal] = useState(false);
+  const [uploadDocumentPlaceholder, setUploadDocumentPlaceholder] = useState(DEFAULT_DOCUMENT_PLACEHOLDER);
   const [prefillLoading, setPrefillLoading] = useState(true);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState("");
   const [fetchedCaseTypeFeeJson, setFetchedCaseTypeFeeJson] = useState(null);
@@ -1406,7 +1412,7 @@ const TemplateForm = () => {
 
       const safeExpected = Number.isFinite(expectedAmount) ? expectedAmount : 0;
       const safePaidRaw = Number.isFinite(paidAmount) ? paidAmount : 0;
-      const safePaid = Math.min(safePaidRaw, safeExpected);
+      const safePaid = Math.max(safePaidRaw, 0);
       const computedTypeOfWorkBalance = Math.max(safeExpected - safePaid, 0);
       const safePhaseBalanceBase = Number.isFinite(phaseBalanceBase) ? phaseBalanceBase : 0;
       const phaseBalanceFromTypeOfWork = Math.max(safePhaseBalanceBase - safePaid, 0);
@@ -1709,13 +1715,6 @@ const TemplateForm = () => {
     if ((name === "tax" || name === "discount" || name === "paid_amount") && type === "number") {
       const num = parseFloat(value);
       if (!isNaN(num) && num < 0) finalValue = "0";
-
-      if (name === "paid_amount") {
-        const expected = Number(formData.expected_amount || 0);
-        if (!Number.isNaN(num) && Number.isFinite(expected) && expected >= 0 && num > expected) {
-          finalValue = String(expected);
-        }
-      }
     }
 
     setFormData((prev) => ({
@@ -2309,6 +2308,9 @@ const TemplateForm = () => {
       form.append("case_id", String(currentCaseId));
       form.append("folder_path", `${resolvedBlobFolderPath}${templateCategory}/`);
       form.append("category", templateCategory);
+      if (templateCategory !== "invoices") {
+        form.append("document_placeholder", uploadDocumentPlaceholder || "other");
+      }
 
       if (templateCategory === "invoices") {
         const invoiceStage = resolveInvoiceStage(formData.payment_stage);
@@ -2612,30 +2614,155 @@ const TemplateForm = () => {
 
   if (showPreview) {
     return (
-      <TemplatePreviewCard
-        copied={copied}
-          onBackToEdit={() => {
-            if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
-            setPdfPreviewUrl("");
-            setShowPreview(false);
-          }}
-        onCopy={handleCopy}
-        onExportPDF={handleExportPDF}
-        onExportDOCX={handleExportDOCX}
-        uploadToCaseLabel={`Upload to Case (${templateCategory})`}
-        uploadToCaseDisabled={uploadingToCase || !canUploadToCase}
-        uploadToCaseLoading={uploadingToCase}
-        uploadStatusMessage={uploadStatusMessage}
-        syncStatusMessage={syncStatusMessage}
-        onUploadToCasePdf={canUploadToCase ? handleUploadPdfToCase : undefined}
-        pdfPreviewUrl={pdfPreviewUrl}
-        preferContentPreview={false}
-      >
-        {renderGeneratedPreview(template.id, generatedContent, {
-          formData,
-          language: selectedLanguage,
-        })}
-      </TemplatePreviewCard>
+      <>
+        <TemplatePreviewCard
+          copied={copied}
+            onBackToEdit={() => {
+              if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+              setPdfPreviewUrl("");
+              setShowPreview(false);
+            }}
+          onCopy={handleCopy}
+          onExportPDF={handleExportPDF}
+          onExportDOCX={handleExportDOCX}
+          uploadToCaseLabel={`Upload to Case (${templateCategory})`}
+          uploadToCaseDisabled={uploadingToCase || !canUploadToCase}
+          uploadToCaseLoading={uploadingToCase}
+          uploadStatusMessage={uploadStatusMessage}
+          syncStatusMessage={syncStatusMessage}
+          onOpenUploadPlaceholderModal={
+            canUploadToCase && templateCategory !== "invoices"
+              ? () => {
+                  if (!generatedContent.trim()) {
+                    setUploadStatusMessage("Generate a document first before uploading.");
+                    return;
+                  }
+                  setShowUploadPlaceholderModal(true);
+                }
+              : undefined
+          }
+          onUploadToCasePdf={canUploadToCase ? handleUploadPdfToCase : undefined}
+          pdfPreviewUrl={pdfPreviewUrl}
+          preferContentPreview={false}
+        >
+          {renderGeneratedPreview(template.id, generatedContent, {
+            formData,
+            language: selectedLanguage,
+          })}
+        </TemplatePreviewCard>
+
+        {showUploadPlaceholderModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 3000,
+              padding: "1rem",
+            }}
+            onClick={() => {
+              if (!uploadingToCase) {
+                setShowUploadPlaceholderModal(false);
+              }
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "12px",
+                width: "min(94vw, 520px)",
+                boxShadow: "0 16px 48px rgba(0,0,0,0.22)",
+                overflow: "hidden",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0.9rem 1rem",
+                  borderBottom: "1px solid #e2e8f0",
+                }}
+              >
+                <strong>Select Placeholder</strong>
+                <button
+                  type="button"
+                  disabled={uploadingToCase}
+                  onClick={() => setShowUploadPlaceholderModal(false)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    fontSize: "1.25rem",
+                    lineHeight: 1,
+                    cursor: uploadingToCase ? "not-allowed" : "pointer",
+                  }}
+                >
+                  x
+                </button>
+              </div>
+
+              <div style={{ padding: "1rem", display: "grid", gap: "0.8rem" }}>
+                <p style={{ margin: 0, color: "#334155" }}>
+                  Choose where this generated document should be categorized.
+                </p>
+                <select
+                  value={uploadDocumentPlaceholder}
+                  onChange={(event) => setUploadDocumentPlaceholder(event.target.value)}
+                  disabled={uploadingToCase}
+                  style={{
+                    width: "100%",
+                    padding: "0.55rem 0.65rem",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    background: "#ffffff",
+                    color: "#0f172a",
+                  }}
+                >
+                  {DOCUMENT_PLACEHOLDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div
+                style={{
+                  padding: "0.85rem 1rem",
+                  borderTop: "1px solid #e2e8f0",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.6rem",
+                }}
+              >
+                <button
+                  type="button"
+                  className="dg-btn"
+                  disabled={uploadingToCase}
+                  onClick={() => setShowUploadPlaceholderModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="dg-btn dg-btn-primary"
+                  disabled={uploadingToCase}
+                  onClick={async () => {
+                    setShowUploadPlaceholderModal(false);
+                    await handleUploadPdfToCase();
+                  }}
+                >
+                  {uploadingToCase ? "Uploading..." : "Upload to Case"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

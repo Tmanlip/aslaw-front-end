@@ -177,7 +177,7 @@ const InvoicePhaseSummary: React.FC<InvoicePhaseSummaryProps> = ({
                         {formatStageLabel(summary.stage)}
                         {practices.length > 0 && (
                           <span style={{ marginLeft: "0.5rem", fontSize: "0.9em" }}>
-                            {isExpanded ? "▼" : "▶"} ({practices.length}/5)
+                            {isExpanded ? "▼" : "▶"}
                           </span>
                         )}
                       </strong>

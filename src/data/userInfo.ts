@@ -10,6 +10,7 @@ export interface EncryptedDocumentItem {
   invoice_stage?: string;
   payment_stage?: string;
   type_of_work?: string;
+  document_placeholder?: string;
   paid_amount?: number;
   preview_url: string;
   download_url: string;

@@ -62,6 +62,8 @@ export default function CaseTable() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const isAdmin = role === "admin";
+  const canAssignCase = role === "admin" || role === "junioradmin";
+  const canSeeCaseActionColumn = canAssignCase || isAdmin;
   const adminPathGroup =
     role === "junioradmin"
       ? PATH.JUNIOR_ADMIN
@@ -195,6 +197,9 @@ export default function CaseTable() {
     { label: "Date Created", dataKey: "createdAt", width: 140 },
     { label: "Action", dataKey: "action", width: 200 },
   ];
+  const visibleColumns = canSeeCaseActionColumn
+    ? columns
+    : columns.filter((column) => column.dataKey !== "action");
 
   const totalCases = cases.length;
   const assignedCases = cases.filter((item) => Boolean(item.caseName)).length;
@@ -554,7 +559,7 @@ export default function CaseTable() {
           components={VirtuosoTableComponents}
           fixedHeaderContent={() => (
             <TableRow>
-              {columns.map((column) => (
+              {visibleColumns.map((column) => (
                 <TableCell
                   className="admin-case-table-head-cell"
                   key={column.dataKey}
@@ -594,29 +599,31 @@ export default function CaseTable() {
                 )}
               </TableCell>
               <TableCell>{formatCreatedDate(row.created_at)}</TableCell>
-              <TableCell>
-                <div className="admin-case-action-cell">
-                {!row.caseName && (
-                  <Button
-                    className="admin-case-action-btn admin-case-secondary-action"
-                    size="sm"
-                    onClick={() => handleShowAssign(row)}
-                  >
-                    Add Case
-                  </Button>
-                )}
-                {isAdmin && row.caseName && (
-                  <Button
-                    className="admin-case-action-btn admin-case-primary-action"
-                    size="sm"
-                    onClick={() => handleManageCase(row)}
-                    style={{ marginLeft: "0.5rem" }}
-                  >
-                    Manage Case
-                  </Button>
-                )}
-                </div>
-              </TableCell>
+              {canSeeCaseActionColumn && (
+                <TableCell>
+                  <div className="admin-case-action-cell">
+                    {canAssignCase && !row.caseName && (
+                      <Button
+                        className="admin-case-action-btn admin-case-secondary-action"
+                        size="sm"
+                        onClick={() => handleShowAssign(row)}
+                      >
+                        Add Case
+                      </Button>
+                    )}
+                    {isAdmin && row.caseName && (
+                      <Button
+                        className="admin-case-action-btn admin-case-primary-action"
+                        size="sm"
+                        onClick={() => handleManageCase(row)}
+                        style={{ marginLeft: "0.5rem" }}
+                      >
+                        Manage Case
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              )}
             </>
           )}
         />

@@ -10,6 +10,8 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  suggestedCategory?: RoleCategory;
+  domainMismatch?: boolean;
 };
 
 type AskResponse = {
@@ -18,6 +20,9 @@ type AskResponse = {
   answer: string;
   category: RoleCategory;
   model: string;
+  domainMismatch?: boolean;
+  currentCategory?: RoleCategory | null;
+  suggestedCategory?: RoleCategory | null;
 };
 
 const categoryOptions: RoleCategory[] = ["general", "civil", "corporate", "criminal"];
@@ -74,20 +79,41 @@ const ChatbotPage: React.FC = () => {
         }),
       });
 
-      const data = (await response.json()) as Partial<AskResponse> & { error?: string };
+      const rawBody = await response.text();
+      let data: (Partial<AskResponse> & { error?: string }) | null = null;
 
-      if (!response.ok || !data.answer) {
-        throw new Error(data.error || "Failed to get chatbot answer.");
+      try {
+        data = rawBody ? (JSON.parse(rawBody) as Partial<AskResponse> & { error?: string }) : null;
+      } catch {
+        data = null;
       }
 
-      if (data.sessionId && !sessionId) {
+      const answer = data?.answer;
+
+      if (!response.ok || !answer) {
+        if (!response.ok) {
+          const messageFromJson = data?.error || "";
+          const messageFromBody = rawBody ? rawBody.trim() : "";
+          throw new Error(
+            messageFromJson ||
+              messageFromBody ||
+              `Chatbot request failed with status ${response.status}.`
+          );
+        }
+
+        throw new Error(data?.error || "Failed to get chatbot answer.");
+      }
+
+      if (data?.sessionId && !sessionId) {
         setSessionId(data.sessionId);
       }
 
       const assistantMessage: ChatMessage = {
         id: `a-${Date.now()}`,
         role: "assistant",
-        text: data.answer,
+        text: answer,
+        suggestedCategory: data?.suggestedCategory ?? undefined,
+        domainMismatch: Boolean(data?.domainMismatch),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -132,6 +158,17 @@ const ChatbotPage: React.FC = () => {
             {messages.map((message) => (
               <div key={message.id} className={`bubble ${message.role}`}>
                 {message.text}
+                {message.role === "assistant" && message.domainMismatch && message.suggestedCategory ? (
+                  <div className="chatbot-domain-switch-wrap">
+                    <button
+                      type="button"
+                      className="chatbot-domain-switch-btn"
+                      onClick={() => setCategory(message.suggestedCategory as RoleCategory)}
+                    >
+                      Switch to {message.suggestedCategory}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ))}
             {loading ? <div className="bubble assistant">Thinking...</div> : null}

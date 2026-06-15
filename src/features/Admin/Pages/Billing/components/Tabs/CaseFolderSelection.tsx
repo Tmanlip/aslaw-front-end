@@ -10,6 +10,11 @@ import { resolveApiBaseUrl } from "../../../../../../api/resolveApiBaseUrl";
 import { EncryptedDocumentItem } from "../../../../../../data/userInfo";
 import LoadingSpinner from "../../../../../../components/ui/Spinner";
 import InvoicePhaseSummary from "../../../../../../shared/components/InvoicePhaseSummary";
+import {
+  DEFAULT_DOCUMENT_PLACEHOLDER,
+  DOCUMENT_PLACEHOLDER_OPTIONS,
+  getDocumentPlaceholderLabel,
+} from "../../../../../../shared/constants/documentPlaceholders";
 
 interface CaseInfo {
   lawyerFirmID: string;
@@ -61,6 +66,8 @@ interface CaseFolderSectionProps {
 type DisplayFile = {
   id?: string;
   fileName: string;
+  typeOfWork?: string;
+  documentPlaceholder?: string;
   encrypted: boolean;
   category?: string;
   modifiedAt?: string;
@@ -363,6 +370,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [uploadSection, setUploadSection] = useState<string>("");
+  const [uploadDocumentPlaceholder, setUploadDocumentPlaceholder] = useState<string>(DEFAULT_DOCUMENT_PLACEHOLDER);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [paidAmount, setPaidAmount] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [loadingFiles, setLoadingFiles] = useState(true);
@@ -392,6 +401,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [resolvedExpectedPaymentPhases, setResolvedExpectedPaymentPhases] = useState<CaseInfo["expected_payment_phases"]>(selectedCase?.expected_payment_phases);
   const [resolvedInvoicePaymentPhases, setResolvedInvoicePaymentPhases] = useState<CaseInfo["invoice_payment_phases"]>(selectedCase?.invoice_payment_phases);
   const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
+  const [placeholderFilter, setPlaceholderFilter] = useState<string>("all");
 
   const alertVariant = useMemo(() => {
     if (!successMessage) {
@@ -412,6 +422,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
   const isInvoiceFolder = folderName === "invoices";
   const canMutateInvoiceFiles = !isInvoiceFolder || isAdmin;
+
+  const resolveTypeOfWorkPlaceholder = useCallback((rawValue?: string) => {
+    const cleaned = String(rawValue || "").trim();
+    return cleaned !== "" ? cleaned : "Type of Work";
+  }, []);
 
   const getLegacyFilePath = useCallback(
     (fileName: string) => `${selectedCase?.blob_folder_path ?? ""}${folderName}/${fileName}`,
@@ -698,6 +713,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         .map((item) => ({
           id: item.document_id,
           fileName: item.file_name,
+          typeOfWork: String((item as any).type_of_work || "").trim(),
+          documentPlaceholder: String((item as any).document_placeholder || "").trim(),
           encrypted: true,
           category: item.category,
           modifiedAt: (item as any).updated_at || item.created_at,
@@ -737,6 +754,24 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       }
     });
   }, [fileSortMode, files]);
+
+  const filteredSortedFiles = useMemo(() => {
+    if (isInvoiceFolder || placeholderFilter === "all") {
+      return sortedFiles;
+    }
+
+    return sortedFiles.filter(
+      (file) => String(file.documentPlaceholder || "other").trim().toLowerCase() === placeholderFilter
+    );
+  }, [isInvoiceFolder, placeholderFilter, sortedFiles]);
+
+  const placeholderFilterLabel = useMemo(() => {
+    if (placeholderFilter === "all") {
+      return "All";
+    }
+
+    return getDocumentPlaceholderLabel(placeholderFilter);
+  }, [placeholderFilter]);
 
   const sortLabel = useMemo(() => {
     switch (fileSortMode) {
@@ -841,7 +876,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     mutationHeaders,
   ]);
 
-  const submitUpload = async (finalFile: File) => {
+  const submitUpload = async (finalFile: File, placeholderValue: string) => {
     if (!selectedCase?.blob_folder_path) {
       setSuccessMessage("No case selected");
       return;
@@ -851,6 +886,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     formData.append("file", finalFile);
     formData.append("case_id", String(selectedCase.caseId || ""));
     formData.append("category", folderName);
+    formData.append("document_placeholder", placeholderValue || "other");
 
     if (isInvoiceFolder) {
       formData.append("invoice_stage", uploadSection || "initial");
@@ -881,6 +917,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     } finally {
       setUploading(false);
       setPendingInvoiceUploadFile(null);
+      setPendingUploadFile(null);
     }
   };
 
@@ -1132,7 +1169,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                   if (isInvoiceFolder) {
                     setPendingInvoiceUploadFile(file);
                   } else {
-                    void submitUpload(file);
+                    setPendingUploadFile(file);
                   }
 
                   e.currentTarget.value = "";
@@ -1170,6 +1207,22 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
               <Dropdown.Item onClick={() => setFileSortMode("name_desc")}>Name Z-A</Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown>
+
+          {!isInvoiceFolder && (
+            <Dropdown>
+              <Dropdown.Toggle className="admin-billing-file-btn admin-billing-file-btn-download" variant="secondary" id={`${folderName}-placeholder-filter-dropdown-admin`}>
+                Placeholder: {placeholderFilterLabel}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item onClick={() => setPlaceholderFilter("all")}>All</Dropdown.Item>
+                {DOCUMENT_PLACEHOLDER_OPTIONS.map((option) => (
+                  <Dropdown.Item key={option.value} onClick={() => setPlaceholderFilter(option.value)}>
+                    {option.label}
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
         </div>
       </div>
 
@@ -1260,11 +1313,47 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
       {!loadingFiles && (
         <ul className="admin-billing-file-list">
-          {sortedFiles.length === 0 && <p className="admin-billing-empty-list">No files found</p>}
-          {sortedFiles.map((file, idx) => (
+          {filteredSortedFiles.length === 0 && <p className="admin-billing-empty-list">No files found</p>}
+          {filteredSortedFiles.map((file, idx) => (
           <li key={file.id || idx} className="admin-billing-file-row">
             <div className="admin-billing-file-main">
               <strong className="admin-billing-file-name">{file.fileName}</strong>
+              {!isInvoiceFolder && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    marginLeft: "0.5rem",
+                    padding: "0.16rem 0.5rem",
+                    borderRadius: "999px",
+                    border: "1px solid #cbd5e1",
+                    background: "#f8fafc",
+                    color: "#334155",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  {getDocumentPlaceholderLabel(file.documentPlaceholder)}
+                </span>
+              )}
+              {isInvoiceFolder && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    marginLeft: "0.5rem",
+                    padding: "0.16rem 0.5rem",
+                    borderRadius: "999px",
+                    border: "1px solid #fca5a5",
+                    background: "#fff1f2",
+                    color: "#b91c1c",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  {resolveTypeOfWorkPlaceholder(file.typeOfWork)}
+                </span>
+              )}
               {updatedInvoiceFileKeys.includes(`id:${String(file.id || "")}`) ||
               updatedInvoiceFileKeys.includes(`name:${String(file.fileName || "").toLowerCase()}`) ? (
                 <span
@@ -1408,7 +1497,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         isConfirming={uploading}
         onConfirm={() => {
           if (pendingInvoiceUploadFile) {
-            void submitUpload(pendingInvoiceUploadFile);
+            void submitUpload(pendingInvoiceUploadFile, "other");
           }
         }}
         onCancel={() => setPendingInvoiceUploadFile(null)}
@@ -1417,6 +1506,46 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           <p style={{ marginBottom: 0 }}>
             Upload "{pendingInvoiceUploadFile.name}" to {formatStageLabel(uploadSection)} phase?
           </p>
+        ) : null}
+      </ConfirmModal>
+
+      <ConfirmModal
+        show={pendingUploadFile !== null}
+        title="Select Document Placeholder"
+        confirmText="Upload"
+        confirmingText="Uploading..."
+        isConfirming={uploading}
+        onConfirm={() => {
+          if (pendingUploadFile) {
+            void submitUpload(pendingUploadFile, uploadDocumentPlaceholder);
+          }
+        }}
+        onCancel={() => setPendingUploadFile(null)}
+      >
+        {pendingUploadFile ? (
+          <div style={{ display: "grid", gap: "0.55rem" }}>
+            <p style={{ marginBottom: 0 }}>
+              Upload "{pendingUploadFile.name}" with placeholder:
+            </p>
+            <select
+              value={uploadDocumentPlaceholder}
+              onChange={(event) => setUploadDocumentPlaceholder(event.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.45rem 0.6rem",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                color: "#1e293b",
+              }}
+            >
+              {DOCUMENT_PLACEHOLDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : null}
       </ConfirmModal>
 

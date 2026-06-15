@@ -225,6 +225,9 @@ export default function UserTable() {
     { label: "Status", dataKey: "status", width: 120 },
     { label: "Action", dataKey: "action", width: 200 },
   ];
+  const visibleColumns = canManageUsers
+    ? columns
+    : columns.filter((column) => column.dataKey !== "action");
 
   const totalUsers = users.length;
   const activeUsers = users.filter((item) => String(item.status || "").toLowerCase() === "active").length;
@@ -608,7 +611,7 @@ export default function UserTable() {
           components={VirtuosoTableComponents}
           fixedHeaderContent={() => (
             <TableRow>
-              {columns.map((column) => (
+              {visibleColumns.map((column) => (
                 <TableCell className="admin-table-head-cell" key={column.dataKey} variant="head" style={{ width: column.width, fontWeight: 600 }}>
                   {column.label}
                 </TableCell>
@@ -626,46 +629,48 @@ export default function UserTable() {
                   {row.status}
                 </span>
               </TableCell>
-              <TableCell>
-                {row.role === "client" ? (
-                  row.caseId ? (
+              {canManageUsers && (
+                <TableCell>
+                  {row.role === "client" ? (
+                    row.caseId ? (
+                      !isOwnFirmRow(row) && (
+                        <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleManageClick(row)}>
+                          Manage User
+                        </button>
+                      )
+                    ) : (
+                      <div className="d-flex gap-2">
+                        {!isOwnFirmRow(row) && (
+                          <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleDirectManageUser(row)}>
+                            Manage User
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-sm admin-table-action-btn admin-secondary-action"
+                          disabled={!canManageUsers}
+                          onClick={() => {
+                            const caseRecord: CaseRecord = {
+                              id: row.id,
+                              clientName: row.name,
+                              clientFirmID: row.firmID,
+                            };
+                            setSelectedCase(caseRecord);
+                            setShowOffcanvas(true);
+                          }}
+                        >
+                          Assign Case
+                        </button>
+                      </div>
+                    )
+                  ) : (
                     !isOwnFirmRow(row) && (
                       <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleManageClick(row)}>
                         Manage User
                       </button>
                     )
-                  ) : (
-                    <div className="d-flex gap-2">
-                      <button
-                        className="btn btn-sm admin-table-action-btn admin-secondary-action"
-                        disabled={!canManageUsers}
-                        onClick={() => {
-                          const caseRecord: CaseRecord = {
-                            id: row.id,
-                            clientName: row.name,
-                            clientFirmID: row.firmID,
-                          };
-                          setSelectedCase(caseRecord);
-                          setShowOffcanvas(true);
-                        }}
-                      >
-                        Assign Case
-                      </button>
-                      {!isOwnFirmRow(row) && (
-                        <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleDirectManageUser(row)}>
-                          Manage User
-                        </button>
-                      )}
-                    </div>
-                  )
-                ) : (
-                  !isOwnFirmRow(row) && (
-                    <button className="btn btn-sm admin-table-action-btn admin-primary-action" disabled={!canManageUsers} onClick={() => handleManageClick(row)}>
-                      Manage User
-                    </button>
-                  )
-                )}
-              </TableCell>
+                  )}
+                </TableCell>
+              )}
             </>
           )}
         />

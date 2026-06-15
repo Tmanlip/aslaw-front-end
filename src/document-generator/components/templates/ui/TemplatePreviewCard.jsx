@@ -9,6 +9,7 @@ const TemplatePreviewCard = ({
   onExportPDF,
   onExportDOCX,
   onUploadToCasePdf,
+  onOpenUploadPlaceholderModal,
   uploadToCaseLabel,
   uploadToCaseDisabled,
   uploadToCaseLoading,
@@ -62,7 +63,7 @@ const TemplatePreviewCard = ({
 
               {onUploadToCasePdf && (
                 <button
-                  onClick={onUploadToCasePdf}
+                  onClick={onOpenUploadPlaceholderModal || onUploadToCasePdf}
                   disabled={uploadToCaseDisabled}
                   className="dg-btn dg-btn-primary"
                 >
