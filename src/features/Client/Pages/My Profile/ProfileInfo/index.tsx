@@ -5,6 +5,7 @@ import Spinner from "react-bootstrap/Spinner";
 import { useLocation } from "react-router-dom";
 
 import AuthMemory from "../../../../../data/authMemory";
+import axiosUser from "../../../../../api/axiosUser";
 import { Client, Case } from "../../../../../data/userInfo";
 import EditClientModal from "./editProfile1";
 import { updateUser } from "../../../../../hooks/user";
@@ -22,6 +23,18 @@ const ProfileInfo: React.FC = () => {
 
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState(
+    Boolean((AuthMemory.getUser() as any)?.mfa_enabled)
+  );
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaOtpAuthUrl, setMfaOtpAuthUrl] = useState<string | null>(null);
+  const [mfaQrCodeUrl, setMfaQrCodeUrl] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaDisablePassword, setMfaDisablePassword] = useState("");
+  const [mfaDisableCode, setMfaDisableCode] = useState("");
+  const [mfaBusy, setMfaBusy] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [mfaSuccess, setMfaSuccess] = useState<string | null>(null);
   const forceResetFromState = Boolean((location.state as any)?.forcePasswordReset);
   const mustChangePassword = Boolean(AuthMemory.getUser()?.must_change_password);
 
@@ -142,6 +155,78 @@ const ProfileInfo: React.FC = () => {
     </div>
   );
 
+  const startMfaSetup = async () => {
+    try {
+      setMfaBusy(true);
+      setMfaError(null);
+      setMfaSuccess(null);
+
+      // Requests a new TOTP secret + QR payload for Microsoft Authenticator provisioning.
+      const response = await axiosUser.post("/mfa/setup-start");
+      const data = response.data || {};
+
+      setMfaSecret(typeof data.secret === "string" ? data.secret : null);
+      setMfaOtpAuthUrl(typeof data.otpauth_url === "string" ? data.otpauth_url : null);
+      setMfaQrCodeUrl(typeof data.qr_code_url === "string" ? data.qr_code_url : null);
+      setMfaCode("");
+      setMfaEnabled(false);
+      setMfaSuccess("MFA setup started. Add the account in Microsoft Authenticator, then enter the 6-digit code below.");
+    } catch (error: any) {
+      setMfaError(error?.response?.data?.message || "Failed to start MFA setup.");
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
+  const confirmMfaSetup = async () => {
+    try {
+      setMfaBusy(true);
+      setMfaError(null);
+      setMfaSuccess(null);
+
+      // Confirms first authenticator code to finalize MFA enrollment.
+      await axiosUser.post("/mfa/setup-confirm", { code: mfaCode });
+
+      setMfaEnabled(true);
+      setMfaSecret(null);
+      setMfaOtpAuthUrl(null);
+      setMfaQrCodeUrl(null);
+      setMfaCode("");
+      setMfaSuccess("MFA is now enabled for your client account.");
+    } catch (error: any) {
+      setMfaError(error?.response?.data?.message || "Failed to confirm MFA setup.");
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
+  const disableMfa = async () => {
+    try {
+      setMfaBusy(true);
+      setMfaError(null);
+      setMfaSuccess(null);
+
+      // Disabling MFA requires both account password and current authenticator code.
+      await axiosUser.post("/mfa/disable", {
+        password: mfaDisablePassword,
+        code: mfaDisableCode,
+      });
+
+      setMfaEnabled(false);
+      setMfaSecret(null);
+      setMfaOtpAuthUrl(null);
+      setMfaQrCodeUrl(null);
+      setMfaCode("");
+      setMfaDisablePassword("");
+      setMfaDisableCode("");
+      setMfaSuccess("MFA has been disabled for your client account.");
+    } catch (error: any) {
+      setMfaError(error?.response?.data?.message || "Failed to disable MFA.");
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
   return (
     <div className="client-profile-info-shell">
       {page === 1 && (
@@ -165,6 +250,101 @@ const ProfileInfo: React.FC = () => {
               {saving && <Spinner animation="border" size="sm" role="status" />}
               {saving ? "Saving..." : "Edit Information"}
             </Button>
+          </div>
+
+          <div className="client-mfa-card">
+            <h4 className="client-mfa-title">Microsoft Authenticator (Client MFA)</h4>
+            <p className="client-mfa-subtitle">
+              Status: <strong>{mfaEnabled ? "Enabled" : "Disabled"}</strong>
+            </p>
+
+            {mfaError && <p className="client-mfa-error">{mfaError}</p>}
+            {mfaSuccess && <p className="client-mfa-success">{mfaSuccess}</p>}
+
+            {!mfaEnabled && (
+              <div className="client-mfa-action-block">
+                <Button
+                  variant="outline-primary"
+                  disabled={mfaBusy}
+                  onClick={startMfaSetup}
+                  className="client-profile-action-btn"
+                >
+                  {mfaBusy ? "Starting..." : "Start MFA Setup"}
+                </Button>
+
+                {mfaSecret && (
+                  <>
+                    {mfaQrCodeUrl && (
+                      <div className="client-mfa-qr-wrap">
+                        <img src={mfaQrCodeUrl} alt="Microsoft Authenticator QR" className="client-mfa-qr" />
+                      </div>
+                    )}
+                    <p className="client-mfa-instruction">
+                      Manual key (if needed): <span>{mfaSecret}</span>
+                    </p>
+                    {mfaOtpAuthUrl && (
+                      <p className="client-mfa-instruction">
+                        OTP Auth URL: <span>{mfaOtpAuthUrl}</span>
+                      </p>
+                    )}
+                    <div className="client-mfa-inline-fields">
+                      <input
+                        className="client-mfa-input"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={mfaCode}
+                        onChange={(e) => setMfaCode(e.target.value.replace(/\D+/g, "").slice(0, 6))}
+                        placeholder="6-digit code"
+                        disabled={mfaBusy}
+                      />
+                      <Button
+                        variant="success"
+                        disabled={mfaBusy || mfaCode.length !== 6}
+                        onClick={confirmMfaSetup}
+                      >
+                        Confirm Setup
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {mfaEnabled && (
+              <div className="client-mfa-action-block">
+                <p className="client-mfa-instruction">
+                  To disable MFA, confirm with your current password and a valid authenticator code.
+                </p>
+                <div className="client-mfa-inline-fields client-mfa-inline-fields-stack">
+                  <input
+                    className="client-mfa-input"
+                    type="password"
+                    value={mfaDisablePassword}
+                    onChange={(e) => setMfaDisablePassword(e.target.value)}
+                    placeholder="Current password"
+                    disabled={mfaBusy}
+                  />
+                  <input
+                    className="client-mfa-input"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={mfaDisableCode}
+                    onChange={(e) => setMfaDisableCode(e.target.value.replace(/\D+/g, "").slice(0, 6))}
+                    placeholder="6-digit code"
+                    disabled={mfaBusy}
+                  />
+                  <Button
+                    variant="outline-danger"
+                    disabled={mfaBusy || mfaDisablePassword.length < 1 || mfaDisableCode.length !== 6}
+                    onClick={disableMfa}
+                  >
+                    Disable MFA
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

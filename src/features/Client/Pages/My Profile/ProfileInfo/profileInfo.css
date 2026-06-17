@@ -100,6 +100,86 @@
   color: #1f2937;
 }
 
+.client-mfa-card {
+  margin-top: 1rem;
+  border: 1px solid #d6dce7;
+  border-radius: 8px;
+  padding: 0.9rem;
+  background: #f8fbff;
+}
+
+.client-mfa-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: #233754;
+}
+
+.client-mfa-subtitle {
+  margin: 0 0 0.7rem;
+  color: #445a77;
+}
+
+.client-mfa-action-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.client-mfa-instruction {
+  margin: 0;
+  color: #2f3e53;
+  overflow-wrap: anywhere;
+}
+
+.client-mfa-instruction span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.client-mfa-qr-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.client-mfa-qr {
+  width: 180px;
+  height: 180px;
+  border: 1px solid #d6dce7;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.35rem;
+}
+
+.client-mfa-inline-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.client-mfa-inline-fields-stack {
+  align-items: stretch;
+}
+
+.client-mfa-input {
+  min-height: 40px;
+  border: 1px solid #b9c7da;
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  min-width: 180px;
+}
+
+.client-mfa-error {
+  color: #a12e2e;
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+}
+
+.client-mfa-success {
+  color: #2c6e34;
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+}
+
 @media (max-width: 1024px) {
   .client-profile-info-card {
     gap: 0.75rem;
@@ -142,6 +222,16 @@
   .client-profile-action-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .client-mfa-inline-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .client-mfa-input {
+    width: 100%;
+    min-width: 0;
   }
 }
 

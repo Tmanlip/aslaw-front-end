@@ -38,7 +38,7 @@ const ChatbotPage: React.FC = () => {
     {
       id: "welcome",
       role: "assistant",
-      text: "Hello. I am ASLAW chatbot. Ask your legal question and I will route to the right domain.",
+      text: "Hello. I am ASALAW chatbot. Ask your legal question and I will route to the right domain.",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -130,7 +130,7 @@ const ChatbotPage: React.FC = () => {
       <div className={`chatbot-layout ${showIntroPanel ? "with-intro" : "intro-collapsed"}`}>
         <div className="chatbot-shell">
           <div className="chatbot-header">
-            <h1>ASLAW Chatbot</h1>
+            <h1>ASALAW Chatbot</h1>
             <div className="chatbot-actions">
               <button type="button" className="secondary" onClick={() => navigate(PATH.AUTH.LOGIN)}>
                 Login

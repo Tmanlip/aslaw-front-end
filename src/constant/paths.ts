@@ -75,7 +75,8 @@ const PATH = {
     LOGOUT : "/logout",
     FORGOT_PASSWORD : "/forgot-password",
     RESET_PASSWORD : "/reset-password",
-    LOGIN : "/login"
+    LOGIN : "/login",
+    SSO_CALLBACK: "/sso/callback"
   }
 };
 

@@ -37,6 +37,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [showForgotPasswordPage, setForgotPasswordPage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLockedModal, setShowLockedModal] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+
+  // Starts Entra SSO by role and delegates the auth challenge to backend redirect endpoint.
+  const startMicrosoftSso = (role: "admin" | "lawyer" | "adminstaff" | "junioradmin") => {
+    const redirectUrl = `${API_URL}/sso/entra/redirect?role=${encodeURIComponent(role)}`;
+    window.location.assign(redirectUrl);
+  };
 
   useEffect(() => {
     const pingBackend = async () => {
@@ -75,13 +83,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/login`, {
+      // Same form handles two-step auth: password login first, then MFA challenge verification.
+      const endpoint = mfaChallenge ? `${API_URL}/login/mfa-verify` : `${API_URL}/login`;
+      const payload = mfaChallenge
+        ? { challenge: mfaChallenge, code: mfaCode }
+        : { email, password, remember: rememberMe };
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ email, password, remember: rememberMe }),
+        body: JSON.stringify(payload),
       });
 
       const responseText = await response.text();
@@ -100,7 +114,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         error.status = response.status;
         error.code = data.code;
         error.resetRequired = Boolean(data.reset_required);
+        error.role = data.role;
         throw error;
+      }
+
+      if (data?.mfa_required && data?.mfa_challenge) {
+        // Switch UI into TOTP verification mode when backend indicates MFA is required.
+        setMfaChallenge(String(data.mfa_challenge));
+        setMfaCode("");
+        setAlertVariant("warning");
+        setAlertMessage("Enter the 6-digit code from Microsoft Authenticator.");
+        return;
       }
 
       console.log("LOGIN SUCCESS:", data);
@@ -209,7 +233,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     } catch (error: any) {
       console.error("LOGIN ERROR:", error.message);
       setAlertVariant("danger");
-      setAlertMessage(error.message);
+      if (error.code === "SSO_REQUIRED") {
+        setAlertMessage("This account role must sign in with Microsoft SSO below.");
+      } else {
+        setAlertMessage(error.message);
+      }
+
+      if (error.code === "MFA_CHALLENGE_EXPIRED") {
+        setMfaChallenge(null);
+        setMfaCode("");
+      }
 
       if (
         error.status === 423 ||
@@ -245,52 +278,97 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || Boolean(mfaChallenge)}
           required
         />
       </Form.Group>
       
-      {/* Password */}
-      <Form.Group className="mb-3" controlId="formPassword">
-        <Form.Label>Password</Form.Label>
-        <Form.Control
-          type="password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isSubmitting}
-          required
-        />
-      </Form.Group>
+      {!mfaChallenge && (
+        <>
+          {/* Password */}
+          <Form.Group className="mb-3" controlId="formPassword">
+            <Form.Label>Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isSubmitting}
+              required
+            />
+          </Form.Group>
 
-      {/* Remember me & Forgot password */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <Form.Check
-          type="checkbox"
-          id="rememberMe"
-          label="Remember me"
-          checked={rememberMe}
-          onChange={(e) => setRememberMe(e.target.checked)}
-          disabled={isSubmitting}
-        />
-        <button
-          type="button"
-          onClick={() => setForgotPasswordPage(true)}
-          disabled={isSubmitting}
-          style={{
-            fontSize: "14px",
-            color: colors.gold6 || "#3b82f6",
-            textDecoration: "none",
-            fontWeight: "500",
-            background: "none",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-          }}
-        >
-          Forgot password?
-        </button>
-      </div>
+          {/* Remember me & Forgot password */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Form.Check
+              type="checkbox"
+              id="rememberMe"
+              label="Remember me"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={isSubmitting}
+            />
+            <button
+              type="button"
+              onClick={() => setForgotPasswordPage(true)}
+              disabled={isSubmitting}
+              style={{
+                fontSize: "14px",
+                color: colors.gold6 || "#3b82f6",
+                textDecoration: "none",
+                fontWeight: "500",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+              }}
+            >
+              Forgot password?
+            </button>
+          </div>
+        </>
+      )}
+
+      {mfaChallenge && (
+        <>
+          <Form.Group className="mb-3" controlId="formMfaCode">
+            <Form.Label>Authenticator Code</Form.Label>
+            <Form.Control
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="Enter 6-digit code"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D+/g, "").slice(0, 6))}
+              disabled={isSubmitting}
+              required
+            />
+          </Form.Group>
+          <div className="d-flex justify-content-end mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                setMfaChallenge(null);
+                setMfaCode("");
+                setAlertMessage(null);
+              }}
+              disabled={isSubmitting}
+              style={{
+                fontSize: "14px",
+                color: colors.gold6 || "#3b82f6",
+                textDecoration: "none",
+                fontWeight: "500",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+              }}
+            >
+              Back to password login
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Submit Button */}
       <Button
@@ -312,9 +390,55 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
             Signing in...
           </>
         ) : (
-          "Sign In"
+          mfaChallenge ? "Verify Code" : "Sign In"
         )}
       </Button>
+
+      {!mfaChallenge && (
+        <>
+          <div className="text-center my-3" style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+            or use Microsoft SSO (lawyer/admin roles)
+          </div>
+          <div className="d-grid gap-2">
+            <Button
+              type="button"
+              variant="outline-primary"
+              disabled={isSubmitting}
+              onClick={() => startMicrosoftSso("lawyer")}
+              style={{ fontWeight: 600 }}
+            >
+              Sign in with Microsoft (Lawyer)
+            </Button>
+            <Button
+              type="button"
+              variant="outline-primary"
+              disabled={isSubmitting}
+              onClick={() => startMicrosoftSso("admin")}
+              style={{ fontWeight: 600 }}
+            >
+              Sign in with Microsoft (Admin)
+            </Button>
+            <Button
+              type="button"
+              variant="outline-primary"
+              disabled={isSubmitting}
+              onClick={() => startMicrosoftSso("adminstaff")}
+              style={{ fontWeight: 600 }}
+            >
+              Sign in with Microsoft (Admin Staff)
+            </Button>
+            <Button
+              type="button"
+              variant="outline-primary"
+              disabled={isSubmitting}
+              onClick={() => startMicrosoftSso("junioradmin")}
+              style={{ fontWeight: 600 }}
+            >
+              Sign in with Microsoft (Junior Admin)
+            </Button>
+          </div>
+        </>
+      )}
 
       <Modal
         show={showLockedModal}

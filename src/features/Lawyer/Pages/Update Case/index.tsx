@@ -762,7 +762,7 @@ const UpdateCase: React.FC = () => {
               </div>
 
               <iframe
-                title="ASLAW Document Generator"
+                title="ASALAW Document Generator"
                 src={docGeneratorCategory ? `${documentGeneratorSrc}&category=${encodeURIComponent(docGeneratorCategory)}` : documentGeneratorSrc}
                 className="lawyer-doc-generator-iframe"
               />

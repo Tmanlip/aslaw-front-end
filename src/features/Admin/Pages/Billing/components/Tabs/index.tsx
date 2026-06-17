@@ -1181,7 +1181,7 @@ const FileSection: React.FC<FileSectionProps> = ({
               </div>
 
               <iframe
-                title="ASLAW Document Generator"
+                title="ASALAW Document Generator"
                 src={activeGeneratorSrc}
                 className="admin-doc-generator-iframe"
               />
