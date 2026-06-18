@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ show, handleClose, children }) => {
   const roleRoutes = AppRoutes(effectiveRole || null);
   const adminExtraRoutes =
     effectiveRole === "admin"
-      ? [{ path: PATH.ADMIN.SCHEDULE_MEETING }, { path: PATH.ADMIN.LOGS }]
+      ? [{ path: PATH.ADMIN.LOGS }]
       : [];
   const adminExcludedPaths = new Set([
     PATH.ADMIN.BILLING,

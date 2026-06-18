@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
@@ -27,72 +27,66 @@ const SsoCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const processedKeyRef = useRef<string | null>(null);
 
-  const parsed = useMemo(() => {
-    // Backend returns SSO payload through query params after Entra callback processing.
-    const token = searchParams.get("token") || "";
-    const role = (searchParams.get("role") || "").toLowerCase();
-    const encodedUser = searchParams.get("user") || "";
-    const message = searchParams.get("message") || "Login successful";
-    const mustChangePassword = searchParams.get("must_change_password") === "1";
-
-    return {
-      token,
-      role,
-      encodedUser,
-      message,
-      mustChangePassword,
-    };
-  }, [searchParams]);
+  const token = searchParams.get("token") || "";
+  const roleParam = (searchParams.get("role") || "").toLowerCase();
+  const encodedUser = searchParams.get("user") || "";
+  const message = searchParams.get("message") || "Login successful";
+  const mustChangePassword = searchParams.get("must_change_password") === "1";
+  const errorMessage = searchParams.get("error");
 
   useEffect(() => {
+    const callbackKey = `${token}|${roleParam}|${encodedUser}`;
+
+    if (processedKeyRef.current === callbackKey) {
+      return;
+    }
+
+    processedKeyRef.current = callbackKey;
+
     try {
-      const errorMessage = searchParams.get("error");
       if (errorMessage) {
         setError(errorMessage);
         return;
       }
 
-      if (!parsed.token) {
+      if (!token) {
         setError("Missing SSO token. Please try again.");
         return;
       }
 
-      if (!["admin", "adminstaff", "junioradmin", "lawyer", "client"].includes(parsed.role)) {
+      if (!["admin", "adminstaff", "junioradmin", "lawyer", "client"].includes(roleParam)) {
         setError("Invalid SSO role payload.");
         return;
       }
 
-      const role = parsed.role as Role;
+      const role = roleParam as Role;
       let user: any = { role };
 
-      if (parsed.encodedUser) {
-        // User profile is base64url-encoded to keep callback payload URL-safe.
-        const decoded = decodeBase64Url(parsed.encodedUser);
+      if (encodedUser) {
+        const decoded = decodeBase64Url(encodedUser);
         user = JSON.parse(decoded);
       }
 
-      if (parsed.mustChangePassword) {
+      if (mustChangePassword) {
         user.must_change_password = true;
       }
 
-      AuthMemory.setAuth(parsed.token, user, true);
+      AuthMemory.setAuth(token, user, true);
       login(role, user, true);
 
-      // Short timeout keeps navigation in next task queue so state is committed first.
-      setTimeout(() => {
-        navigate(getDashboardPath(role), {
-          replace: true,
-          state: {
-            successMessage: parsed.message,
-            forcePasswordReset: parsed.mustChangePassword,
-          },
-        });
-      }, 10);
+      navigate(getDashboardPath(role), {
+        replace: true,
+        state: {
+          successMessage: message,
+          forcePasswordReset: mustChangePassword,
+        },
+      });
     } catch (callbackError: any) {
       setError(callbackError?.message || "SSO callback handling failed.");
     }
-  }, [login, navigate, parsed, searchParams]);
+  }, [encodedUser, errorMessage, login, message, mustChangePassword, navigate, roleParam, token]);
 
   if (error) {
     return (

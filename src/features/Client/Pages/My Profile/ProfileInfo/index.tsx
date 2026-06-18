@@ -161,7 +161,6 @@ const ProfileInfo: React.FC = () => {
       setMfaError(null);
       setMfaSuccess(null);
 
-      // Requests a new TOTP secret + QR payload for Microsoft Authenticator provisioning.
       const response = await axiosUser.post("/mfa/setup-start");
       const data = response.data || {};
 
@@ -184,7 +183,6 @@ const ProfileInfo: React.FC = () => {
       setMfaError(null);
       setMfaSuccess(null);
 
-      // Confirms first authenticator code to finalize MFA enrollment.
       await axiosUser.post("/mfa/setup-confirm", { code: mfaCode });
 
       setMfaEnabled(true);
@@ -206,7 +204,6 @@ const ProfileInfo: React.FC = () => {
       setMfaError(null);
       setMfaSuccess(null);
 
-      // Disabling MFA requires both account password and current authenticator code.
       await axiosUser.post("/mfa/disable", {
         password: mfaDisablePassword,
         code: mfaDisableCode,

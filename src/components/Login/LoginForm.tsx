@@ -40,9 +40,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [mfaChallenge, setMfaChallenge] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
 
-  // Starts Entra SSO by role and delegates the auth challenge to backend redirect endpoint.
-  const startMicrosoftSso = (role: "admin" | "lawyer" | "adminstaff" | "junioradmin") => {
-    const redirectUrl = `${API_URL}/sso/entra/redirect?role=${encodeURIComponent(role)}`;
+  const startMicrosoftSso = () => {
+    const redirectUrl = `${API_URL}/sso/entra/redirect`;
     window.location.assign(redirectUrl);
   };
 
@@ -83,7 +82,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      // Same form handles two-step auth: password login first, then MFA challenge verification.
       const endpoint = mfaChallenge ? `${API_URL}/login/mfa-verify` : `${API_URL}/login`;
       const payload = mfaChallenge
         ? { challenge: mfaChallenge, code: mfaCode }
@@ -119,7 +117,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       }
 
       if (data?.mfa_required && data?.mfa_challenge) {
-        // Switch UI into TOTP verification mode when backend indicates MFA is required.
         setMfaChallenge(String(data.mfa_challenge));
         setMfaCode("");
         setAlertVariant("warning");
@@ -397,46 +394,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       {!mfaChallenge && (
         <>
           <div className="text-center my-3" style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-            or use Microsoft SSO (lawyer/admin roles)
+            or sign in with Microsoft SSO
           </div>
-          <div className="d-grid gap-2">
-            <Button
-              type="button"
-              variant="outline-primary"
-              disabled={isSubmitting}
-              onClick={() => startMicrosoftSso("lawyer")}
-              style={{ fontWeight: 600 }}
-            >
-              Sign in with Microsoft (Lawyer)
-            </Button>
-            <Button
-              type="button"
-              variant="outline-primary"
-              disabled={isSubmitting}
-              onClick={() => startMicrosoftSso("admin")}
-              style={{ fontWeight: 600 }}
-            >
-              Sign in with Microsoft (Admin)
-            </Button>
-            <Button
-              type="button"
-              variant="outline-primary"
-              disabled={isSubmitting}
-              onClick={() => startMicrosoftSso("adminstaff")}
-              style={{ fontWeight: 600 }}
-            >
-              Sign in with Microsoft (Admin Staff)
-            </Button>
-            <Button
-              type="button"
-              variant="outline-primary"
-              disabled={isSubmitting}
-              onClick={() => startMicrosoftSso("junioradmin")}
-              style={{ fontWeight: 600 }}
-            >
-              Sign in with Microsoft (Junior Admin)
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline-primary"
+            disabled={isSubmitting}
+            onClick={startMicrosoftSso}
+            style={{ fontWeight: 600, width: "100%" }}
+          >
+            Sign in with Microsoft
+          </Button>
         </>
       )}
 

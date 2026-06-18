@@ -11,7 +11,6 @@ import EditCase from "../features/Admin/Pages/Manage Case/Edit Case";
 import LawyerCases from "../features/Admin/Pages/Billing/LawyerBilling";
 import RegisterCase from "../features/Admin/Pages/Manage Case/Register Case";
 import AdminProfile from "../features/Admin/Pages/My Profile";
-import AdminScheduleMeeting from "../features/Admin/Pages/ScheduleMeeting";
 import AdminLogs from "../features/Admin/Pages/Logs/index";
 import AdminSearch from "../features/Admin/Pages/Search/index";
 import GeneratorDashboard from "../document-generator/pages/Dashboard";
@@ -21,7 +20,6 @@ import TemplateVisibilityAdmin from "../document-generator/pages/TemplateVisibil
 const adminRoutes: RouteObject[] = [
   { path: PATH.ADMIN.DASHBOARD, element: <Dashboard /> },
   { path: PATH.ADMIN.MY_PROFILE, element: <AdminProfile /> },
-  { path: PATH.ADMIN.SCHEDULE_MEETING, element: <AdminScheduleMeeting /> },
   { path: PATH.ADMIN.BILLING, element: <Billing /> },
   { path: PATH.ADMIN.MANAGE_CASE, element: <ManageCase /> },
   { path: PATH.ADMIN.EDIT_CASE, element: <EditCase />},
