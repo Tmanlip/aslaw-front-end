@@ -117,7 +117,7 @@ const ChatbotPage: React.FC = () => {
     ]);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/ask/stream`, {
+      const response = await fetch(`${apiBaseUrl}/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
