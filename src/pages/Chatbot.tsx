@@ -25,7 +25,48 @@ type AskResponse = {
   suggestedCategory?: RoleCategory | null;
 };
 
+type AskStreamEvent =
+  | { event: "meta"; data: { sessionId?: string } }
+  | { event: "chunk"; data: { text?: string } }
+  | { event: "done"; data: AskResponse }
+  | { event: "error"; data: { message?: string } };
+
 const categoryOptions: RoleCategory[] = ["general", "civil", "corporate", "criminal"];
+
+const parseSseEvents = (buffer: string): { events: AskStreamEvent[]; remainder: string } => {
+  const rawFrames = buffer.split("\n\n");
+  const remainder = rawFrames.pop() ?? "";
+  const events: AskStreamEvent[] = [];
+
+  for (const frame of rawFrames) {
+    const lines = frame.split("\n");
+    let eventName = "message";
+    const dataLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trim());
+      }
+    }
+
+    if (dataLines.length === 0) {
+      continue;
+    }
+
+    try {
+      const payload = JSON.parse(dataLines.join("\n"));
+      if (eventName === "meta" || eventName === "chunk" || eventName === "done" || eventName === "error") {
+        events.push({ event: eventName, data: payload } as AskStreamEvent);
+      }
+    } catch {
+      // Ignore malformed event chunks and continue stream parsing.
+    }
+  }
+
+  return { events, remainder };
+};
 
 const ChatbotPage: React.FC = () => {
   const navigate = useNavigate();
@@ -59,16 +100,28 @@ const ChatbotPage: React.FC = () => {
       text: trimmed,
     };
 
+    const assistantMessageId = `a-${Date.now()}`;
+
     setMessages((prev) => [...prev, userMessage]);
     setQuestion("");
     setLoading(true);
     setError("");
 
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        text: "",
+      },
+    ]);
+
     try {
-      const response = await fetch(`${apiBaseUrl}/ask`, {
+      const response = await fetch(`${apiBaseUrl}/ask/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "text/event-stream",
         },
         body: JSON.stringify({
           question: trimmed,
@@ -79,47 +132,91 @@ const ChatbotPage: React.FC = () => {
         }),
       });
 
-      const rawBody = await response.text();
-      let data: (Partial<AskResponse> & { error?: string }) | null = null;
-
-      try {
-        data = rawBody ? (JSON.parse(rawBody) as Partial<AskResponse> & { error?: string }) : null;
-      } catch {
-        data = null;
+      if (!response.ok || !response.body) {
+        const rawBody = await response.text();
+        throw new Error(rawBody || `Chatbot request failed with status ${response.status}.`);
       }
 
-      const answer = data?.answer;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = "";
+      let finalPayload: AskResponse | null = null;
+      let streamError = "";
 
-      if (!response.ok || !answer) {
-        if (!response.ok) {
-          const messageFromJson = data?.error || "";
-          const messageFromBody = rawBody ? rawBody.trim() : "";
-          throw new Error(
-            messageFromJson ||
-              messageFromBody ||
-              `Chatbot request failed with status ${response.status}.`
-          );
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
         }
 
-        throw new Error(data?.error || "Failed to get chatbot answer.");
+        sseBuffer += decoder.decode(value, { stream: true });
+        const parsed = parseSseEvents(sseBuffer);
+        sseBuffer = parsed.remainder;
+
+        for (const event of parsed.events) {
+          if (event.event === "meta") {
+            if (event.data?.sessionId && !sessionId) {
+              setSessionId(event.data.sessionId);
+            }
+            continue;
+          }
+
+          if (event.event === "chunk") {
+            const piece = event.data?.text || "";
+            if (piece) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? {
+                        ...msg,
+                        text: `${msg.text}${piece}`,
+                      }
+                    : msg
+                )
+              );
+            }
+            continue;
+          }
+
+          if (event.event === "done") {
+            finalPayload = event.data;
+            continue;
+          }
+
+          if (event.event === "error") {
+            streamError = event.data?.message || "Chatbot stream failed.";
+          }
+        }
       }
 
-      if (data?.sessionId && !sessionId) {
-        setSessionId(data.sessionId);
+      if (streamError) {
+        throw new Error(streamError);
       }
 
-      const assistantMessage: ChatMessage = {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        text: answer,
-        suggestedCategory: data?.suggestedCategory ?? undefined,
-        domainMismatch: Boolean(data?.domainMismatch),
-      };
+      if (!finalPayload || !finalPayload.answer) {
+        throw new Error("Chatbot stream ended without a final answer.");
+      }
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      if (finalPayload.sessionId && !sessionId) {
+        setSessionId(finalPayload.sessionId);
+      }
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                text: finalPayload?.answer || msg.text,
+                suggestedCategory: finalPayload?.suggestedCategory ?? undefined,
+                domainMismatch: Boolean(finalPayload?.domainMismatch),
+              }
+            : msg
+        )
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Chatbot request failed.";
       setError(message);
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
     } finally {
       setLoading(false);
     }
@@ -171,7 +268,6 @@ const ChatbotPage: React.FC = () => {
                 ) : null}
               </div>
             ))}
-            {loading ? <div className="bubble assistant">Thinking...</div> : null}
           </div>
 
           <form className="chatbot-form" onSubmit={sendQuestion}>
