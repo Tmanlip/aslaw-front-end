@@ -1048,8 +1048,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           const taxAmt = (newPaid * taxPct) / 100;
           const discountAmt = (newPaid * discountPct) / 100;
           const computedTotal = newPaid + taxAmt - discountAmt;
-          const fmt = (v: number) =>
-            new Intl.NumberFormat('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 
           const handleSubmit = async () => {
             const normalizedBalance =
