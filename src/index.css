@@ -880,6 +880,14 @@ iframe {
   transform: translateY(-2px);
 }
 
+.login-locked-backdrop {
+  z-index: 10990 !important;
+}
+
+.login-locked-modal {
+  z-index: 11000 !important;
+}
+
 /* ==================== METIS TABLE THEME ==================== */
 .table {
   margin-bottom: 0;

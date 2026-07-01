@@ -47,6 +47,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     invoice: any;
   } | null>(null);
   const [updatePaidAmount, setUpdatePaidAmount] = useState<string>("");
+  const [updatePaymentStage, setUpdatePaymentStage] = useState<string>("initial");
+  const [updateTypeOfWork, setUpdateTypeOfWork] = useState<string>("");
+  const [updateTax, setUpdateTax] = useState<string>("0");
+  const [updateDiscount, setUpdateDiscount] = useState<string>("0");
   const [isSavingInvoiceUpdate, setIsSavingInvoiceUpdate] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewMessageVariant, setReviewMessageVariant] = useState<"success" | "danger">("success");
@@ -279,6 +283,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
         invoice: resolvedInvoice,
       });
       setUpdatePaidAmount(String(resolvedInvoice?.paid_amount ?? ""));
+      setUpdatePaymentStage(String(resolvedInvoice?.payment_stage || "initial"));
+      setUpdateTypeOfWork(String(response?.data?.type_of_work || resolvedInvoice?.type_of_work || ""));
+      setUpdateTax(String(resolvedInvoice?.tax ?? 0));
+      setUpdateDiscount(String(resolvedInvoice?.discount ?? 0));
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||
@@ -298,8 +306,22 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     }
 
     const numericPaidAmount = Number(updatePaidAmount);
+    const numericTax = Number(updateTax || 0);
+    const numericDiscount = Number(updateDiscount || 0);
+    const nextStage = String(updatePaymentStage || "initial").toLowerCase();
+    const stageAllowed = ["initial", "first", "second", "third", "final"].includes(nextStage);
     if (!Number.isFinite(numericPaidAmount) || numericPaidAmount < 0) {
       setReviewMessage("Paid Amount must be a valid number greater than or equal to 0.");
+      setReviewMessageVariant("danger");
+      return;
+    }
+    if (!stageAllowed) {
+      setReviewMessage("Payment Stage is invalid.");
+      setReviewMessageVariant("danger");
+      return;
+    }
+    if (!Number.isFinite(numericTax) || numericTax < 0 || !Number.isFinite(numericDiscount) || numericDiscount < 0) {
+      setReviewMessage("Tax and Discount must be valid numbers greater than or equal to 0.");
       setReviewMessageVariant("danger");
       return;
     }
@@ -308,7 +330,13 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
     try {
       const response = await axiosUser.put(
         `/encrypted-documents/${updateInvoicePayload.documentId}/invoice`,
-        { paid_amount: numericPaidAmount },
+        {
+          paid_amount: numericPaidAmount,
+          payment_stage: nextStage,
+          type_of_work: updateTypeOfWork.trim(),
+          tax: numericTax,
+          discount: numericDiscount,
+        },
         { headers: authHeaders }
       );
 
@@ -325,9 +353,9 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                 document_id: nextDocumentId,
                 file_name: nextFileName,
                 paid_amount: updatedInvoice?.paid_amount ?? numericPaidAmount,
-                payment_stage: updatedInvoice?.payment_stage ?? item.payment_stage,
-                invoice_stage: updatedInvoice?.payment_stage ?? item.invoice_stage,
-                type_of_work: updatedInvoice?.type_of_work ?? item.type_of_work,
+                payment_stage: updatedInvoice?.payment_stage ?? nextStage ?? item.payment_stage,
+                invoice_stage: updatedInvoice?.payment_stage ?? nextStage ?? item.invoice_stage,
+                type_of_work: updatedInvoice?.type_of_work ?? updateTypeOfWork ?? item.type_of_work,
               }
             : item
         )
@@ -335,6 +363,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
 
       setUpdateInvoicePayload(null);
       setUpdatePaidAmount("");
+      setUpdatePaymentStage("initial");
+      setUpdateTypeOfWork("");
+      setUpdateTax("0");
+      setUpdateDiscount("0");
       setReviewMessage("Invoice saved successfully.");
       setReviewMessageVariant("success");
       onUploadSuccess?.();
@@ -685,8 +717,8 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
           const invoice = updateInvoicePayload.invoice || {};
           const expectedAmount = Number(invoice.expected_amount || 0);
           const paidAmountValue = Number(updatePaidAmount || 0);
-          const taxPct = Number(invoice.tax || 0);
-          const discountPct = Number(invoice.discount || 0);
+          const taxPct = Number(updateTax || 0);
+          const discountPct = Number(updateDiscount || 0);
           const balanceAmount = Math.max(expectedAmount - paidAmountValue, 0);
           const totalAmount = paidAmountValue + (paidAmountValue * taxPct) / 100 - (paidAmountValue * discountPct) / 100;
           const formatAmount = (value: number) =>
@@ -711,6 +743,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                 if (!isSavingInvoiceUpdate) {
                   setUpdateInvoicePayload(null);
                   setUpdatePaidAmount("");
+                  setUpdatePaymentStage("initial");
+                  setUpdateTypeOfWork("");
+                  setUpdateTax("0");
+                  setUpdateDiscount("0");
                 }
               }}
             >
@@ -746,6 +782,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                       if (!isSavingInvoiceUpdate) {
                         setUpdateInvoicePayload(null);
                         setUpdatePaidAmount("");
+                        setUpdatePaymentStage("initial");
+                        setUpdateTypeOfWork("");
+                        setUpdateTax("0");
+                        setUpdateDiscount("0");
                       }
                     }}
                     style={{
@@ -776,11 +816,49 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                     }}
                   >
                     <div><span style={{ color: "#64748b" }}>Invoice No.</span><br /><strong>{invoice.invoice_number || "-"}</strong></div>
-                    <div><span style={{ color: "#64748b" }}>Payment Stage</span><br /><strong style={{ textTransform: "capitalize" }}>{invoice.payment_stage || "-"}</strong></div>
+                    <div>
+                      <span style={{ color: "#64748b" }}>Payment Stage</span><br />
+                      <select
+                        value={updatePaymentStage}
+                        onChange={(event) => setUpdatePaymentStage(event.target.value)}
+                        disabled={isSavingInvoiceUpdate}
+                        style={{
+                          width: "100%",
+                          marginTop: "0.2rem",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "6px",
+                          padding: "0.32rem 0.45rem",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {(["initial", "first", "second", "third", "final"] as const).map((phase) => (
+                          <option key={phase} value={phase} style={{ textTransform: "capitalize" }}>
+                            {phase.charAt(0).toUpperCase() + phase.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div><span style={{ color: "#64748b" }}>Client</span><br /><strong>{invoice.client_name || "-"}</strong></div>
                     <div><span style={{ color: "#64748b" }}>Case</span><br /><strong>{invoice.case_title || "-"}</strong></div>
                     <div><span style={{ color: "#64748b" }}>Issue Date</span><br /><strong>{invoice.issue_date || "-"}</strong></div>
                     <div><span style={{ color: "#64748b" }}>Due Date</span><br /><strong>{invoice.due_date || "-"}</strong></div>
+                    <div style={{ gridColumn: "1 / span 2" }}>
+                      <span style={{ color: "#64748b" }}>Type of Work</span><br />
+                      <input
+                        type="text"
+                        value={updateTypeOfWork}
+                        onChange={(event) => setUpdateTypeOfWork(event.target.value)}
+                        disabled={isSavingInvoiceUpdate}
+                        placeholder="Type of Work"
+                        style={{
+                          width: "100%",
+                          marginTop: "0.2rem",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "6px",
+                          padding: "0.38rem 0.5rem",
+                        }}
+                      />
+                    </div>
                   </div>
 
                   <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden", marginBottom: "1rem" }}>
@@ -845,6 +923,72 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
+                        padding: "0.65rem 1rem",
+                        borderBottom: "1px solid #f1f5f9",
+                        background: "#f8fafc",
+                      }}
+                    >
+                      <label htmlFor="recent-update-tax-input" style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>
+                        Tax (%)
+                      </label>
+                      <input
+                        id="recent-update-tax-input"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={updateTax}
+                        onChange={(event) => setUpdateTax(event.target.value)}
+                        style={{
+                          width: "140px",
+                          padding: "0.4rem 0.65rem",
+                          borderRadius: "7px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          textAlign: "right",
+                        }}
+                        disabled={isSavingInvoiceUpdate}
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.65rem 1rem",
+                        borderBottom: "1px solid #f1f5f9",
+                        background: "#f8fafc",
+                      }}
+                    >
+                      <label htmlFor="recent-update-discount-input" style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>
+                        Discount (%)
+                      </label>
+                      <input
+                        id="recent-update-discount-input"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={updateDiscount}
+                        onChange={(event) => setUpdateDiscount(event.target.value)}
+                        style={{
+                          width: "140px",
+                          padding: "0.4rem 0.65rem",
+                          borderRadius: "7px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          textAlign: "right",
+                        }}
+                        disabled={isSavingInvoiceUpdate}
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                         padding: "0.6rem 1rem",
                         borderBottom: "1px solid #f1f5f9",
                         fontSize: "0.9rem",
@@ -876,6 +1020,10 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
                       onClick={() => {
                         setUpdateInvoicePayload(null);
                         setUpdatePaidAmount("");
+                        setUpdatePaymentStage("initial");
+                        setUpdateTypeOfWork("");
+                        setUpdateTax("0");
+                        setUpdateDiscount("0");
                       }}
                       disabled={isSavingInvoiceUpdate}
                       style={{

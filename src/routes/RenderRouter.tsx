@@ -6,7 +6,6 @@ import AppRoutes from "./AppRouter";
 import ForgotPasswordPage from "../pages/ForgotPassword"
 import ArchivedUserPage from "../pages/ArchivedUser";
 import InactiveUserPage from "../pages/InactiveUser";
-import SsoCallback from "../pages/SsoCallback";
 import PATH from "../constant/paths";
 import CornerIdentityBadge from "../shared/components/CornerIdentityBadge";
 
@@ -25,7 +24,6 @@ export default function RenderRouter() {
     { path: "/", element: <HomePage /> },
     { path: PATH.CHATBOT, element: <ChatbotPage /> },
     { path: PATH.AUTH.RESET_PASSWORD, element: <ForgotPasswordPage /> },
-    { path: PATH.AUTH.SSO_CALLBACK, element: <SsoCallback /> },
   ];
 
   // 2. Get role-based routes

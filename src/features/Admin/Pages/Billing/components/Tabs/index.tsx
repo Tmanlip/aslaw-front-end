@@ -105,6 +105,10 @@ const FileSection: React.FC<FileSectionProps> = ({
   const [updateInvoiceData, setUpdateInvoiceData] = useState<any | null>(null);
   const [updateCaseFinancials, setUpdateCaseFinancials] = useState<any | null>(null);
   const [updatePaidAmountValue, setUpdatePaidAmountValue] = useState<string>("");
+  const [updatePaymentStageValue, setUpdatePaymentStageValue] = useState<string>("initial");
+  const [updateTypeOfWorkValue, setUpdateTypeOfWorkValue] = useState<string>("");
+  const [updateTaxValue, setUpdateTaxValue] = useState<string>("0");
+  const [updateDiscountValue, setUpdateDiscountValue] = useState<string>("0");
   const [isUpdatingInvoice, setIsUpdatingInvoice] = useState(false);
   const [livePhaseSnapshot, setLivePhaseSnapshot] = useState<PhaseSnapshot | null>(null);
   const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
@@ -757,7 +761,7 @@ const FileSection: React.FC<FileSectionProps> = ({
 
       {pendingUpdateFile && updateInvoiceData && (() => {
         const inv = updateInvoiceData;
-        const stage = String(inv.payment_stage || "").toLowerCase();
+        const stage = String(updatePaymentStageValue || inv.payment_stage || "").toLowerCase();
         const stageKey = ["initial", "first", "second", "third", "final"].includes(stage) ? stage : "initial";
         const parseCaseTypeFeeJson = (candidate: any) => {
           if (!candidate) {
@@ -816,8 +820,8 @@ const FileSection: React.FC<FileSectionProps> = ({
         );
         const newPaid = Number(updatePaidAmountValue || 0);
         const expected = Number(inv.expected_amount || 0);
-        const taxPct = Number(inv.tax || 0);
-        const discountPct = Number(inv.discount || 0);
+        const taxPct = Number(updateTaxValue || 0);
+        const discountPct = Number(updateDiscountValue || 0);
         const newBalance = Math.max(expected - newPaid, 0);
         const taxAmt = (newPaid * taxPct) / 100;
         const discountAmt = (newPaid * discountPct) / 100;
@@ -833,14 +837,39 @@ const FileSection: React.FC<FileSectionProps> = ({
           setUpdateInvoiceData(null);
           setUpdateCaseFinancials(null);
           setUpdatePaidAmountValue("");
+          setUpdatePaymentStageValue("initial");
+          setUpdateTypeOfWorkValue("");
+          setUpdateTaxValue("0");
+          setUpdateDiscountValue("0");
         };
 
         const submitUpdate = async () => {
+          if (!Number.isFinite(newPaid) || newPaid < 0) {
+            console.error("Invalid paid amount");
+            return;
+          }
+          if (!["initial", "first", "second", "third", "final"].includes(stageKey)) {
+            console.error("Invalid payment stage");
+            return;
+          }
+          if (!Number.isFinite(taxPct) || taxPct < 0 || !Number.isFinite(discountPct) || discountPct < 0) {
+            console.error("Invalid tax or discount");
+            return;
+          }
+
           setIsUpdatingInvoice(true);
           try {
             const mutationHeaders = buildAuthHeaders();
-            await axiosUser.post(`/invoices/${inv.id}/update-paid`,
-              { paid_amount: newPaid, balance: newBalance, total_amount: newTotal },
+            await axiosUser.put(`/encrypted-documents/${pendingUpdateFile.document_id}/invoice`,
+              {
+                paid_amount: newPaid,
+                payment_stage: stageKey,
+                type_of_work: String(updateTypeOfWorkValue || "").trim(),
+                tax: taxPct,
+                discount: discountPct,
+                balance: newBalance,
+                total_amount: newTotal,
+              },
               { headers: mutationHeaders }
             );
             closeUpdateModal();
@@ -893,7 +922,7 @@ const FileSection: React.FC<FileSectionProps> = ({
                 <div>
                   <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#c23b4d" }}>INVOICE</div>
                   <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.15rem" }}>
-                    Update paid amount - all other fields are read-only
+                    Update invoice fields
                   </div>
                 </div>
                 <button
@@ -927,12 +956,37 @@ const FileSection: React.FC<FileSectionProps> = ({
                   }}
                 >
                   <div><span style={{ color: "#64748b" }}>Invoice No.</span><br /><strong>{inv.invoice_number || pendingUpdateFile.file_name || "-"}</strong></div>
-                  <div><span style={{ color: "#64748b" }}>Payment Stage</span><br /><strong style={{ textTransform: "capitalize" }}>{inv.payment_stage || "-"}</strong></div>
-                  <div><span style={{ color: "#64748b" }}>Type of Work</span><br /><strong>{resolvedTypeOfWork}</strong></div>
+                  <div>
+                    <span style={{ color: "#64748b" }}>Payment Stage</span><br />
+                    <select
+                      value={updatePaymentStageValue}
+                      onChange={(event) => setUpdatePaymentStageValue(event.target.value)}
+                      disabled={isUpdatingInvoice}
+                      style={{ width: "100%", marginTop: "0.2rem", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.32rem 0.45rem", textTransform: "capitalize" }}
+                    >
+                      <option value="initial">Initial</option>
+                      <option value="first">First</option>
+                      <option value="second">Second</option>
+                      <option value="third">Third</option>
+                      <option value="final">Final</option>
+                    </select>
+                  </div>
+                  <div><span style={{ color: "#64748b" }}>Type of Work</span><br /><strong>{String(updateTypeOfWorkValue || "").trim() || resolvedTypeOfWork}</strong></div>
                   <div><span style={{ color: "#64748b" }}>Client</span><br /><strong>{inv.client_name || "-"}</strong></div>
                   <div><span style={{ color: "#64748b" }}>Case</span><br /><strong>{inv.case_title || "-"}</strong></div>
                   <div><span style={{ color: "#64748b" }}>Issue Date</span><br /><strong>{inv.issue_date || "-"}</strong></div>
                   <div><span style={{ color: "#64748b" }}>Due Date</span><br /><strong>{inv.due_date || "-"}</strong></div>
+                  <div style={{ gridColumn: "1 / span 2" }}>
+                    <span style={{ color: "#64748b" }}>Type of Work (Editable)</span><br />
+                    <input
+                      type="text"
+                      value={updateTypeOfWorkValue}
+                      onChange={(event) => setUpdateTypeOfWorkValue(event.target.value)}
+                      disabled={isUpdatingInvoice}
+                      placeholder="Type of Work"
+                      style={{ width: "100%", marginTop: "0.2rem", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.38rem 0.5rem" }}
+                    />
+                  </div>
                 </div>
 
                 <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden", marginBottom: "1rem" }}>
@@ -957,6 +1011,56 @@ const FileSection: React.FC<FileSectionProps> = ({
                       <span style={{ fontWeight: 600, color: "#1e293b" }}>{value}</span>
                     </div>
                   ))}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "0.65rem 1rem",
+                      borderBottom: "1px solid #f1f5f9",
+                      background: "#f8fafc",
+                    }}
+                  >
+                    <label htmlFor="recent-update-tax-input" style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>
+                      Tax (%)
+                    </label>
+                    <input
+                      id="recent-update-tax-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={updateTaxValue}
+                      onChange={(event) => setUpdateTaxValue(event.target.value)}
+                      style={{ width: "140px", padding: "0.4rem 0.65rem", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.95rem", fontWeight: 700, textAlign: "right" }}
+                      disabled={isUpdatingInvoice}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "0.65rem 1rem",
+                      borderBottom: "1px solid #f1f5f9",
+                      background: "#f8fafc",
+                    }}
+                  >
+                    <label htmlFor="recent-update-discount-input" style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>
+                      Discount (%)
+                    </label>
+                    <input
+                      id="recent-update-discount-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={updateDiscountValue}
+                      onChange={(event) => setUpdateDiscountValue(event.target.value)}
+                      style={{ width: "140px", padding: "0.4rem 0.65rem", borderRadius: "7px", border: "1px solid #cbd5e1", fontSize: "0.95rem", fontWeight: 700, textAlign: "right" }}
+                      disabled={isUpdatingInvoice}
+                    />
+                  </div>
 
                   <div
                     style={{

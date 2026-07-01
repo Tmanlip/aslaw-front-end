@@ -40,11 +40,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [mfaChallenge, setMfaChallenge] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
 
-  const startMicrosoftSso = () => {
-    const redirectUrl = `${API_URL}/sso/entra/redirect`;
-    window.location.assign(redirectUrl);
-  };
-
   useEffect(() => {
     const pingBackend = async () => {
       const pingUrl = `${API_URL}/ping`;
@@ -231,7 +226,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       console.error("LOGIN ERROR:", error.message);
       setAlertVariant("danger");
       if (error.code === "SSO_REQUIRED") {
-        setAlertMessage("This account role must sign in with Microsoft SSO below.");
+        setAlertMessage("This account cannot sign in with the current login method. Please contact the administrator.");
       } else {
         setAlertMessage(error.message);
       }
@@ -391,27 +386,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         )}
       </Button>
 
-      {!mfaChallenge && (
-        <>
-          <div className="text-center my-3" style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-            or sign in with Microsoft SSO
-          </div>
-          <Button
-            type="button"
-            variant="outline-primary"
-            disabled={isSubmitting}
-            onClick={startMicrosoftSso}
-            style={{ fontWeight: 600, width: "100%" }}
-          >
-            Sign in with Microsoft
-          </Button>
-        </>
-      )}
-
       <Modal
         show={showLockedModal}
         onHide={() => setShowLockedModal(false)}
         centered
+        className="login-locked-modal"
+        backdropClassName="login-locked-backdrop"
       >
         <Modal.Header closeButton>
           <Modal.Title>Account Locked</Modal.Title>

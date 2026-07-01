@@ -110,7 +110,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateInvoiceData, setUpdateInvoiceData] = useState<any | null>(null);
   const [updatePaidAmountLoading, setUpdatePaidAmountLoading] = useState(false);
-  const [updateInvoiceForm, setUpdateInvoiceForm] = useState<any | null>(null);
+  const [updatePaidAmountValue, setUpdatePaidAmountValue] = useState<string>("");
+  const [updatePaymentStageValue, setUpdatePaymentStageValue] = useState<string>("initial");
+  const [updateTypeOfWorkValue, setUpdateTypeOfWorkValue] = useState<string>("");
+  const [updateTaxValue, setUpdateTaxValue] = useState<string>("0");
+  const [updateDiscountValue, setUpdateDiscountValue] = useState<string>("0");
   const [archivedActiveFileName, setArchivedActiveFileName] = useState<string | null>(null);
   const [archivedPreviewLoading, setArchivedPreviewLoading] = useState(false);
   const [fileSortMode, setFileSortMode] = useState<FileSortMode>("modified_desc");
@@ -138,6 +142,18 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
   useEffect(() => {
     onUploadingChange?.(uploading);
   }, [uploading, onUploadingChange]);
+
+  useEffect(() => {
+    if (!showUpdateModal || !updateInvoiceData) {
+      return;
+    }
+
+    setUpdatePaidAmountValue(String(updateInvoiceData?.paid_amount ?? ""));
+    setUpdatePaymentStageValue(String(updateInvoiceData?.payment_stage || "initial"));
+    setUpdateTypeOfWorkValue(String(updateInvoiceData?.type_of_work || ""));
+    setUpdateTaxValue(String(updateInvoiceData?.tax ?? 0));
+    setUpdateDiscountValue(String(updateInvoiceData?.discount ?? 0));
+  }, [showUpdateModal, updateInvoiceData]);
 
   const isInvoiceFolder = folderName === "invoices";
   const isAdmin = (currentUser?.role || "").toLowerCase() === "admin";
@@ -591,49 +607,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
     }
   };
 
-  const openInvoiceUpdateModal = async (file: DisplayFile) => {
-    if (!file.id) {
-      setSuccessMessage("Unable to update this invoice file.");
-      return;
-    }
-
-    setUpdatePaidAmountLoading(true);
-
-    try {
-      const response = await axiosUser.get(`/encrypted-documents/${file.id}/invoice`, {
-        headers: mutationHeaders as Record<string, string>,
-      });
-
-      const invoice = response?.data?.invoice;
-      if (!invoice?.id) {
-        setSuccessMessage("Invoice record was not found for this file.");
-        return;
-      }
-
-      setUpdateInvoiceData(invoice);
-      setUpdateInvoiceForm({
-        invoice_number: String(invoice.invoice_number || ""),
-        payment_stage: String(invoice.payment_stage || "initial"),
-        issue_date: String(invoice.issue_date || "").slice(0, 10),
-        due_date: String(invoice.due_date || "").slice(0, 10),
-        client_name: String(invoice.client_name || ""),
-        case_title: String(invoice.case_title || ""),
-        expected_amount: String(invoice.expected_amount ?? "0"),
-        paid_amount: String(invoice.paid_amount ?? "0"),
-        tax: String(invoice.tax ?? "0"),
-        discount: String(invoice.discount ?? "0"),
-        balance: String(invoice.balance ?? "0"),
-        total_amount: String(invoice.total_amount ?? "0"),
-      });
-      setShowUpdateModal(true);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      setSuccessMessage(`Failed to load invoice details: ${message}`);
-    } finally {
-      setUpdatePaidAmountLoading(false);
-    }
-  };
-
   /* ================= RENDER FILE ================= */
   return (
     <>
@@ -981,25 +954,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                           )}
                         </button>
 
-                        {isInvoiceFolder && canMutateInvoiceFiles && (
-                          <button
-                            type="button"
-                            disabled={updatePaidAmountLoading}
-                            className="admin-billing-file-btn admin-billing-file-btn-preview"
-                            style={{ opacity: updatePaidAmountLoading ? 0.6 : 1, cursor: updatePaidAmountLoading ? "not-allowed" : "pointer" }}
-                            onClick={() => void openInvoiceUpdateModal(file)}
-                          >
-                            {updatePaidAmountLoading ? (
-                              <>
-                                <LoadingSpinner size={14} color="#ffffff" />
-                                Loading
-                              </>
-                            ) : (
-                              "Update"
-                            )}
-                          </button>
-                        )}
-
                         {allowDelete && (
                             <button
                               type="button"
@@ -1038,55 +992,68 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           )}
 
         {/* Invoice Update Modal */}
-        {showUpdateModal && updateInvoiceData && updateInvoiceForm && (() => {
+        {showUpdateModal && updateInvoiceData && (() => {
           const inv = updateInvoiceData;
-          const expected = Number(updateInvoiceForm.expected_amount || 0);
-          const newPaid = Number(updateInvoiceForm.paid_amount || 0);
-          const taxPct = Number(updateInvoiceForm.tax || 0);
-          const discountPct = Number(updateInvoiceForm.discount || 0);
-          const computedBalance = Math.max(expected - newPaid, 0);
+          const newPaid = Number(updatePaidAmountValue || 0);
+          const nextStage = String(updatePaymentStageValue || "initial").toLowerCase();
+          const stageAllowed = ["initial", "first", "second", "third", "final"].includes(nextStage);
+          const expected = Number(inv.expected_amount || 0);
+          const taxPct = Number(updateTaxValue || 0);
+          const discountPct = Number(updateDiscountValue || 0);
+          const newBalance = Math.max(expected - newPaid, 0);
           const taxAmt = (newPaid * taxPct) / 100;
           const discountAmt = (newPaid * discountPct) / 100;
-          const computedTotal = newPaid + taxAmt - discountAmt;
+          const newTotal = newPaid + taxAmt - discountAmt;
+          const fmt = (v: number) =>
+            new Intl.NumberFormat('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+
+          const closeUpdateModal = () => {
+            if (updatePaidAmountLoading) {
+              return;
+            }
+
+            setShowUpdateModal(false);
+            setUpdateInvoiceData(null);
+            setUpdatePaidAmountValue("");
+            setUpdatePaymentStageValue("initial");
+            setUpdateTypeOfWorkValue("");
+            setUpdateTaxValue("0");
+            setUpdateDiscountValue("0");
+          };
 
           const handleSubmit = async () => {
-            const normalizedBalance =
-              updateInvoiceForm.balance === "" || updateInvoiceForm.balance === null || updateInvoiceForm.balance === undefined
-                ? computedBalance
-                : Number(updateInvoiceForm.balance || 0);
-
-            const normalizedTotal =
-              updateInvoiceForm.total_amount === "" || updateInvoiceForm.total_amount === null || updateInvoiceForm.total_amount === undefined
-                ? computedTotal
-                : Number(updateInvoiceForm.total_amount || 0);
+            if (!Number.isFinite(newPaid) || newPaid < 0) {
+              setSuccessMessage("Paid amount must be a valid number greater than or equal to 0.");
+              return;
+            }
+            if (!stageAllowed) {
+              setSuccessMessage("Payment stage is invalid.");
+              return;
+            }
+            if (!Number.isFinite(taxPct) || taxPct < 0 || !Number.isFinite(discountPct) || discountPct < 0) {
+              setSuccessMessage("Tax and discount must be valid numbers greater than or equal to 0.");
+              return;
+            }
 
             setUpdatePaidAmountLoading(true);
             try {
               await axiosUser.put(`/invoices/${inv.id}`,
                 {
-                  invoice_number: String(updateInvoiceForm.invoice_number || "").trim(),
-                  payment_stage: String(updateInvoiceForm.payment_stage || "initial"),
-                  issue_date: String(updateInvoiceForm.issue_date || "").trim(),
-                  due_date: String(updateInvoiceForm.due_date || "").trim() || null,
-                  client_name: String(updateInvoiceForm.client_name || "").trim(),
-                  case_title: String(updateInvoiceForm.case_title || "").trim(),
-                  expected_amount: Number(updateInvoiceForm.expected_amount || 0),
-                  paid_amount: Number(updateInvoiceForm.paid_amount || 0),
-                  tax: Number(updateInvoiceForm.tax || 0),
-                  discount: Number(updateInvoiceForm.discount || 0),
-                  balance: Number.isFinite(normalizedBalance) ? normalizedBalance : computedBalance,
-                  total_amount: Number.isFinite(normalizedTotal) ? normalizedTotal : computedTotal,
+                  paid_amount: newPaid,
+                  payment_stage: nextStage,
+                  type_of_work: String(updateTypeOfWorkValue || "").trim(),
+                  tax: taxPct,
+                  discount: discountPct,
+                  balance: newBalance,
+                  total_amount: newTotal,
                 },
                 { headers: mutationHeaders as Record<string, string> }
               );
-              setShowUpdateModal(false);
-              setUpdateInvoiceData(null);
-              setUpdateInvoiceForm(null);
+              closeUpdateModal();
               fetchFiles?.();
               onUploadSuccess?.();
-            } catch (err: any) {
-              const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-              setSuccessMessage(`Failed to update invoice: ${message}`);
+            } catch (err) {
+              console.error('Failed to update invoice', err);
             } finally {
               setUpdatePaidAmountLoading(false);
             }
@@ -1100,7 +1067,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: '1rem',
               }}
-              onClick={() => { if (!updatePaidAmountLoading) setShowUpdateModal(false); }}
+              onClick={closeUpdateModal}
             >
               <div
                 style={{
@@ -1119,41 +1086,32 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '1.1rem', color: colors.red }}>INVOICE</div>
                     <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.15rem' }}>
-                      Update invoice details
+                      Update invoice fields
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => { if (!updatePaidAmountLoading) setShowUpdateModal(false); }}
+                    onClick={closeUpdateModal}
                     style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#64748b', lineHeight: 1 }}
                   >×</button>
                 </div>
 
                 {/* Body */}
                 <div style={{ padding: '1rem 1.25rem' }}>
-                  {/* Editable invoice details */}
+                  {/* Invoice meta grid */}
                   <div style={{
                     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1rem',
                     background: '#f8fafc', borderRadius: '10px', padding: '0.85rem 1rem',
                     marginBottom: '1rem', fontSize: '0.9rem',
                   }}>
+                    <div><span style={{ color: '#64748b' }}>Invoice No.</span><br /><strong>{inv.invoice_number || '—'}</strong></div>
                     <div>
-                      <label style={{ color: '#64748b', fontSize: '0.8rem' }}>Invoice No.</label>
-                      <input
-                        type="text"
-                        value={updateInvoiceForm.invoice_number || ""}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, invoice_number: e.target.value }))}
-                        className="form-control"
-                        disabled={updatePaidAmountLoading}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ color: '#64748b', fontSize: '0.8rem' }}>Payment Stage</label>
+                      <span style={{ color: '#64748b' }}>Payment Stage</span><br />
                       <select
-                        value={updateInvoiceForm.payment_stage || "initial"}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, payment_stage: e.target.value }))}
-                        className="form-control"
+                        value={updatePaymentStageValue}
+                        onChange={(e) => setUpdatePaymentStageValue(e.target.value)}
                         disabled={updatePaidAmountLoading}
+                        style={{ width: '100%', marginTop: '0.2rem', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.32rem 0.45rem', textTransform: 'capitalize' }}
                       >
                         <option value="initial">Initial</option>
                         <option value="first">First</option>
@@ -1162,73 +1120,79 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                         <option value="final">Final</option>
                       </select>
                     </div>
-                    <div>
-                      <label style={{ color: '#64748b', fontSize: '0.8rem' }}>Client</label>
+                    <div><span style={{ color: '#64748b' }}>Client</span><br /><strong>{inv.client_name || '—'}</strong></div>
+                    <div><span style={{ color: '#64748b' }}>Case</span><br /><strong>{inv.case_title || '—'}</strong></div>
+                    <div><span style={{ color: '#64748b' }}>Issue Date</span><br /><strong>{inv.issue_date || '—'}</strong></div>
+                    <div><span style={{ color: '#64748b' }}>Due Date</span><br /><strong>{inv.due_date || '—'}</strong></div>
+                    <div style={{ gridColumn: '1 / span 2' }}>
+                      <span style={{ color: '#64748b' }}>Type of Work</span><br />
                       <input
                         type="text"
-                        value={updateInvoiceForm.client_name || ""}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, client_name: e.target.value }))}
-                        className="form-control"
+                        value={updateTypeOfWorkValue}
+                        onChange={(e) => setUpdateTypeOfWorkValue(e.target.value)}
                         disabled={updatePaidAmountLoading}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ color: '#64748b', fontSize: '0.8rem' }}>Case</label>
-                      <input
-                        type="text"
-                        value={updateInvoiceForm.case_title || ""}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, case_title: e.target.value }))}
-                        className="form-control"
-                        disabled={updatePaidAmountLoading}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ color: '#64748b', fontSize: '0.8rem' }}>Issue Date</label>
-                      <input
-                        type="date"
-                        value={updateInvoiceForm.issue_date || ""}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, issue_date: e.target.value }))}
-                        className="form-control"
-                        disabled={updatePaidAmountLoading}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ color: '#64748b', fontSize: '0.8rem' }}>Due Date</label>
-                      <input
-                        type="date"
-                        value={updateInvoiceForm.due_date || ""}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, due_date: e.target.value }))}
-                        className="form-control"
-                        disabled={updatePaidAmountLoading}
+                        placeholder="Type of Work"
+                        style={{ width: '100%', marginTop: '0.2rem', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.38rem 0.5rem' }}
                       />
                     </div>
                   </div>
 
                   {/* Amounts table */}
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', marginBottom: '1rem' }}>
-                      {([
-                      { label: 'Expected Amount', field: 'expected_amount' },
-                      { label: 'Tax (%)', field: 'tax' },
-                      { label: 'Discount (%)', field: 'discount' },
-                    ] as { label: string; field: string }[]).map(({ label, field }) => (
+                    {([
+                      { label: 'Expected Amount', value: `RM ${fmt(expected)}` },
+                      { label: 'Tax', value: `${taxPct}%` },
+                      { label: 'Discount', value: `${discountPct}%` },
+                    ] as { label: string; value: string }[]).map(({ label, value }) => (
                       <div key={label} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '0.6rem 1rem', borderBottom: '1px solid #f1f5f9',
                         fontSize: '0.9rem', color: '#64748b',
                       }}>
                         <span>{label}</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={updateInvoiceForm[field] || "0"}
-                          onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, [field]: e.target.value }))}
-                          style={{ width: '140px', textAlign: 'right' }}
-                          className="form-control"
-                          disabled={updatePaidAmountLoading}
-                        />
+                        <span style={{ fontWeight: 600, color: '#1e293b' }}>{value}</span>
                       </div>
                     ))}
+
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '0.65rem 1rem', borderBottom: '1px solid #f1f5f9',
+                      background: '#f8fafc',
+                    }}>
+                      <label htmlFor="update-tax-input" style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>
+                        Tax (%)
+                      </label>
+                      <input
+                        id="update-tax-input"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={updateTaxValue}
+                        onChange={(e) => setUpdateTaxValue(e.target.value)}
+                        style={{ width: '140px', padding: '0.4rem 0.65rem', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.95rem', fontWeight: 700, textAlign: 'right' }}
+                        disabled={updatePaidAmountLoading}
+                      />
+                    </div>
+
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '0.65rem 1rem', borderBottom: '1px solid #f1f5f9',
+                      background: '#f8fafc',
+                    }}>
+                      <label htmlFor="update-discount-input" style={{ fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>
+                        Discount (%)
+                      </label>
+                      <input
+                        id="update-discount-input"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={updateDiscountValue}
+                        onChange={(e) => setUpdateDiscountValue(e.target.value)}
+                        style={{ width: '140px', padding: '0.4rem 0.65rem', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.95rem', fontWeight: 700, textAlign: 'right' }}
+                        disabled={updatePaidAmountLoading}
+                      />
+                    </div>
 
                     {/* Editable paid amount */}
                     <div style={{
@@ -1244,8 +1208,8 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                         type="number"
                         min="0"
                         step="0.01"
-                        value={updateInvoiceForm.paid_amount || "0"}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, paid_amount: e.target.value }))}
+                        value={updatePaidAmountValue}
+                        onChange={(e) => setUpdatePaidAmountValue(e.target.value)}
                         style={{
                           width: '140px', padding: '0.4rem 0.65rem',
                           borderRadius: '7px', border: `2px solid ${colors.red}`,
@@ -1263,15 +1227,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                       fontSize: '0.9rem', background: '#f0fdf4',
                     }}>
                       <span style={{ color: '#15803d', fontWeight: 600 }}>Balance</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={updateInvoiceForm.balance || String(computedBalance)}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, balance: e.target.value }))}
-                        style={{ width: '140px', textAlign: 'right' }}
-                        className="form-control"
-                        disabled={updatePaidAmountLoading}
-                      />
+                      <span style={{ fontWeight: 700, color: '#15803d' }}>RM {fmt(newBalance)}</span>
                     </div>
 
                     {/* Total */}
@@ -1280,15 +1236,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                       padding: '0.7rem 1rem', background: '#fff7ed', fontSize: '1rem',
                     }}>
                       <span style={{ fontWeight: 700, color: '#7c3aed' }}>Total Amount</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={updateInvoiceForm.total_amount || String(computedTotal)}
-                        onChange={(e) => setUpdateInvoiceForm((prev: any) => ({ ...prev, total_amount: e.target.value }))}
-                        style={{ width: '140px', textAlign: 'right', fontWeight: 700, color: '#7c3aed' }}
-                        className="form-control"
-                        disabled={updatePaidAmountLoading}
-                      />
+                      <span style={{ fontWeight: 800, color: '#7c3aed' }}>RM {fmt(newTotal)}</span>
                     </div>
                   </div>
 
@@ -1296,7 +1244,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
                   <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setShowUpdateModal(false)}
+                      onClick={closeUpdateModal}
                       disabled={updatePaidAmountLoading}
                       style={{
                         padding: '0.55rem 1.2rem', borderRadius: '8px',
