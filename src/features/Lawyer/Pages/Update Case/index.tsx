@@ -76,6 +76,114 @@ const splitAddress = (value: string) => {
   };
 };
 
+const MAX_PREFILL_URL_CHARS = 1400;
+
+const truncateText = (value: unknown, maxLength = 280): string => {
+  const text = String(value ?? "");
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength)}...`;
+};
+
+const compactPrefillForUrl = (prefill: Record<string, any>) => {
+  if (!prefill || typeof prefill !== "object") {
+    return prefill;
+  }
+
+  const compact = {
+    ...prefill,
+    case_data:
+      prefill.case_data && typeof prefill.case_data === "object"
+        ? { ...prefill.case_data }
+        : undefined,
+  } as Record<string, any>;
+
+  // These fields can be very large and are not required to initialize the template UI.
+  delete compact.case_type_fee_json;
+  delete compact.expected_payment_phases;
+  delete compact.invoice_payment_phases;
+
+  if (compact.case_data && typeof compact.case_data === "object") {
+    delete compact.case_data.case_type_fee_json;
+    delete compact.case_data.expected_payment_phases;
+    delete compact.case_data.invoice_payment_phases;
+    delete compact.case_data.encrypted_documents;
+  }
+
+  let encodedLength = encodeURIComponent(JSON.stringify(compact)).length;
+  if (encodedLength <= MAX_PREFILL_URL_CHARS) {
+    return compact;
+  }
+
+  // Keep only essential values when URL would still exceed production limits.
+  const reduced = {
+    Date: compact.Date,
+    date: compact.date,
+    Reference: compact.Reference,
+    senderName: compact.senderName,
+    recipientName: compact.recipientName,
+    ClientName: compact.ClientName,
+    LawyerName: compact.LawyerName,
+    case_id: compact.case_id,
+    case_title: compact.case_title,
+    clientID: compact.clientID,
+    lawyerID: compact.lawyerID,
+    blob_path: compact.blob_path,
+    message: truncateText(compact.message),
+    BackgroundFacts: truncateText(compact.BackgroundFacts),
+    case_data: compact.case_data
+      ? {
+          caseId: compact.case_data.caseId,
+          case_id: compact.case_data.case_id,
+          title: truncateText(compact.case_data.title, 120),
+          description: truncateText(compact.case_data.description),
+          status: compact.case_data.status,
+          blob_folder_path: compact.case_data.blob_folder_path,
+          clientId: compact.case_data.clientId,
+          clientID: compact.case_data.clientID,
+          clientFirmID: compact.case_data.clientFirmID,
+          lawyerId: compact.case_data.lawyerId,
+          lawyerID: compact.case_data.lawyerID,
+          lawyerFirmID: compact.case_data.lawyerFirmID,
+          clientName: compact.case_data.clientName,
+          lawyerName: compact.case_data.lawyerName,
+        }
+      : undefined,
+  } as Record<string, any>;
+
+  encodedLength = encodeURIComponent(JSON.stringify(reduced)).length;
+  if (encodedLength <= MAX_PREFILL_URL_CHARS) {
+    return reduced;
+  }
+
+  // Final fallback: shortest safe payload, template can fetch additional details by case id.
+  return {
+    case_id: reduced.case_id,
+    case_title: reduced.case_title,
+    clientID: reduced.clientID,
+    lawyerID: reduced.lawyerID,
+    case_data: reduced.case_data
+      ? {
+          caseId: reduced.case_data.caseId,
+          case_id: reduced.case_data.case_id,
+          title: reduced.case_data.title,
+          status: reduced.case_data.status,
+          blob_folder_path: reduced.case_data.blob_folder_path,
+          clientId: reduced.case_data.clientId,
+          clientID: reduced.case_data.clientID,
+          clientFirmID: reduced.case_data.clientFirmID,
+          lawyerId: reduced.case_data.lawyerId,
+          lawyerID: reduced.case_data.lawyerID,
+          lawyerFirmID: reduced.case_data.lawyerFirmID,
+          clientName: reduced.case_data.clientName,
+          lawyerName: reduced.case_data.lawyerName,
+        }
+      : undefined,
+  };
+};
+
 const UpdateCase: React.FC = () => {
   const location = useLocation();
   const { selectedCaseId: initialSelectedCaseId, activeFileSection: requestedActiveFileSection } =
@@ -242,6 +350,8 @@ const UpdateCase: React.FC = () => {
       },
     };
 
+    const transportPrefill = compactPrefillForUrl(prefill);
+
     const params = new URLSearchParams({
       source: "aslaw-front-end",
       caseId: String(selectedCase.caseId),
@@ -251,7 +361,7 @@ const UpdateCase: React.FC = () => {
       blob_folder_path: selectedCase.blob_folder_path || "",
       access_token: authToken,
       return_to: returnTo,
-      prefill: JSON.stringify(prefill),
+      prefill: JSON.stringify(transportPrefill),
     });
 
     const separator = documentGeneratorUrl.includes("?") ? "&" : "?";
