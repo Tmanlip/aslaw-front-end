@@ -48,12 +48,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           method: "GET",
           headers: { Accept: "application/json" },
         });
-        const responseText = await response.text();
+        await response.text();
 
         if (!response.ok) {
           return;
         }
-      } catch (error) {
+      } catch {
       }
     };
 
