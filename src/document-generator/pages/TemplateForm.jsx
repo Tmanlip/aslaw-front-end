@@ -1765,18 +1765,6 @@ const TemplateForm = () => {
       return null;
     }
 
-    const debugSource = response.headers.get("X-Document-Generator-Source") || "";
-    const debugPdfBytes = response.headers.get("X-Document-Generator-PDF-Bytes") || "";
-    const debugHtmlBytes = response.headers.get("X-Document-Generator-HTML-Bytes") || "";
-
-    if (debugSource || debugPdfBytes || debugHtmlBytes) {
-      console.debug("Invoice PDF debug metadata", {
-        source: debugSource,
-        pdfBytes: debugPdfBytes,
-        htmlBytes: debugHtmlBytes,
-      });
-    }
-
     const blob = await response.blob();
     const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
     const buffer = await blob.arrayBuffer();
@@ -2072,7 +2060,6 @@ const TemplateForm = () => {
       updatePreviewFromContent(aiContent);
       setShowPreview(true);
     } catch (err) {
-      console.error(err);
       setError(err?.message || "Failed to generate content. Make sure backend & Ollama are running.");
     } finally {
       setLoading(false);
@@ -2170,7 +2157,6 @@ const TemplateForm = () => {
           );
           saveAs(blob, fileName);
         } catch (err) {
-          console.error(err);
           if (err?.message === INVOICE_NUMBER_CONFLICT_MESSAGE) {
             setError(INVOICE_NUMBER_CONFLICT_MESSAGE);
           } else {
@@ -2549,7 +2535,6 @@ const TemplateForm = () => {
 
         saveAs(blob, fileName);
       } catch (err) {
-        console.error(err);
         if (err?.message === INVOICE_NUMBER_CONFLICT_MESSAGE) {
           setError(INVOICE_NUMBER_CONFLICT_MESSAGE);
         } else {
@@ -2589,7 +2574,6 @@ const TemplateForm = () => {
 
         saveAs(blob, fileName);
       } catch (err) {
-        console.error(err);
         if (err?.message === INVOICE_NUMBER_CONFLICT_MESSAGE) {
           setError(INVOICE_NUMBER_CONFLICT_MESSAGE);
         } else {

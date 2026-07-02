@@ -26,7 +26,6 @@ const InactiveUserPage: React.FC = () => {
           },
         }).catch((err) => {
           // Ignore errors during logout
-          console.warn("Logout API call failed (this is OK):", err);
         });
       }
 
@@ -37,7 +36,6 @@ const InactiveUserPage: React.FC = () => {
       // Redirect to home
       navigate("/", { replace: true });
     } catch (error) {
-      console.error("Logout error:", error);
       // Force clear and redirect anyway
       logout();
       AuthMemory.clear();

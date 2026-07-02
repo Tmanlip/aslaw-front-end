@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Pagination from "react-bootstrap/Pagination";
 import NavBarAdmin from "../../../../shared/Navbar/NavBar Admin/new";
 import axiosUser from "../../../../api/axiosUser";
 import "./logs.css";
@@ -155,15 +156,61 @@ const formatDateTime = (dateStr?: string): string => {
   }
 };
 
+const formatDateInputValue = (dateStr?: string): string => {
+  if (!dateStr) return "";
+
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("en-CA");
+  } catch {
+    return "";
+  }
+};
+
+const getStatusGroup = (statusCode: number): string => {
+  const normalized = Number(statusCode || 0);
+  if (normalized >= 500) return "5xx";
+  if (normalized >= 400) return "4xx";
+  if (normalized >= 300) return "3xx";
+  if (normalized >= 200) return "2xx";
+  if (normalized >= 100) return "1xx";
+  return "other";
+};
+
+const formatDateOptionLabel = (dateValue: string): string => {
+  if (!dateValue) return "";
+
+  try {
+    const date = new Date(`${dateValue}T00:00:00`);
+    if (isNaN(date.getTime())) return dateValue;
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateValue;
+  }
+};
+
 const AdminLogs: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = (searchParams.get("search") || searchParams.get("q") || "").trim();
+  const [pageSize, setPageSize] = useState(10);
 
   const [logs, setLogs] = useState<InteractionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch);
   const [severityFilter, setSeverityFilter] = useState<SeverityLevel | "all">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [interactionFilter, setInteractionFilter] = useState("");
+  const [userFilter, setUserFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [ipFilter, setIpFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
     const urlSearch = (searchParams.get("search") || searchParams.get("q") || "").trim();
@@ -171,18 +218,20 @@ const AdminLogs: React.FC = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [search, severityFilter, pageSize, interactionFilter, userFilter, statusFilter, ipFilter, dateFilter]);
+
+  useEffect(() => {
     const loadLogs = async () => {
       try {
-        const res = await axiosUser.get<{ data: InteractionLog[] }>(
-          `/logs/interactions?limit=300`
-        );
+        const res = await axiosUser.get<{ data: InteractionLog[] }>(`/logs/interactions`);
         setLogs(res.data?.data ?? []);
       } catch (err: any) {
         const status = err?.response?.status;
         const message =
           status === 401 || status === 403
             ? "Unauthorized Access"
-            : err?.response?.data?.message || err?.message || "Failed to load logs";
+            : "Unable to load logs.";
         setError(message);
       } finally {
         setLoading(false);
@@ -194,6 +243,10 @@ const AdminLogs: React.FC = () => {
 
   const filteredLogs = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const interactionQuery = interactionFilter.trim().toLowerCase();
+    const userQuery = userFilter.trim().toLowerCase();
+    const ipQuery = ipFilter.trim().toLowerCase();
+    const dateQuery = dateFilter.trim();
     
     let results = logs;
 
@@ -220,8 +273,89 @@ const AdminLogs: React.FC = () => {
       results = results.filter((log) => normalizeSeverity(log) === severityFilter);
     }
 
+    if (interactionQuery) {
+      results = results.filter((log) => getInteractionLabel(log).toLowerCase().includes(interactionQuery));
+    }
+
+    if (userQuery) {
+      results = results.filter((log) => {
+        const userLabel = [log.email || "", log.user_id ? `User #${log.user_id}` : "", log.firm_id || ""]
+          .join(" ")
+          .toLowerCase();
+
+        return userLabel.includes(userQuery);
+      });
+    }
+
+    if (statusFilter !== "all") {
+      results = results.filter((log) => getStatusGroup(log.status_code) === statusFilter);
+    }
+
+    if (ipQuery) {
+      results = results.filter((log) => String(log.ip || "").toLowerCase().includes(ipQuery));
+    }
+
+    if (dateQuery) {
+      results = results.filter((log) => formatDateInputValue(log.created_at) === dateQuery);
+    }
+
     return results;
-  }, [logs, search, severityFilter]);
+  }, [logs, search, severityFilter, interactionFilter, userFilter, statusFilter, ipFilter, dateFilter]);
+
+  const interactionOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        logs
+          .map((log) => getInteractionLabel(log).trim())
+          .filter((value) => value !== "")
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [logs]);
+
+  const userOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        logs
+          .map((log) => [log.email || "", log.user_id ? `User #${log.user_id}` : "", log.firm_id ? `(${log.firm_id})` : ""]
+            .filter(Boolean)
+            .join(" ")
+            .trim())
+          .filter((value) => value !== "")
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [logs]);
+
+  const ipOptions = useMemo(() => {
+    return Array.from(new Set(logs.map((log) => String(log.ip || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [logs]);
+
+  const dateOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        logs
+          .map((log) => formatDateInputValue(log.created_at))
+          .filter((value) => value !== "")
+      )
+    ).sort((a, b) => b.localeCompare(a));
+  }, [logs]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const visibleLogs = filteredLogs.slice(pageStartIndex, pageStartIndex + pageSize);
+
+  useEffect(() => {
+    if (currentPage !== safeCurrentPage) {
+      setCurrentPage(safeCurrentPage);
+    }
+  }, [currentPage, safeCurrentPage]);
+
+  const pageWindowStart = Math.max(1, safeCurrentPage - 2);
+  const pageWindowEnd = Math.min(totalPages, pageWindowStart + 4);
+  const pageItems = [] as number[];
+  for (let page = pageWindowStart; page <= pageWindowEnd; page += 1) {
+    pageItems.push(page);
+  }
 
   return (
     <>
@@ -263,6 +397,80 @@ const AdminLogs: React.FC = () => {
               <option value="SECURITY">🚨 Security</option>
               <option value="AUDIT">🧾 Audit</option>
             </select>
+            <select
+              className="admin-logs-filter"
+              value={interactionFilter}
+              onChange={(e) => setInteractionFilter(e.target.value)}
+            >
+              <option value="">All Interactions</option>
+              {interactionOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-logs-filter"
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+            >
+              <option value="">All Users</option>
+              {userOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-logs-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status Groups</option>
+              <option value="2xx">2xx Success</option>
+              <option value="3xx">3xx Redirect</option>
+              <option value="4xx">4xx Client Error</option>
+              <option value="5xx">5xx Server Error</option>
+            </select>
+            <select
+              className="admin-logs-filter"
+              value={ipFilter}
+              onChange={(e) => setIpFilter(e.target.value)}
+            >
+              <option value="">All IPs</option>
+              {ipOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-logs-filter"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              aria-label="Filter by date"
+            >
+              <option value="">All Dates</option>
+              {dateOptions.map((option) => (
+                <option key={option} value={option}>
+                  {formatDateOptionLabel(option)}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-logs-page-size"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value) || 10)}
+              aria-label="Rows per page"
+            >
+              <option value={10}>10 per page</option>
+              <option value={25}>25 per page</option>
+              <option value={50}>50 per page</option>
+              <option value={100}>100 per page</option>
+              <option value={300}>300 per page</option>
+              <option value={500}>500 per page</option>
+              <option value={1000}>1000 per page</option>
+            </select>
           </div>
         </div>
 
@@ -283,7 +491,7 @@ const AdminLogs: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredLogs.map((log, index) => {
+                {visibleLogs.map((log, index) => {
                   const severity = normalizeSeverity(log);
                   const severityKey = severity.toLowerCase();
                   const severityEmoji = {
@@ -320,7 +528,7 @@ const AdminLogs: React.FC = () => {
                   );
                 })}
 
-                {filteredLogs.length === 0 && (
+                {visibleLogs.length === 0 && (
                   <tr>
                     <td colSpan={6} className="admin-logs-empty">
                       No logs found.
@@ -329,6 +537,42 @@ const AdminLogs: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loading && !error && filteredLogs.length > pageSize && (
+          <div className="admin-logs-pagination-area">
+            <div className="admin-logs-pagination-summary">
+              Showing {pageStartIndex + 1}-{Math.min(pageStartIndex + pageSize, filteredLogs.length)} of {filteredLogs.length} logs
+            </div>
+
+            <Pagination className="admin-logs-pagination">
+              <Pagination.First onClick={() => setCurrentPage(1)} disabled={safeCurrentPage === 1} />
+              <Pagination.Prev onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1} />
+
+              {pageItems[0] > 1 && (
+                <>
+                  <Pagination.Item onClick={() => setCurrentPage(1)}>1</Pagination.Item>
+                  {pageItems[0] > 2 && <Pagination.Ellipsis disabled />}
+                </>
+              )}
+
+              {pageItems.map((page) => (
+                <Pagination.Item key={page} active={page === safeCurrentPage} onClick={() => setCurrentPage(page)}>
+                  {page}
+                </Pagination.Item>
+              ))}
+
+              {pageItems[pageItems.length - 1] < totalPages && (
+                <>
+                  {pageItems[pageItems.length - 1] < totalPages - 1 && <Pagination.Ellipsis disabled />}
+                  <Pagination.Item onClick={() => setCurrentPage(totalPages)}>{totalPages}</Pagination.Item>
+                </>
+              )}
+
+              <Pagination.Next onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage === totalPages} />
+              <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage === totalPages} />
+            </Pagination>
           </div>
         )}
       </div>

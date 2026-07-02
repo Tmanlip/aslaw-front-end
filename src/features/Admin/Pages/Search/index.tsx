@@ -113,7 +113,6 @@ const AdminSearch: React.FC = () => {
         setAllCases(casesData);
         setAllLogs(logsData);
       } catch (error) {
-        console.error("Admin global search failed", error);
         setErrorMessage("Unable to load search results. Please try again.");
       } finally {
         setLoading(false);

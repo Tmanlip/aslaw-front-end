@@ -49,7 +49,6 @@ const EditCase: React.FC = () => {
           } as Case));
         }
       } catch (error) {
-        console.error("Failed to refresh selected case in Edit Case", error);
       }
     };
 

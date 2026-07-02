@@ -108,7 +108,6 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
           .sort((a, b) => `${a.date}T${a.time}:00`.localeCompare(`${b.date}T${b.time}:00`))
       );
     } catch (error) {
-      console.error("Failed to load meetings:", error);
       setErrorMessage("Unable to load upcoming meetings.");
     } finally {
       setMeetingsLoading(false);
@@ -336,7 +335,6 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
           if (!isMounted) return;
           setCounterpartOptions(buildOptionsFromCases(cases));
         } catch (error) {
-          console.error("Failed to load admin case list for meetings:", error);
           if (isMounted) {
             setCounterpartOptions([]);
           }
@@ -375,7 +373,6 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
         if (!isMounted) return;
         setCounterpartOptions(buildOptionsFromCases(data.cases || []));
       } catch (error) {
-        console.error("Failed to load case-linked counterpart list:", error);
         if (isMounted) {
           setCounterpartOptions([]);
         }
@@ -447,7 +444,6 @@ const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({ role }) => {
       setSuccessMessage(role === "admin" || role === "junioradmin" ? "Meeting scheduled successfully." : "Meeting request submitted successfully.");
       clearForm();
     } catch (error) {
-      console.error("Failed to create meeting:", error);
       setErrorMessage("Failed to schedule meeting. Please try again.");
     }
   };

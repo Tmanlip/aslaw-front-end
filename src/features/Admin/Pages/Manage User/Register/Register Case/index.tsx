@@ -92,7 +92,6 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
         setLawyerOptions(res.data.filter((u) => u.role === "lawyer"));
         setClientOptions(res.data.filter((u) => u.role === "client"));
       } catch (err) {
-        console.error("Failed to fetch users", err);
       }
     };
 
@@ -114,15 +113,12 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
         setSelectedTypeOfWorkValues(buildEmptyStageSelections());
         setSelectedTypeOfWorkAmounts(buildEmptyStageAmountInputs());
       } catch (err: any) {
-        console.error("Failed to fetch type of work options", err);
         setFeeOptions([]);
         const status = Number(err?.response?.status || 0);
-        const backendMessage = String(err?.response?.data?.message || "").trim();
         setFeeOptionsError(
-          backendMessage ||
-            (status === 401 || status === 403
-              ? "Unauthorized while loading Type of Work options."
-              : "Unable to load Type of Work options right now.")
+          status === 401 || status === 403
+            ? "Unauthorized while loading Type of Work options."
+            : "Unable to load Type of Work options right now."
         );
       } finally {
         setFeeOptionsLoading(false);
@@ -311,8 +307,6 @@ const RegisterCase: React.FC<RegisterCaseProps> = ({ user }) => {
       }, SUCCESS_REDIRECT_DELAY_MS);
 
     } catch (error: any) {
-      console.error(error);
-
       const fallbackMessage =
         error?.response?.status === 422
           ? "Validation failed. Check lawyer and client selection."

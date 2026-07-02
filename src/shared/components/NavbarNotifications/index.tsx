@@ -147,7 +147,6 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
           void loadNotifications({ force: true });
         },
         (err) => {
-          console.warn("Azure Web PubSub connection issue, notifications may be delayed", err);
         }
       );
 
@@ -168,7 +167,6 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
         void loadNotifications({ force: true });
       });
     } catch (err) {
-      console.warn("Reverb WebSocket subscription failed, falling back to polling", err);
     }
 
     return () => {
@@ -210,7 +208,6 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
       setNotifications(items);
       setUnreadCountFromApi(Number(response.unread_count || 0));
     } catch (err) {
-      console.error("Failed to load navbar notifications", err);
       setError("Unable to load notifications.");
       setUnreadCountFromApi(0);
     } finally {
@@ -235,7 +232,6 @@ const NavbarNotifications: React.FC<NavbarNotificationsProps> = ({ scopeKey }) =
       setUnreadCountFromApi((prev) => Math.max(0, prev - 1));
       setNotifications((prev) => prev.filter((item) => item.id !== notificationId));
     } catch (err) {
-      console.error("Failed to mark notifications as read", err);
     } finally {
       setMarkingIds((prev) => {
         const next = { ...prev };

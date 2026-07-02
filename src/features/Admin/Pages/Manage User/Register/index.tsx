@@ -312,10 +312,6 @@ const RegisterUser: React.FC = () => {
         message: "User registered successfully!",
       });
     } catch (error: any) {
-      console.error(
-        "Registration error:",
-        error.response?.data || error.message
-      );
       setFeedback({
         variant: "danger",
         message: createFailureMessage(

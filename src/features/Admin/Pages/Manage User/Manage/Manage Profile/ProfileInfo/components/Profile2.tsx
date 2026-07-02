@@ -32,7 +32,6 @@ const ProfileStatusPage: React.FC<ProfileStatusPageProps> = ({
       setStatus(newStatus);
       alert(`Status changed to ${newStatus}`);
     } catch (error) {
-      console.error("Failed to save status:", error);
       alert("Failed to save status change.");
     } finally {
       setIsSaving(false);

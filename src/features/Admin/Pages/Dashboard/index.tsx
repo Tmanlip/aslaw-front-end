@@ -74,7 +74,6 @@ const AdminDashboard: React.FC = () => {
         setUsers(userData);
         setApiError(null);
       } catch (error: any) {
-        console.error("Failed to load admin analytics data:", error);
         const errorMsg = error?.response?.data?.message || error?.message || "Failed to load analytics";
         setApiError(errorMsg);
         setCases([]);

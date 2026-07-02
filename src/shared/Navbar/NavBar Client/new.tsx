@@ -94,7 +94,6 @@ const NavBarClient: React.FC = () => {
         const response = await fetchClientFullData(firmID);
         setCases(Array.isArray(response?.cases) ? response.cases : []);
       } catch (error) {
-        console.error("Failed to load client search data", error);
         setSearchDataError("Unable to load search results.");
       } finally {
         setLoadingSearchData(false);
@@ -263,7 +262,6 @@ const NavBarClient: React.FC = () => {
       });
 
     } catch (err) {
-      console.error("Logout error:", err);
     } finally {
       // 3️⃣ Clear memory-only auth
       AuthMemory.clear();

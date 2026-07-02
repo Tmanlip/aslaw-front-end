@@ -112,7 +112,6 @@ export default function CaseTable() {
         } else {
           const status = logsResult.reason?.response?.status;
           if (status !== 403) {
-            console.error(logsResult.reason);
           }
           setLogs([]);
         }
@@ -121,7 +120,6 @@ export default function CaseTable() {
         if (status === 401 || status === 403) {
           setErrorMessage("Unauthorized Access");
         } else {
-          console.error(err);
           setErrorMessage("Failed to load case data.");
         }
       } finally {
@@ -170,7 +168,6 @@ export default function CaseTable() {
 
       setShowManageModal(false);
     } catch (err) {
-      console.error(err);
       setLoadingNavigate(false);
     }
   };

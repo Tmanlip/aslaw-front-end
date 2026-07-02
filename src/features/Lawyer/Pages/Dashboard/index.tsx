@@ -66,7 +66,6 @@ const LawyerDashboard: React.FC = () => {
         const response = await fetchLawyerFullData(firmID);
         setLawyerData(response);
       } catch (error) {
-        console.error("Failed to load lawyer dashboard analytics:", error);
         setLawyerData(null);
       } finally {
         setLoadingAnalytics(false);

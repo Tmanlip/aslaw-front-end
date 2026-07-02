@@ -388,7 +388,7 @@ const UpdateCase: React.FC = () => {
             setSelectedCase(targetCase);
           }
         })
-        .catch((err) => console.error(err))
+        .catch(() => {})
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -416,7 +416,7 @@ const UpdateCase: React.FC = () => {
 
     fetchClientFullData(clientFirmID)
       .then((res) => setClientData(res))
-      .catch((err) => console.error("Failed to load client data for document generator:", err));
+      .catch(() => {});
   }, [selectedCase?.clientFirmID]);
 
   useEffect(() => {
@@ -449,7 +449,6 @@ const UpdateCase: React.FC = () => {
           }
         }
       } catch (err) {
-        console.error("Failed to refresh case data after file change:", err);
       } finally {
         isRefreshingCaseRef.current = false;
       }
@@ -489,19 +488,11 @@ const UpdateCase: React.FC = () => {
       await refreshCaseData();
       setIsEditCaseOpen(false);
     } catch (error: any) {
-      console.error("Failed to update case info:", error.response?.data || error.message);
-      alert(error?.response?.data?.message || "Failed to update case information.");
+      alert("Unable to update case information. Please try again.");
     } finally {
       setSavingCase(false);
     }
   };
-
-  // Debug log for cases
-  useEffect(() => {
-    if (data) {
-      console.log("RAW DATA FROM API:", JSON.stringify(data, null, 2));
-    }
-  }, [data]);
 
   useEffect(() => {
     if (!isDocGeneratorOpen) return;
@@ -652,7 +643,6 @@ const UpdateCase: React.FC = () => {
           handleRealtimePayload(payload);
         },
         (err) => {
-          console.warn("Azure Web PubSub case sync issue", err);
         }
       );
 
@@ -668,7 +658,6 @@ const UpdateCase: React.FC = () => {
           handleRealtimePayload(payload);
         });
     } catch (err) {
-      console.warn("Realtime case sync subscription failed", err);
     }
 
     return () => {

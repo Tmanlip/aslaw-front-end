@@ -19,7 +19,7 @@ const LawyerProfile: React.FC = () => {
           setData(res);
           AuthMemory.setLawyerFullData(res); // optional: store in AuthMemory
         })
-        .catch((err) => console.error(err))
+        .catch(() => {})
         .finally(() => setLoading(false));
     } else {
       setLoading(false);

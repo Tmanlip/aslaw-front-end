@@ -73,7 +73,6 @@ const CaseForm: React.FC = () => {
       const res = await axiosUser.get(`/clients`);
       setClients(res.data);
     } catch (error) {
-      console.error("Error fetching clients:", error);
       setFetchError("Failed to fetch clients. Make sure you are authenticated.");
     }
   };
@@ -84,7 +83,6 @@ const CaseForm: React.FC = () => {
       const res = await axiosUser.get(`/lawyers`);
       setLawyers(res.data);
     } catch (error) {
-      console.error("Error fetching lawyers:", error);
       setFetchError("Failed to fetch lawyers. Make sure you are authenticated.");
     }
   };
@@ -146,12 +144,7 @@ const CaseForm: React.FC = () => {
         navigate(adminPathGroup.MANAGE_CASE);
       }, SUCCESS_REDIRECT_DELAY_MS);
     } catch (error: any) {
-      console.error("Error creating case:", error);
-
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message ||
-                          "Case creation failed. Please check the selected lawyer and client.";
-      setSubmitError(errorMessage);
+      setSubmitError("Unable to register case. Please try again.");
     }
 
     setLoading(false);

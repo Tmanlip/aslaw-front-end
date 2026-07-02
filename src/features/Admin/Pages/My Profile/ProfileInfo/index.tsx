@@ -108,8 +108,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ admin, onAdminUpdated }) => {
       setShowEditModal(false);
       alert("Profile updated successfully!");
     } catch (error: any) {
-      console.error(error);
-      alert(error.response?.data?.message || "Failed to update admin information");
+      alert("Unable to update profile. Please try again.");
     } finally {
       setSaving(false);
     }

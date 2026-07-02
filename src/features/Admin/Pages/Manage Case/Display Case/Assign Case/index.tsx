@@ -85,7 +85,6 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
         setLawyerOptions(users.filter((user) => user.role === "lawyer"));
         setClientOptions(users.filter((user) => user.role === "client"));
       } catch (error) {
-        console.error("Failed to fetch users", error);
       }
     };
 
@@ -107,7 +106,6 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
         setSelectedTypeOfWorkValues(buildEmptyStageSelections());
         setSelectedTypeOfWorkAmounts(buildEmptyStageAmountInputs());
       } catch (error: any) {
-        console.error("Failed to fetch type of work options", error);
         setFeeOptions([]);
         const status = Number(error?.response?.status || 0);
         const backendMessage = String(error?.response?.data?.message || "").trim();
@@ -339,8 +337,6 @@ const AddCaseOffcanvas: React.FC<AddCaseOffcanvasProps> = ({
         handleClose();
       }, 650);
     } catch (error: any) {
-      console.error(error);
-
       const fallbackMessage =
         error?.response?.status === 422
           ? "Validation failed. Check lawyer and client selection."

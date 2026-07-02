@@ -322,8 +322,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       }
       fetchFiles();
     } catch (err: any) {
-      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      setSuccessMessage(`Upload failed: ${message}`);
+      setSuccessMessage("Upload failed.");
     } finally {
       setUploading(false);
       setPendingUploadFile(null);
@@ -380,7 +379,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
       setPreviewFile(`${apiBaseUrl}/read/${selectedCase?.blob_folder_path}${folderName}/${file.fileName}`);
     } catch (err: any) {
-      setSuccessMessage(`Preview failed: ${err.message}`);
+      setSuccessMessage("Preview failed.");
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
     }
@@ -410,7 +409,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       a.click();
       a.remove();
     } catch (err: any) {
-      setSuccessMessage(`Download failed: ${err.message}`);
+      setSuccessMessage("Download failed.");
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
     }
@@ -440,7 +439,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           });
         }
       } catch (err: any) {
-        setSuccessMessage(`Preview failed: ${err.message}`);
+        setSuccessMessage("Preview failed.");
       } finally {
         setArchivedPreviewLoading(false);
       }
@@ -564,8 +563,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           }
           fetchFiles();
         } catch (err: any) {
-          const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-          setSuccessMessage(`Delete failed: ${message}`);
+          setSuccessMessage("Delete failed.");
         } finally {
           setLoadingAction((current) => (current === actionKey ? null : current));
         }
@@ -595,8 +593,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           }
           fetchFiles();
         } catch (err: any) {
-          const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-          setSuccessMessage(`Delete failed: ${message}`);
+          setSuccessMessage("Delete failed.");
         } finally {
           setBulkAction(null);
         }
@@ -1053,7 +1050,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
               fetchFiles?.();
               onUploadSuccess?.();
             } catch (err) {
-              console.error('Failed to update invoice', err);
             } finally {
               setUpdatePaidAmountLoading(false);
             }

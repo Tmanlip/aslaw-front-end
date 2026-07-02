@@ -490,13 +490,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           { headers: mutationHeaders }
         );
 
-        console.log("[Invoice Update Debug]", {
-          document_id: resolvedDocumentId,
-          file_name: file.fileName,
-          invoice_table: res?.data?.invoice ?? null,
-          law_cases_expected_and_balance: res?.data?.case_financials ?? null,
-        });
-
         const resolvedInvoice = res?.data?.invoice ?? res?.data?.invoice_table ?? res?.data?.data?.invoice ?? null;
         const resolvedCaseFinancials =
           res?.data?.case_financials ??
@@ -518,8 +511,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
         setSuccessMessage("Invoice data logged and displayed.");
       } catch (err: any) {
-        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-        setSuccessMessage(`Failed to load invoice data: ${message}`);
+        setSuccessMessage("Unable to load invoice data.");
       } finally {
         setLoadingAction((current) => (current === actionKey ? null : current));
       }
@@ -619,15 +611,9 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       await fetchFiles();
       onUploadSuccess?.();
 
-      console.log("[Invoice Update Saved]", {
-        updated_progress_percentage: updatedProgress,
-        regenerated_invoice_document: updatedDocument,
-      });
-
       setSuccessMessage("Invoice saved. New invoice document generated successfully.");
     } catch (err: any) {
-      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      setSuccessMessage(`Failed to save invoice update: ${message}`);
+      setSuccessMessage("Unable to save invoice update.");
     } finally {
       setIsSavingInvoiceUpdate(false);
     }
@@ -657,8 +643,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         const objectUrl = URL.createObjectURL(response.data as Blob);
         setPreviewFile(objectUrl);
       } catch (err: any) {
-        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-        setSuccessMessage(`Preview failed: ${message}`);
+        setSuccessMessage("Preview failed.");
       } finally {
         setLoadingAction((current) => (current === actionKey ? null : current));
       }
@@ -692,8 +677,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         document.body.removeChild(link);
         URL.revokeObjectURL(objectUrl);
       } catch (err: any) {
-        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-        setSuccessMessage(`Download failed: ${message}`);
+        setSuccessMessage("Download failed.");
       } finally {
         setLoadingAction((current) => (current === actionKey ? null : current));
       }
@@ -821,7 +805,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
           return;
         }
       } catch (err) {
-        console.error(`Failed to refresh encrypted ${folderName} for case ${selectedCaseId}:`, err);
       }
     } else {
       // Fallback to locally available case data.
@@ -866,7 +849,6 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
 
       setFiles(legacyFiles);
     } catch (err) {
-      console.error(`Failed to fetch ${folderName}:`, err);
     } finally {
       setLoadingFiles(false);
     }
@@ -911,9 +893,11 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       fetchFiles();
     } catch (err: any) {
       const conflictMessage = resolveInvoiceConflictMessage(err);
-      const message =
-        conflictMessage || err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      setSuccessMessage(`Upload failed: ${message}`);
+      if (conflictMessage) {
+        setSuccessMessage(conflictMessage);
+      } else {
+        setSuccessMessage("Upload failed.");
+      }
     } finally {
       setUploading(false);
       setPendingInvoiceUploadFile(null);
@@ -966,8 +950,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         }
         fetchFiles();
       } catch (err: any) {
-        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-        setSuccessMessage(`Delete failed: ${message}`);
+        setSuccessMessage("Delete failed.");
       } finally {
         setLoadingAction((current) => (current === actionKey ? null : current));
       }
@@ -991,8 +974,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
         }
         fetchFiles();
       } catch (err: any) {
-        const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-        setSuccessMessage(`Delete failed: ${message}`);
+        setSuccessMessage("Delete failed.");
       } finally {
         setLoadingAction((current) => (current === actionKey ? null : current));
       }
@@ -1063,8 +1045,7 @@ const CaseFolderSection: React.FC<CaseFolderSectionProps> = ({
       }
       fetchFiles();
     } catch (err: any) {
-      const message = err?.response?.data?.message || err?.response?.data?.error || err?.message;
-      setSuccessMessage(`Delete failed: ${message}`);
+      setSuccessMessage("Delete failed.");
     } finally {
       setBulkAction(null);
     }

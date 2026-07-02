@@ -36,7 +36,6 @@ const ProfileInfo: React.FC = () => {
       // Update local state
       setEditableUser(response.user);
     } catch (error: any) {
-      console.error("Failed to update status:", error.response?.data || error);
       throw error;
     }
   };
@@ -59,8 +58,7 @@ const ProfileInfo: React.FC = () => {
       setShowEdit(false);
       alert("Profile updated successfully!");
     } catch (error: any) {
-      console.error("Failed to update profile:", error.response?.data || error);
-      alert(error.response?.data?.message || "Failed to update profile.");
+      alert("Unable to update profile. Please try again.");
     }
   };
 
@@ -84,8 +82,7 @@ const ProfileInfo: React.FC = () => {
       setShowResetConfirm(false);
       alert("Your new password was given and sent to the registered email.");
     } catch (error: any) {
-      console.error("Failed to reset password:", error.response?.data || error);
-      alert(error.response?.data?.message || "Failed to reset password.");
+      alert("Unable to reset password. Please try again.");
     } finally {
       setIsResetting(false);
     }

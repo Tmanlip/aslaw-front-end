@@ -158,7 +158,6 @@ const NavBarAdmin: React.FC = () => {
         setAllLogs(logsData);
         setHasFetchedSearchData(true);
       } catch (error) {
-        console.error("Failed to load navbar search data", error);
         setSearchDataError("Unable to load results. Please try again.");
       } finally {
         setLoadingSearchData(false);
@@ -333,7 +332,6 @@ const NavBarAdmin: React.FC = () => {
         setUserData(admin, cases || []);
       }
     } catch (error) {
-      console.error("Failed to prepare user profile data from search result", error);
     } finally {
       navigate(adminPathGroup.MANAGE_PROFILE);
       setShowSearchResults(false);
@@ -531,7 +529,6 @@ const NavBarAdmin: React.FC = () => {
       });
 
     } catch (err) {
-      console.error("Logout error:", err);
     } finally {
       // 3️⃣ Clear memory-only auth
       AuthMemory.clear();

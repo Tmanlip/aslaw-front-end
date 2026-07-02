@@ -126,7 +126,6 @@ const ViewCase: React.FC = () => {
         }
       })
       .catch((err) => {
-        console.error(err);
       })
       .finally(() => setLoading(false));
   }, [initialSelectedCaseId]);
@@ -176,7 +175,6 @@ const ViewCase: React.FC = () => {
           handleRealtimePayload(payload);
         },
         (err) => {
-          console.warn("Azure Web PubSub client case sync issue", err);
         }
       );
 
@@ -192,7 +190,6 @@ const ViewCase: React.FC = () => {
           handleRealtimePayload(payload);
         });
     } catch (err) {
-      console.warn("Realtime client case sync subscription failed", err);
     }
 
     return () => {

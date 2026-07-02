@@ -66,7 +66,6 @@ const ClientDashboard: React.FC = () => {
         const response = await fetchClientFullData(firmID);
         setClientData(response);
       } catch (error) {
-        console.error("Failed to load client dashboard analytics:", error);
         setClientData(null);
       } finally {
         setLoadingAnalytics(false);

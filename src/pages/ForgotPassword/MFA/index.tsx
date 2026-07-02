@@ -30,9 +30,7 @@ const EmailConfirm: React.FC<EmailConfirmProps> = ({ initialEmail = "" }) => {
       setAlertVariant("success");
       setEmail(""); // clear input on success
     } catch (error: any) {
-      setAlertMessage(
-        error.response?.data?.message || "❌ Something went wrong. Please try again."
-      );
+      setAlertMessage("❌ Something went wrong. Please try again.");
       setAlertVariant("danger");
     } finally {
       setLoading(false);

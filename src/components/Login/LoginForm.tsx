@@ -50,22 +50,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         });
         const responseText = await response.text();
 
-        console.log("[API PING] URL:", pingUrl);
-        console.log("[API PING] Status:", response.status);
-
         if (!response.ok) {
-          console.error("[API PING] Failed response body:", responseText);
           return;
         }
-
-        try {
-          const data = responseText ? JSON.parse(responseText) : {};
-          console.log("[API PING] Success:", data);
-        } catch {
-          console.log("[API PING] Success (non-JSON body):", responseText);
-        }
       } catch (error) {
-        console.error("[API PING] Request failed:", error);
       }
     };
 
@@ -118,8 +106,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         setAlertMessage("Enter the 6-digit code from Microsoft Authenticator.");
         return;
       }
-
-      console.log("LOGIN SUCCESS:", data);
 
       const normalizedRole = String(data.role || "").toLowerCase() as
         | "admin"
@@ -223,12 +209,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       setAlertVariant("success");
       setAlertMessage(data.message);
     } catch (error: any) {
-      console.error("LOGIN ERROR:", error.message);
       setAlertVariant("danger");
       if (error.code === "SSO_REQUIRED") {
         setAlertMessage("This account cannot sign in with the current login method. Please contact the administrator.");
       } else {
-        setAlertMessage(error.message);
+        setAlertMessage("Login failed. Please try again.");
       }
 
       if (error.code === "MFA_CHALLENGE_EXPIRED") {

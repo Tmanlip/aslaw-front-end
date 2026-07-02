@@ -179,7 +179,6 @@ const UpdateCheque: React.FC = () => {
           return;
         }
       } catch (detailError) {
-        console.warn("Case detail refresh failed, falling back to case list", detailError);
       }
 
       // Fallback for backends that only expose list response shapes.
@@ -201,7 +200,6 @@ const UpdateCheque: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error("Failed to refresh billing case data", error);
     }
   }, [currentCaseId]);
 
@@ -240,19 +238,16 @@ const UpdateCheque: React.FC = () => {
     if (manageRoute?.path) {
       navigate(manageRoute.path);
     } else {
-      console.warn("Manage User route not found for admin");
     }
   };
 
   /* ================== HANDLE MANAGE CASE ================== */
   const handleManageCaseClick = () => {
     if (role !== "admin") {
-      console.warn("Access denied: only admin can manage cases");
       return;
     }
 
     if (!caseToManage) {
-      console.warn("No cases available to manage");
       return;
     }
 
@@ -264,18 +259,14 @@ const UpdateCheque: React.FC = () => {
         lockManageUser: true, // optional if needed
       },
     });
-
-    console.log("Navigating to EditCase with selectedCase:", caseToManage);
   };
 
   const handleChangeLawyerClick = () => {
     if (role !== "admin") {
-      console.warn("Access denied: only admin can change assigned lawyer");
       return;
     }
 
     if (!caseToManage) {
-      console.warn("No cases available to change lawyer");
       return;
     }
 

@@ -183,8 +183,6 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
         onUploadSuccess?.();
         return;
       }
-
-      console.error(`Failed to ${action} pending file`, error);
       setReviewMessage(apiMessage || `Failed to ${action} "${file.file_name}".`);
       setReviewMessageVariant("danger");
     } finally {
@@ -209,7 +207,6 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
       const objectUrl = URL.createObjectURL(response.data as Blob);
       setPreviewFile(objectUrl);
     } catch (error) {
-      console.error("Failed to preview file from Recent", error);
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
     }
@@ -234,7 +231,6 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
       document.body.removeChild(link);
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
-      console.error("Failed to download file from Recent", error);
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
     }
@@ -400,7 +396,6 @@ const CaseFileTabs: React.FC<CaseFileTabsProps> = ({
       onDeleteSuccess?.();
       setPendingDeleteFile(null);
     } catch (error) {
-      console.error("Failed to delete file from Recent", error);
     } finally {
       setIsDeleting(false);
       setLoadingAction((current) => (current === actionKey ? null : current));

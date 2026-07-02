@@ -242,7 +242,6 @@ const FileSection: React.FC<FileSectionProps> = ({
 
   const openDocGeneratorPopup = (src: string, caseMeta?: { caseId: string; caseTitle: string }) => {
     Promise.resolve(onUploadSuccess?.()).catch((error) => {
-      console.error("Failed to refresh billing data before opening document generator", error);
     });
     setDocGeneratorPopupSrc(src);
     setDocGeneratorCaseMeta(caseMeta || null);
@@ -410,7 +409,6 @@ const FileSection: React.FC<FileSectionProps> = ({
       setIsDocGeneratorOpen(false);
 
       Promise.resolve(onUploadSuccess?.()).catch((error) => {
-        console.error("Failed to refresh billing data after document upload", error);
       });
 
       // Some API responses can be eventually consistent for encrypted_documents.
@@ -443,9 +441,7 @@ const FileSection: React.FC<FileSectionProps> = ({
       setPreviewFile(objectUrl);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.error("Preview unauthorized (401). Token missing or expired.");
       }
-      console.error("Failed to preview file from Recent", error);
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
     }
@@ -471,9 +467,7 @@ const FileSection: React.FC<FileSectionProps> = ({
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.error("Download unauthorized (401). Token missing or expired.");
       }
-      console.error("Failed to download file from Recent", error);
     } finally {
       setLoadingAction((current) => (current === actionKey ? null : current));
     }
@@ -507,7 +501,6 @@ const FileSection: React.FC<FileSectionProps> = ({
       onDeleteSuccess?.();
       setPendingDeleteFile(null);
     } catch (error) {
-      console.error("Failed to delete file from Recent", error);
     } finally {
       setIsDeleting(false);
       setLoadingAction((current) => (current === actionKey ? null : current));
@@ -845,15 +838,12 @@ const FileSection: React.FC<FileSectionProps> = ({
 
         const submitUpdate = async () => {
           if (!Number.isFinite(newPaid) || newPaid < 0) {
-            console.error("Invalid paid amount");
             return;
           }
           if (!["initial", "first", "second", "third", "final"].includes(stageKey)) {
-            console.error("Invalid payment stage");
             return;
           }
           if (!Number.isFinite(taxPct) || taxPct < 0 || !Number.isFinite(discountPct) || discountPct < 0) {
-            console.error("Invalid tax or discount");
             return;
           }
 
@@ -875,7 +865,6 @@ const FileSection: React.FC<FileSectionProps> = ({
             closeUpdateModal();
             onUploadSuccess?.();
           } catch (err) {
-            console.error("Failed to update invoice", err);
           } finally {
             setIsUpdatingInvoice(false);
           }

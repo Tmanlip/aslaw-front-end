@@ -67,7 +67,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       await axios.post(`${apiBaseUrl}/password/send-otp`, { email });
       setOtpSuccess("OTP sent to your email.");
     } catch (err: any) {
-      setOtpError(err?.response?.data?.message || "Failed to send OTP.");
+      setOtpError("Failed to send OTP.");
     } finally {
       setSendingOtp(false);
     }
@@ -119,7 +119,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       setOtpSuccess("Verification successful.");
       setVerified(true);
     } catch (err: any) {
-      setOtpError(err?.response?.data?.message || "Invalid or expired verification code.");
+      setOtpError("Invalid or expired verification code.");
     } finally {
       setOtpLoading(false);
     }
@@ -160,7 +160,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       setResetSuccess("Password reset successful.");
       setTimeout(onClose, 1500);
     } catch (err: any) {
-      setResetError(err?.response?.data?.message || "Failed to reset password.");
+      setResetError("Failed to reset password.");
     } finally {
       setResetLoading(false);
     }

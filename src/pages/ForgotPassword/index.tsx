@@ -71,7 +71,7 @@ const ForgotPasswordPage: React.FC = () => {
         navigate("/", { replace: true }); // redirect to HomePage/login
       }, 1500);
     } catch (error: any) {
-      setMessage(error.response?.data?.message || "Reset failed.");
+      setMessage("Reset failed. Please try again.");
       setVariant("danger");
     } finally {
       setLoading(false);

@@ -21,7 +21,6 @@ const ResetPassword: React.FC = () => {
       alert("New password and confirmation do not match!");
       return;
     }
-    console.log("Old:", oldPassword, "New:", newPassword, "Confirm:", confirmPassword);
   };
 
   return (

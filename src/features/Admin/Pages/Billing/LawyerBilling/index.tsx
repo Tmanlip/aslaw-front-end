@@ -30,10 +30,8 @@ const LawyerBilling: React.FC = () => {
       if (manageRoute?.path) {
         navigate(manageRoute.path);
       } else {
-        console.warn("Manage User route not found for admin-like role");
       }
     } else {
-      console.warn("Access denied: only admin can manage users");
     }
   };
 

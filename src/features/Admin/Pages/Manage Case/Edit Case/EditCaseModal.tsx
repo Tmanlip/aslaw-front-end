@@ -133,7 +133,6 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
 
         setLawyers(normalized);
       } catch (error) {
-        console.error("Failed to fetch lawyers for change-lawyer dropdown", error);
         setLawyersError("Failed to load lawyer list. You can still enter lawyer firm ID manually.");
       } finally {
         setLawyersLoading(false);
@@ -308,7 +307,6 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
           } as Case;
         }
       } catch (refreshError) {
-        console.error("Failed to refetch updated case after save", refreshError);
       }
 
       const updatedCase: Case = {
@@ -349,9 +347,7 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({
 
       alert("Case updated successfully!");
     } catch (error: any) {
-      console.error("Error updating case:", error.response?.data || error.message);
-      const apiMessage = error?.response?.data?.message;
-      alert(apiMessage || "Failed to update case. Please check the input and try again.");
+      alert("Unable to update case. Please try again.");
     } finally {
       setLoading(false);
     }

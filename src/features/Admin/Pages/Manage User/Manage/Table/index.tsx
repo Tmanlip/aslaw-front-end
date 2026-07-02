@@ -114,7 +114,6 @@ export default function UserTable() {
         } else {
           const status = logsResult.reason?.response?.status;
           if (status !== 403) {
-            console.error(logsResult.reason);
           }
           setLogs([]);
         }
@@ -123,7 +122,6 @@ export default function UserTable() {
         if (status === 401 || status === 403) {
           setErrorMessage("Unauthorized Access");
         } else {
-          console.error(err);
           setErrorMessage("Failed to load user data.");
         }
       } finally {
@@ -156,7 +154,6 @@ export default function UserTable() {
         roleRoutes.find((r: any) => r.path === adminPathGroup.MANAGE_PROFILE)?.path || adminPathGroup.MANAGE_PROFILE
       );
     } catch (err) {
-      console.error(err);
     }
   };
 
@@ -197,7 +194,6 @@ export default function UserTable() {
 
       setShowModal(false);
     } catch (error) {
-      console.error("Failed to fetch user data", error);
     } finally {
       setLoadingNavigate(false);
     }
